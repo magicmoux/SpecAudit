@@ -1,32 +1,32 @@
-# Contribuer
+# Contributing
 
-Les contributions sont les bienvenues : signalements, corrections, améliorations du protocole ou de la documentation.
+Contributions are welcome: bug reports, fixes, improvements to the protocol or the documentation.
 
-## Signaler un problème
+## Reporting an issue
 
-Ouvrez une [issue](https://github.com/magicmoux/SpecAudit/issues) en indiquant :
+Open an [issue](https://github.com/magicmoux/SpecAudit/issues) stating:
 
-- la version de Claude Code (`claude --version`) et celle du plugin (`claude plugin list`) ;
-- le type de document audité, sans contenu confidentiel ;
-- la phase concernée et l'extrait utile du registre ou du rapport ;
-- le comportement attendu et le comportement observé.
+- the Claude Code version (`claude --version`) and the plugin version (`claude plugin list`);
+- the type of document audited, without confidential content;
+- the phase concerned and the relevant excerpt of the register or the report;
+- the expected behavior and the observed behavior.
 
-Un faux positif confirmé, une correction qui renforce un énoncé, un relecteur qui a reçu de l'historique ou un worktree perdu sont des bugs du protocole : ils sont prioritaires.
+A confirmed false positive, a fix that strengthens a statement, a reviewer that received history, or a lost worktree are protocol bugs: they take priority.
 
-## Structure
+## Layout
 
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| `.claude-plugin/plugin.json` | manifeste du plugin : nom, version, métadonnées |
-| `.claude-plugin/marketplace.json` | le dépôt est sa propre marketplace |
-| `skills/spec-audit/SKILL.md` | consignes de l'orchestrateur, phases 0 à 8 |
-| `skills/spec-audit/references/registre.md` | formats du registre, des entrées et des gardes, chargés à la demande |
-| `agents/spec-reviewer.md` | consignes et format de sortie du relecteur |
-| `agents/spec-adjudicator.md` | consignes et format de sortie de l'arbitre |
-| `docs/` | documentation utilisateur |
-| `examples/` | spécification de démonstration à erreurs connues |
+| `.claude-plugin/plugin.json` | plugin manifest: name, version, metadata |
+| `.claude-plugin/marketplace.json` | the repository is its own marketplace |
+| `skills/spec-audit/SKILL.md` | orchestrator instructions, phases 0 to 8 |
+| `skills/spec-audit/references/register.md` | formats of the register, its entries and the guards, loaded on demand |
+| `agents/spec-reviewer.md` | reviewer instructions and output format |
+| `agents/spec-adjudicator.md` | adjudicator instructions and output format |
+| `docs/` | user documentation |
+| `examples/` | demo specification with known errors |
 
-## Développer en local
+## Developing locally
 
 ```bash
 git clone https://github.com/magicmoux/SpecAudit.git
@@ -34,43 +34,43 @@ cd SpecAudit
 claude --plugin-dir .
 ```
 
-`--plugin-dir` charge le plugin pour la session sans l'installer. Relancez la session après chaque modification du skill ou des agents.
+`--plugin-dir` loads the plugin for the session without installing it. Restart the session after each change to the skill or the agents.
 
-Si vous avez aussi installé le plugin depuis la marketplace, ou copié le skill dans `~/.claude/`, désactivez ces copies pendant le développement pour ne pas tester la mauvaise version.
+If you have also installed the plugin from the marketplace, or copied the skill into `~/.claude/`, disable those copies while developing so as not to test the wrong version.
 
-## Valider
+## Validating
 
 ```bash
 claude plugin validate --strict .
 ```
 
-La commande vérifie les manifestes et les en-têtes du skill et des agents. Elle doit passer sans avertissement.
+The command checks the manifests and the frontmatter of the skill and the agents. It must pass without warnings.
 
-## Tester une modification
+## Testing a change
 
-Il n'y a pas de tests automatiques du comportement d'un skill : testez sur la [spécification de démonstration](examples/), avant et après votre modification, et comparez les registres et les rapports. Vérifiez au moins :
+There are no automated tests of a skill's behavior: test on the [demo specification](examples/), before and after your change, and compare the registers and the reports. Check at least:
 
-- que les relecteurs ne reçoivent ni registre, ni corpus, ni erreurs précédentes, et qu'aucun agent n'est lancé en « fork » ;
-- que chaque garde est vue rouge avant la correction ;
-- que les erreurs attendues sont trouvées, corrigées de bas en haut, sans sur-correction de la Proposition 4 ;
-- que la clôture recommande l'option prévue pour l'issue obtenue et rapatrie le rapport.
+- that the reviewers receive no register, no corpus and no previous errors, and that no agent is launched as a "fork";
+- that each guard is seen red before the fix;
+- that the expected errors are found and fixed bottom-up, without over-correcting Proposition 4;
+- that the closing recommends the option expected for the outcome obtained and brings the report back.
 
-Pour une modification du protocole, testez aussi sur un document réel du domaine visé et décrivez le résultat dans la pull request.
+For a change to the protocol, also test on a real document of the target domain and describe the result in the pull request.
 
 ## Conventions
 
-- **Langue** : le skill, les agents et la documentation sont en français ; le README garde un résumé en anglais.
-- **Style des consignes** : expliquez pourquoi une règle existe plutôt que de l'imposer ; un modèle qui comprend la raison généralise mieux qu'un modèle qui obéit.
-- **Cohérence** : les types d'erreur, les statuts, les gravités et les formats YAML sont partagés entre `SKILL.md`, les deux agents et `references/registre.md`. Modifiez-les ensemble, et mettez à jour la documentation.
-- **Version** : versionnage sémantique dans `.claude-plugin/plugin.json` (correctif : comportement inchangé ; mineure : nouvelle capacité compatible ; majeure : protocole, formats ou paramètres incompatibles), avec une entrée dans `CHANGELOG.md`. Après fusion, `claude plugin tag .` crée l'étiquette `spec-audit--v<version>`.
+- **Language**: the skill, the agents and the documentation are written in English.
+- **Instruction style**: explain why a rule exists rather than imposing it; a model that understands the reason generalizes better than a model that obeys.
+- **Consistency**: error types, statuses, severities and YAML formats are shared between `SKILL.md`, the two agents and `references/register.md`. Change them together, and update the documentation.
+- **Version**: semantic versioning in `.claude-plugin/plugin.json` (patch: unchanged behavior; minor: new compatible capability; major: incompatible protocol, formats or parameters), with an entry in `CHANGELOG.md`. After merging, `claude plugin tag .` creates the tag `spec-audit--v<version>`.
 
 ## Pull requests
 
-1. Créez une branche depuis `main`.
-2. Une pull request par sujet, avec la description du changement de comportement attendu.
-3. Mettez à jour la documentation et le journal des modifications.
-4. Vérifiez que `claude plugin validate --strict .` passe.
+1. Create a branch from `main`.
+2. One pull request per topic, describing the expected change in behavior.
+3. Update the documentation and the changelog.
+4. Check that `claude plugin validate --strict .` passes.
 
-## Licence
+## License
 
-En contribuant, vous acceptez que votre contribution soit publiée sous [licence MIT](LICENSE).
+By contributing, you agree that your contribution is published under the [MIT license](LICENSE).

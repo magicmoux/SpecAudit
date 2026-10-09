@@ -3,13 +3,13 @@
   "name": "spec-audit",
   "owner": { "name": "Max Brönnimann" },
   "metadata": {
-    "description": "Marketplace du plugin spec-audit : audit itératif de précision de spécifications théoriques, techniques ou mathématiques."
+    "description": "Marketplace for the spec-audit plugin: iterative precision audits of theoretical, technical or mathematical specifications."
   },
   "plugins": [
     {
       "name": "spec-audit",
       "source": "./",
-      "description": "Audite un document formel (article, preuve, spécification d'algorithme, de protocole ou de format) : relecteurs neufs, erreurs confirmées par contre-exemple exécuté, correction des causes avant les conséquences, gardes anti-régression, le tout dans un worktree git dédié.",
+      "description": "Audits a formal document (paper, proof, algorithm, protocol or format specification): fresh reviewers, errors confirmed by executed counterexamples, causes fixed before consequences, regression guards, all in a dedicated git worktree.",
       "category": "productivity"
     }
   ]

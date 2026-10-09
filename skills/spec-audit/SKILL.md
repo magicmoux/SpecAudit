@@ -1,344 +1,343 @@
 ---
 name: spec-audit
 description: >-
-  Audit itératif de précision d'une spécification théorique, technique ou mathématique
-  (manuscrit, article, preuve, spécification d'algorithme, de protocole ou de format),
-  mené dans un worktree git dédié : détection complète à froid par des agents neufs sans historique, classement des erreurs
-  en chaînes de causalité, correction des causes avant leurs conséquences (de bas en haut),
-  confirmation de chaque erreur par un contre-exemple exécuté, gardes anti-régression dans
-  un corpus global de tests, correction des énoncés, du cadrage et des preuves, puis des
-  typos, de la bibliographie, de la numérotation et des renvois, et nouvelle passe jusqu'à
-  convergence, épuisement du budget, récidive d'une erreur corrigée ou boucle causale.
-  Clôture par une question à choix multiple à l'utilisateur (accepter et fusionner, refaire
-  une vérification, conserver, abandonner), l'option la plus sûre étant recommandée, et
-  rapport rapatrié dans la session et la branche d'origine dans tous les cas.
-  À utiliser dès que l'utilisateur veut relire, vérifier, auditer, durcir ou fiabiliser un
-  document formel, traquer des erreurs dans des théorèmes, lemmes, algorithmes ou preuves,
-  ou préparer une spécification avant soumission ou publication, même sans dire « audit ».
-argument-hint: "<document> [--corpus <dossier>] [--max-iter N] [--auto] [--resume] [--base <réf>] [--no-worktree] [--keep]"
+  Iterative precision audit of a theoretical, technical or mathematical specification
+  (manuscript, paper, proof, algorithm, protocol or format specification), run in a
+  dedicated git worktree: complete cold detection by fresh agents with no history, sorting
+  of errors into causal chains, fixing causes before their consequences (bottom-up),
+  confirmation of each error by an executed counterexample, regression guards in a global
+  test corpus, correction of statements, scoping and proofs, then of typos, bibliography,
+  numbering and cross-references, and a new pass until convergence, budget exhaustion,
+  recurrence of a fixed error or a causal loop. Ends with a multiple-choice question to the
+  user (accept and merge, run another check, keep, abandon), the safest option being
+  recommended, and the report brought back to the original session and branch in every case.
+  Use whenever the user wants to proofread, check, audit, harden or make reliable a formal
+  document, hunt for errors in theorems, lemmas, algorithms or proofs, or prepare a
+  specification for submission or publication, even without saying "audit".
+argument-hint: "<document> [--corpus <dir>] [--max-iter N] [--auto] [--resume] [--base <ref>] [--no-worktree] [--keep]"
 ---
 
-# Audit de précision d'une spécification
+# Precision audit of a specification
 
-Un auteur ne voit pas ses propres angles morts, et un relecteur qui connaît l'historique lit ce qu'il s'attend à lire. Ce skill sépare donc les rôles : des relecteurs neufs qui ne savent rien de l'audit, un arbitre qui confirme ou réfute chaque erreur, et toi, l'orchestrateur, qui tiens le registre, classes les erreurs, écris les gardes et corriges. Trois principes guident tout le reste :
+An author cannot see their own blind spots, and a reviewer who knows the history reads what they expect to read. This skill therefore separates the roles: fresh reviewers who know nothing about the audit, an adjudicator who confirms or refutes each error, and you, the orchestrator, who keep the register, sort the errors, write the guards and make the fixes. Three principles guide everything else:
 
-- **Une erreur non confirmée n'est pas une erreur.** Les relecteurs produisent des faux positifs, et corriger un énoncé juste abîme le document autant que laisser un énoncé faux.
-- **On corrige une cause avant ses conséquences.** Corriger d'abord une conséquence masque la cause, ou la compense localement (une hypothèse ajoutée au mauvais endroit).
-- **Une erreur corrigée sans garde reviendra.** Chaque correction laisse dans le corpus un test qui échouerait si l'erreur réapparaissait.
+- **An unconfirmed error is not an error.** Reviewers produce false positives, and fixing a correct statement damages the document as much as leaving a false one.
+- **Fix a cause before its consequences.** Fixing a consequence first masks the cause, or compensates for it locally (a hypothesis added in the wrong place).
+- **An error fixed without a guard will come back.** Every fix leaves a test in the corpus that would fail if the error reappeared.
 
-## Ce qui compte comme erreur
+## What counts as an error
 
-Une **erreur** est un défaut du contenu propre au domaine du document (logique, mathématique, algorithmique, théorique) :
+An **error** is a defect in the content specific to the document's domain (logical, mathematical, algorithmic, theoretical):
 
-- un énoncé faux (un contre-exemple existe) ;
-- une preuve invalide ou lacunaire ;
-- un cadrage insuffisant : hypothèse manquante, contexte ou domaine d'application non restreint, cas limite non traité ;
-- une définition incohérente, mal fondée, ou ambiguë au point de changer un résultat ;
-- un algorithme qui ne réalise pas sa spécification, une terminaison non garantie, une complexité fausse ;
-- deux résultats qui se contredisent, ou un résumé, une introduction ou une conclusion qui affirment plus que le corps ne démontre ;
-- une formule ou un exemple calculé faux, même par faute de frappe, puisque le sens change.
+- a false statement (a counterexample exists);
+- an invalid or incomplete proof;
+- insufficient scoping: missing hypothesis, context or domain of application not restricted, edge case not handled;
+- a definition that is inconsistent, ill-founded, or ambiguous enough to change a result;
+- an algorithm that does not meet its specification, termination not guaranteed, a wrong complexity;
+- two results that contradict each other, or an abstract, introduction or conclusion that claims more than the body proves;
+- a wrong formula or computed example, even from a typo, since the meaning changes.
 
-Seules les erreurs suivent le protocole complet : graphe causal, contre-exemple, gardes, correction de bas en haut.
+Only errors follow the full protocol: cause graph, counterexample, guards, bottom-up fixing.
 
-Les **défauts de forme** (typo hors formule, numérotation, renvoi, entrée bibliographique) ne sont pas des erreurs au sens de ce protocole. Ils suivent la voie éditoriale (phase 5), sans contre-exemple ni chaîne causale. Les préférences de style sont écartées.
+**Form defects** (typo outside formulas, numbering, cross-reference, bibliography entry) are not errors in the sense of this protocol. They follow the editorial track (phase 5), without counterexample or causal chain. Style preferences are discarded.
 
-## Paramètres
+## Parameters
 
-- `<document>` : le ou les fichiers audités.
-- `--corpus <dossier>` : le corpus global de gardes. Par défaut, le corpus de vérification existant du projet s'il y en a un (en respecter les conventions), sinon `spec-guards/` à la racine.
-- `--max-iter N` : nombre maximal d'itérations (défaut 5).
-- `--auto` : appliquer aussi les corrections critiques sans pause (voir 4.3).
-- `--resume` : reprendre un audit interrompu à partir de son registre, dans son worktree existant.
-- `--base <réf>` : branche ou commit de départ du worktree (défaut : `HEAD` du dépôt courant).
-- `--no-worktree` : travailler dans le répertoire courant, sans worktree, quand il est déjà isolé pour l'audit.
-- `--keep` : à la clôture, ne poser aucune question et conserver le worktree ; seul le rapport est rapatrié (phase 8).
+- `<document>`: the audited file or files.
+- `--corpus <dir>`: the global guard corpus. By default, the project's existing verification corpus if there is one (follow its conventions), otherwise `spec-guards/` at the root.
+- `--max-iter N`: maximum number of iterations (default 5).
+- `--auto`: also apply critical fixes without pausing (see 4.3).
+- `--resume`: resume an interrupted audit from its register, in its existing worktree.
+- `--base <ref>`: starting branch or commit of the worktree (default: `HEAD` of the current repository).
+- `--no-worktree`: work in the current directory, without a worktree, when it is already isolated for the audit.
+- `--keep`: at closing, ask no question and keep the worktree; only the report is brought back (phase 8).
 
-## Rôles
+## Roles
 
-| Rôle | Qui | Voit | Écrit |
+| Role | Who | Sees | Writes |
 |---|---|---|---|
-| Orchestrateur | toi | tout : registre, corpus, historique git | document, corpus, registre |
-| Relecteur | agent `spec-reviewer`, neuf à chaque vague | le document et ses dépendances normatives, rien d'autre | rien, hors son brouillon |
-| Arbitre | agent `spec-adjudicator`, neuf pour chaque erreur | une erreur et le document | rien, hors son brouillon |
+| Orchestrator | you | everything: register, corpus, git history | document, corpus, register |
+| Reviewer | `spec-reviewer` agent, fresh for each wave | the document and its normative dependencies, nothing else | nothing, outside its scratch directory |
+| Adjudicator | `spec-adjudicator` agent, fresh for each error | one error and the document | nothing, outside its scratch directory |
 
-Installés dans `~/.claude/agents/`, ces agents s'appellent `spec-reviewer` et `spec-adjudicator` ; installés comme plugin, `spec-audit:spec-reviewer` et `spec-audit:spec-adjudicator`. S'ils ne sont pas disponibles, lance un agent généraliste neuf en lui donnant comme consigne le contenu de `spec-reviewer.md` ou `spec-adjudicator.md` (dans `~/.claude/agents/`, ou dans le dossier `agents/` du plugin). N'utilise jamais un agent de type « fork » : il hériterait de la conversation, donc de l'historique.
+Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `spec-adjudicator`; installed as a plugin, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`. If they are not available, launch a fresh general-purpose agent, giving it the content of `spec-reviewer.md` or `spec-adjudicator.md` as instructions (in `~/.claude/agents/`, or in the plugin's `agents/` folder). Never use a "fork" agent: it would inherit the conversation, hence the history.
 
-## Phase 0 — Préparation (une fois)
+## Phase 0 — Preparation (once)
 
-1. **Règles du projet.** Lis `CLAUDE.md`, les conventions et la mémoire du projet : elles priment sur ce skill (en-têtes d'attribution, versionnement des documents, politique de push, périmètre de la théorie, statut des preuves).
-2. **Convention de version.** Le projet corrige-t-il le document en place, ou crée-t-il une nouvelle révision (nouveau fichier, section d'historique) ? Suis la convention ; si elle n'est pas claire, pose la question une fois.
-3. **Worktree dédié.** Sauf avec `--no-worktree`, tout l'audit se déroule dans un worktree git créé pour lui : le document y est modifié, le corpus y grandit, les commits y restent, sans toucher au répertoire de l'utilisateur ni aux sessions qui y travaillent en parallèle.
-   - `<slug>` : le nom du document sans extension, en minuscules ASCII, mots séparés par des tirets.
-   - Relève le chemin du dépôt d'origine, sa branche courante et son commit de tête, et note-les au registre : la clôture (phase 8) en dépend.
-   - Relève `git status` du dépôt courant. Si le document, ses dépendances normatives ou le corpus ont des modifications non commitées, elles n'existeront pas dans le worktree : demande à l'utilisateur s'il faut auditer la version commitée ou s'il préfère commiter d'abord. N'utilise pas `git stash`, partagé entre tous les worktrees.
-   - Nomme la branche `audit/<slug>` et le répertoire `<parent de la racine du dépôt>/<nom du dépôt>-audit-<slug>`. Si l'une ou l'autre existe déjà hors `--resume`, ajoute un suffixe `-2`, `-3`…
-   - Crée-le : `git worktree add "<répertoire>" -b audit/<slug> <base>`, où `<base>` vaut `--base` ou `HEAD`. Avec `--resume`, retrouve-le plutôt par `git worktree list`.
-   - Désormais, toutes les commandes s'exécutent dans le worktree (chemins absolus, ou `git -C "<répertoire>"`), et les agents reçoivent des chemins absolus dans le worktree.
-   - Les fichiers non suivis par git (sources PDF, environnements, dépendances compilées) n'y sont pas : lis-les dans le dépôt d'origine, en lecture seule, et vérifie que le lanceur du corpus fonctionne dans le worktree avant de commencer.
-   - Avec `--no-worktree`, travaille sur place, mais relève `git status` : d'autres sessions peuvent travailler en parallèle, et leurs modifications ne sont pas les tiennes.
-   - Hors dépôt git, demande s'il faut en initialiser un : sans git, il n'y a ni isolation ni commits.
-   - Dans tous les cas, ne commite que tes fichiers et ne pousse jamais.
-4. **Registre.** Crée `spec-audit/<slug-du-document>/registre.md` (format dans `references/registre.md`), ou relis-le avec `--resume`. C'est la mémoire de l'audit : il doit survivre à une compaction du contexte, donc mets-le à jour après chaque étape, pas à la fin.
-5. **Inventaire.** Établis `spec-audit/<slug>/inventaire.md` : chaque définition, lemme, proposition, théorème et algorithme, avec son énoncé et les résultats qu'il utilise. Ce graphe de dépendances sert à établir les liens causaux (phase 3), à propager les corrections (4.4) et à chercher les erreurs de même classe (4.2).
-6. **État de référence.** Exécute tout le corpus. Il doit être vert ; une garde déjà rouge devient une erreur de l'itération 0, jamais un test à retoucher.
-7. **Lint mécanique.** Écris une fois dans le corpus un script déterministe qui vérifie : continuité et unicité de la numérotation, existence de la cible de chaque renvoi, présence de chaque clé citée dans la bibliographie et citation de chaque entrée, équilibre des délimiteurs mathématiques, symboles employés avant leur définition quand c'est détectable. Il alimente la voie éditoriale.
+1. **Project rules.** Read `CLAUDE.md`, the project's conventions and memory: they take precedence over this skill (attribution headers, document versioning, push policy, scope of the theory, status of proofs).
+2. **Version convention.** Does the project fix the document in place, or create a new revision (new file, history section)? Follow the convention; if it is unclear, ask once.
+3. **Dedicated worktree.** Unless `--no-worktree` is given, the whole audit runs in a git worktree created for it: the document is modified there, the corpus grows there, the commits stay there, without touching the user's directory or the sessions working in it in parallel.
+   - `<slug>`: the document name without extension, in lowercase ASCII, words separated by hyphens.
+   - Record the path of the original repository, its current branch and its head commit, and note them in the register: closing (phase 8) depends on them.
+   - Record `git status` of the current repository. If the document, its normative dependencies or the corpus have uncommitted changes, they will not exist in the worktree: ask the user whether to audit the committed version or to commit first. Do not use `git stash`, which is shared between all worktrees.
+   - Name the branch `audit/<slug>` and the directory `<parent of the repository root>/<repository name>-audit-<slug>`. If either already exists outside `--resume`, add a suffix `-2`, `-3`…
+   - Create it: `git worktree add "<directory>" -b audit/<slug> <base>`, where `<base>` is `--base` or `HEAD`. With `--resume`, find it instead with `git worktree list`.
+   - From now on, all commands run in the worktree (absolute paths, or `git -C "<directory>"`), and agents receive absolute paths in the worktree.
+   - Files not tracked by git (PDF sources, environments, compiled dependencies) are not there: read them in the original repository, read-only, and check that the corpus runner works in the worktree before starting.
+   - With `--no-worktree`, work in place, but record `git status`: other sessions may be working in parallel, and their changes are not yours.
+   - Outside a git repository, ask whether to initialize one: without git, there is neither isolation nor commits.
+   - In all cases, commit only your files and never push.
+4. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end.
+5. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every definition, lemma, proposition, theorem and algorithm, with its statement and the results it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).
+6. **Baseline.** Run the whole corpus. It must be green; a guard that is already red becomes an iteration-0 error, never a test to be touched up.
+7. **Mechanical lint.** Write once in the corpus a deterministic script that checks: continuity and uniqueness of numbering, existence of the target of each cross-reference, presence of each cited key in the bibliography and citation of each entry, balance of math delimiters, symbols used before their definition when detectable. It feeds the editorial track.
 
-## Phase 1 — Détection complète, à froid
+## Phase 1 — Complete cold detection
 
-Toutes les erreurs de l'itération sont détectées avant qu'aucune ne soit confirmée, testée ou corrigée : le classement causal (phase 3) n'a de sens que sur l'ensemble des erreurs.
+All errors of the iteration are detected before any is confirmed, tested or fixed: causal sorting (phase 3) only makes sense on the full set of errors.
 
-Chaque relecteur est neuf et reçoit un message fixe qui ne dit rien de l'audit :
-
-```
-Relis intégralement ce document comme un rapporteur qui le découvre : <chemins>.
-Dépendances normatives (définitions qu'il utilise) : <chemins, ou « aucune »>.
-Angle : <intégral | logique et preuves | définitions, cadrage et cas limites | algorithmes et complexité>.
-Répertoire de brouillon pour tes calculs : <brouillon/iter-k/relecteur-x>.
-Rends ta liste au format prévu par tes instructions.
-```
-
-- N'y ajoute jamais le registre, le corpus, les erreurs précédentes, les zones corrigées ni le motif de l'audit. Attirer l'attention sur un passage, c'est déjà biaiser la relecture.
-- **Première vague** : un relecteur intégral, plus des relecteurs par angle si le document est long ou dense. Chacun lit tout le document, car une incohérence se voit entre deux sections, pas dans une seule.
-- **Vagues suivantes** : un relecteur intégral neuf. S'il apporte des erreurs nouvelles par rapport à l'union des vagues précédentes (après dédoublonnage, phase 2), lance une vague de plus. La détection est complète quand une vague n'apporte plus rien de nouveau, et s'arrête au plus tard à la troisième vague ; dans ce cas, note au registre « détection non saturée ».
-- Si le document est trop long pour une lecture, découpe-le par sections, mais donne à chaque relecteur les sections de définitions et de notation et la liste des énoncés de l'inventaire (sans historique), et ajoute une passe dédiée à la cohérence entre sections.
-- Ne modifie pas le document pendant la détection : tous les relecteurs d'une itération lisent le même état.
-
-## Phase 2 — Tri et dédoublonnage
-
-Oriente d'abord chaque constat : erreur (définition ci-dessus) ou défaut de forme (voie éditoriale, phase 5). Les suggestions de style sont écartées.
-
-Pour chaque erreur, rédige une **empreinte** indépendante de la numérotation et des lignes, qui changent au fil des corrections : `[type] objet — défaut — témoin`. Exemple : `[énoncé faux] borne de la fusion partielle — ignore le cas k > n — n = 2, k = 3`.
-
-Compare-la, sur le sens et non sur la lettre, aux autres constats de l'itération et aux entrées du registre :
-
-- **Nouvelle** → statut DÉTECTÉ, phase 3.
-- **Identique à une erreur CORRIGÉE** → **récidive** : arrêt (phase 7), sans recorriger.
-- **Identique à une erreur RÉFUTÉE** → écartée. Si deux passes indépendantes la relèvent encore, le texte induit en erreur : ouvre un défaut de forme « ambiguïté » pour le clarifier sans en changer le sens.
-- **Identique à une erreur INDÉCISE ou ESCALADÉE** → écartée, déjà en attente de l'utilisateur.
-- **Même classe, autre instance** → nouvelle, liée à l'erreur d'origine.
-
-## Phase 3 — Graphe des causes
-
-Classe les erreurs détectées en chaînes de causalité. Comme une erreur peut avoir plusieurs causes et plusieurs conséquences, c'est un graphe orienté : un arc `A → B` signifie « A cause B ».
-
-- **Il y a un arc `A → B`** quand le défaut de B vient de A : B cite ou applique A, ou hérite de sa définition, et son défaut disparaîtrait si A était juste tel qu'énoncé ; ou le contre-exemple de B est celui de A, ou en dérive ; ou le même cadrage manquant (hypothèse, restriction de contexte) se propage de A à B.
-- **Une dépendance n'est pas une causalité** : B peut utiliser A et avoir sa propre erreur. Dans ce cas, pas d'arc.
-- Appuie-toi sur l'inventaire et sur les causes probables signalées par les relecteurs. Justifie chaque arc en une phrase au registre.
-- **Lien douteux** : pas d'arc, B est traitée comme une racine, mais l'ordre de traitement suit les dépendances de l'inventaire, donc B passe de toute façon après sa cause présumée.
-- **Racines** : les erreurs sans cause ouverte.
-
-**Boucle causale.** Si le graphe contient un cycle (A cause B qui cause A, directement ou non), arrête la vérification : aucune correction de plus, rapport immédiat à l'utilisateur avec les erreurs du cycle et la justification de chaque arc. Il n'y a pas de bas par où commencer : soit le document raisonne en cercle, soit l'analyse causale est fausse, et dans les deux cas la décision revient à un humain. Refais ce contrôle chaque fois que le graphe change (4.4, 4.5).
-
-## Phase 4 — Correction de bas en haut
+Each reviewer is fresh and receives a fixed message that says nothing about the audit:
 
 ```
-tant qu'il reste une erreur ouverte dans le graphe :
-    racines courantes = erreurs ouvertes dont toutes les causes sont
-                        CORRIGÉES, RÉFUTÉES ou RÉSOLUES
-    pour chaque racine, dans l'ordre des dépendances de l'inventaire :
-        4.1 confirmation → 4.2 gardes (rouge) → 4.3 correction (vert) → 4.4 propagation
-    pour chaque conséquence dont toutes les causes sont traitées :
-        4.5 réévaluation
-    contrôle de cycle (phase 3)
+Review this document in full, as a referee discovering it: <paths>.
+Normative dependencies (definitions it uses): <paths, or "none">.
+Angle: <full | logic and proofs | definitions, scoping and edge cases | algorithms and complexity>.
+Scratch directory for your computations: <scratch/iter-k/reviewer-x>.
+Return your list in the format given by your instructions.
 ```
 
-Tant que sa cause n'est pas corrigée, une conséquence est **ignorée** : statut BLOQUÉE (par F-…), ni arbitrée, ni testée, ni corrigée. Son analyse porterait sur un texte qui va changer, et sa correction risquerait de compenser la cause au lieu de la réparer.
+- Never add the register, the corpus, previous errors, fixed areas or the reason for the audit. Drawing attention to a passage already biases the review.
+- **First wave**: one full reviewer, plus angle reviewers if the document is long or dense. Each one reads the whole document, because an inconsistency shows between two sections, not within one.
+- **Following waves**: one fresh full reviewer. If it brings new errors compared with the union of the previous waves (after deduplication, phase 2), launch one more wave. Detection is complete when a wave brings nothing new, and stops at the third wave at the latest; in that case, note "detection not saturated" in the register.
+- If the document is too long for one reading, split it by sections, but give each reviewer the definition and notation sections and the list of statements from the inventory (without history), and add a pass dedicated to cross-section consistency.
+- Do not modify the document during detection: all reviewers of an iteration read the same state.
+
+## Phase 2 — Triage and deduplication
+
+First classify each finding: error (definition above) or form defect (editorial track, phase 5). Style suggestions are discarded.
+
+For each error, write a **fingerprint** independent of numbering and lines, which change as fixes are made: `[type] object — defect — witness`. Example: `[false statement] bound of the partial merge — ignores the case k > n — n = 2, k = 3`.
+
+Compare it, on meaning and not on wording, with the other findings of the iteration and with the entries of the register:
+
+- **New** → status DETECTED, phase 3.
+- **Identical to a FIXED error** → **recurrence**: stop (phase 7), without fixing again.
+- **Identical to a REFUTED error** → discarded. If two independent passes still raise it, the text is misleading: open an "ambiguity" form defect to clarify it without changing its meaning.
+- **Identical to an UNDECIDED or ESCALATED error** → discarded, already awaiting the user.
+- **Same class, other instance** → new, linked to the original error.
+
+## Phase 3 — Cause graph
+
+Sort the detected errors into causal chains. Since an error can have several causes and several consequences, this is a directed graph: an edge `A → B` means "A causes B".
+
+- **There is an edge `A → B`** when B's defect comes from A: B cites or applies A, or inherits its definition, and its defect would disappear if A were correct as stated; or B's counterexample is A's, or derives from it; or the same missing scoping (hypothesis, context restriction) propagates from A to B.
+- **A dependency is not a causation**: B may use A and have its own error. In that case, no edge.
+- Rely on the inventory and on the probable causes reported by the reviewers. Justify each edge in one sentence in the register.
+- **Doubtful link**: no edge, B is treated as a root, but the processing order follows the inventory's dependencies, so B comes after its presumed cause anyway.
+- **Roots**: errors with no open cause.
+
+**Causal loop.** If the graph contains a cycle (A causes B which causes A, directly or not), stop the verification: no more fixes, immediate report to the user with the errors of the cycle and the justification of each edge. There is no bottom to start from: either the document reasons in a circle, or the causal analysis is wrong, and in both cases the decision belongs to a human. Redo this check every time the graph changes (4.4, 4.5).
+
+## Phase 4 — Bottom-up fixing
+
+```
+while an open error remains in the graph:
+    current roots = open errors all of whose causes are
+                    FIXED, REFUTED or RESOLVED
+    for each root, in the inventory's dependency order:
+        4.1 confirmation → 4.2 guards (red) → 4.3 fix (green) → 4.4 propagation
+    for each consequence all of whose causes are handled:
+        4.5 reassessment
+    cycle check (phase 3)
+```
+
+As long as its cause is not fixed, a consequence is **ignored**: status BLOCKED (by F-…), neither adjudicated, nor tested, nor fixed. Its analysis would bear on a text that is about to change, and its fix would risk compensating for the cause instead of repairing it.
 
 ### 4.1 Confirmation
 
-La racine part chez un arbitre neuf, avec l'erreur seule (sans l'identité du relecteur ni les autres erreurs), les chemins du document et un brouillon. N'arbitre pas toi-même, en particulier une erreur qui touche un passage que tu as corrigé : tu serais juge de ton propre travail.
+The root goes to a fresh adjudicator, with the error alone (without the reviewer's identity or the other errors), the document paths and a scratch directory. Do not adjudicate yourself, especially an error that touches a passage you fixed: you would be judging your own work.
 
-- **CONFIRMÉE** (preuve exécutée à l'appui) → 4.2.
-- **RÉFUTÉE** (avec la raison) → retire ses arcs sortants ; ses conséquences sans autre cause ouverte deviennent des racines.
-- **INDÉCISE** (avec ce qui permettrait de trancher) → escaladée à l'utilisateur, aucune modification ; ses conséquences restent BLOQUÉES et figurent au rapport.
+- **CONFIRMED** (with executed evidence) → 4.2.
+- **REFUTED** (with the reason) → remove its outgoing edges; its consequences with no other open cause become roots.
+- **UNDECIDED** (with what would settle it) → escalated to the user, no change; its consequences remain BLOCKED and appear in the report.
 
-Une erreur de type « énoncé faux » exige un contre-exemple **exécuté** ; sinon elle redescend en preuve lacunaire ou en INDÉCISE.
+An error of type "false statement" requires an **executed** counterexample; otherwise it is downgraded to incomplete proof or UNDECIDED.
 
-Si l'arbitre nomme une **cause en amont**, la racine n'en était pas une : si cette cause est déjà une erreur du graphe, ajoute l'arc ; sinon ouvre une nouvelle erreur pour elle, en phase 3. La racine repasse BLOQUÉE derrière sa cause, et le contrôle de cycle est refait.
+If the adjudicator names an **upstream cause**, the root was not one: if that cause is already an error in the graph, add the edge; otherwise open a new error for it, in phase 3. The root goes back to BLOCKED behind its cause, and the cycle check is redone.
 
-### 4.2 Documentation et gardes, avant la correction
+### 4.2 Documentation and guards, before the fix
 
-Écris la garde avant la correction : écrite après, elle tend à tester la correction plutôt que l'erreur.
+Write the guard before the fix: written afterwards, it tends to test the fix rather than the error.
 
-1. **Registre** : une entrée complète (format dans `references/registre.md`), cause probable comprise. La cause (hypothèse implicite, cas limite oublié, résultat voisin recopié…) dit où chercher les erreurs sœurs.
-2. **Gardes**, dans le corpus :
-   - **Garde témoin** : encode l'énoncé original et vérifie qu'il échoue sur le contre-exemple (elle documente l'erreur), puis que l'énoncé corrigé y tient.
-   - **Variantes** : au moins deux cas de plus parmi les cas limites pertinents (vide, singleton, 0 et 1, égalités et ex aequo, doublons, valeurs extrêmes, valeur absente ou NULL, ordre non total, débordement), et un **quasi-cas** où l'énoncé original est vrai, qui protège contre une sur-correction.
-   - **Vérification bornée** de l'énoncé corrigé : exhaustive sur un petit domaine, ou par propriétés avec graine fixe.
-   - **Garde de classe** : cherche dans l'inventaire les énoncés exposés au même motif (même hypothèse oubliée, même cas limite, même quantificateur) et ajoute une garde pour chacun, même s'ils sont justes aujourd'hui. Un énoncé frère qui s'avère faux devient une nouvelle erreur, ajoutée au graphe.
-   - **Preuve lacunaire** : une garde sur l'affirmation intermédiaire de l'étape fautive, testée sur des instances bornées sous les hypothèses disponibles à cet endroit.
-3. **Rouge d'abord** : exécute la garde contre la formulation originale ; l'assertion sur l'énoncé original doit échouer, preuve que la garde détecte l'erreur. Consigne le résultat au registre.
+1. **Register**: a complete entry (format in `references/register.md`), including the probable cause. The cause (implicit hypothesis, forgotten edge case, neighboring result copied over…) tells where to look for sibling errors.
+2. **Guards**, in the corpus:
+   - **Witness guard**: encodes the original statement and checks that it fails on the counterexample (it documents the error), then that the fixed statement holds on it.
+   - **Variants**: at least two more cases among the relevant edge cases (empty, singleton, 0 and 1, equalities and ties, duplicates, extreme values, missing value or NULL, non-total order, overflow), and a **near-case** where the original statement is true, which protects against over-correction.
+   - **Bounded check** of the fixed statement: exhaustive on a small domain, or property-based with a fixed seed.
+   - **Class guard**: search the inventory for the statements exposed to the same pattern (same forgotten hypothesis, same edge case, same quantifier) and add a guard for each, even if they are correct today. A sibling statement that turns out to be false becomes a new error, added to the graph.
+   - **Incomplete proof**: a guard on the intermediate claim of the faulty step, tested on bounded instances under the hypotheses available at that point.
+3. **Red first**: run the guard against the original wording; the assertion on the original statement must fail, proof that the guard detects the error. Record the result in the register.
 
-Règles du corpus :
-- il ne fait que grandir : ne supprime ni n'assouplis jamais une garde pour la faire passer ; toute modification d'une garde existante est justifiée au registre et signalée dans le rapport ;
-- arithmétique exacte (entiers, rationnels, calcul symbolique), jamais d'égalité entre flottants ; graines fixes ;
-- le modèle encodé dans la garde suit les définitions du document, pas la correction proposée ;
-- respecte les conventions du corpus existant (en-têtes, nommage, lanceur de tests).
+Corpus rules:
+- it only grows: never delete or loosen a guard to make it pass; any change to an existing guard is justified in the register and flagged in the report;
+- exact arithmetic (integers, rationals, symbolic computation), never equality between floats; fixed seeds;
+- the model encoded in the guard follows the document's definitions, not the proposed fix;
+- follow the conventions of the existing corpus (headers, naming, test runner).
 
-### 4.3 Correction
+### 4.3 Fix
 
-Choisis la nature de la correction, et consigne-la :
+Choose the nature of the fix, and record it:
 
-- **correctif d'énoncé** : la conclusion est affaiblie ou rectifiée ;
-- **complément de cadrage** : une hypothèse est ajoutée, ou le contexte ou le domaine d'application est restreint, pour que l'énoncé redevienne vrai ;
-- **complément ou réparation de preuve** : l'énoncé tient, l'étape fautive est justifiée ou remplacée.
+- **statement fix**: the conclusion is weakened or corrected;
+- **scoping addition**: a hypothesis is added, or the context or domain of application is restricted, so that the statement becomes true again;
+- **proof completion or repair**: the statement holds, the faulty step is justified or replaced.
 
-Elles se combinent au besoin. Dans tous les cas :
+They can be combined if needed. In all cases:
 
-- **Correction minimale** : le changement le plus faible qui rend l'énoncé vrai et garde ses usages valides. Ne renforce jamais un énoncé, n'introduis pas de résultat nouveau pour boucher un trou, ne supprime jamais un résultat en silence : un résultat retiré est marqué comme tel, avec la raison et le contre-exemple.
-- **Corrections critiques** : modifier l'énoncé d'un résultat principal (théorème, résultat cité dans le résumé) ou retirer un résultat change ce que le document affirme. Par défaut, traite d'abord les racines non critiques, puis présente ensemble à l'utilisateur les corrections critiques en attente (énoncé avant et après, contre-exemple, impact) et attends son accord ; leurs chaînes restent BLOQUÉES jusque-là. Avec `--auto`, applique et signale-le dans le rapport.
-- **Vert** : exécute la garde de l'erreur, puis tout le corpus. Une garde verte qui passe au rouge est une régression : annule la correction et repasse l'erreur en INDÉCISE.
-- **Traçabilité** : si le document a une section d'errata, d'historique ou de révision, ou si le projet versionne ses documents, consigne la correction selon cette convention.
+- **Minimal fix**: the weakest change that makes the statement true and keeps its uses valid. Never strengthen a statement, do not introduce a new result to plug a gap, never delete a result silently: a withdrawn result is marked as such, with the reason and the counterexample.
+- **Critical fixes**: changing the statement of a main result (theorem, result cited in the abstract) or withdrawing a result changes what the document claims. By default, first handle the non-critical roots, then present the pending critical fixes to the user together (statement before and after, counterexample, impact) and wait for their approval; their chains remain BLOCKED until then. With `--auto`, apply them and flag it in the report.
+- **Green**: run the error's guard, then the whole corpus. A green guard that turns red is a regression: revert the fix and set the error back to UNDECIDED.
+- **Traceability**: if the document has an errata, history or revision section, or if the project versions its documents, record the fix according to that convention.
 
 ### 4.4 Propagation
 
-À partir de l'inventaire, revérifie tout ce qui dépend de l'énoncé corrigé : résultats ultérieurs, preuves qui le citent, exemples, tableaux, résumé, introduction, conclusion, autres documents du projet, code ou mécanisation qui y renvoient. Un complément de cadrage oblige chaque utilisateur de l'énoncé à satisfaire la nouvelle hypothèse : chaque usage qui ne la satisfait plus devient une nouvelle erreur, conséquence de la racine (arc racine → nouvelle erreur), traitée dans la même boucle.
+Starting from the inventory, recheck everything that depends on the fixed statement: later results, proofs that cite it, examples, tables, abstract, introduction, conclusion, other project documents, code or mechanization that refer to it. A scoping addition forces every user of the statement to satisfy the new hypothesis: every use that no longer satisfies it becomes a new error, a consequence of the root (edge root → new error), handled in the same loop.
 
-### 4.5 Réévaluation des conséquences
+### 4.5 Reassessment of consequences
 
-Quand toutes les causes d'une conséquence sont traitées, envoie-la à un arbitre neuf, qui la juge contre le texte corrigé :
+When all the causes of a consequence are handled, send it to a fresh adjudicator, who judges it against the fixed text:
 
-- **RÉFUTÉE** → statut RÉSOLUE (par F-…). Ajoute son cas aux gardes de la cause : si la cause régressait, la conséquence le montrerait aussi.
-- **CONFIRMÉE** → elle devient une racine et suit le protocole complet (4.2 à 4.4).
-- **Changement de nature** → nouvelle erreur, ajoutée au graphe.
+- **REFUTED** → status RESOLVED (by F-…). Add its case to the cause's guards: if the cause regressed, the consequence would show it too.
+- **CONFIRMED** → it becomes a root and follows the full protocol (4.2 to 4.4).
+- **Change of nature** → new error, added to the graph.
 
-## Phase 5 — Voie éditoriale
+## Phase 5 — Editorial track
 
-Après les corrections de fond de l'itération, qui peuvent déplacer le texte et les numéros :
+After the iteration's substantive fixes, which can move the text and the numbers:
 
-- relance le lint et corrige ce qu'il relève ;
-- corrige les typos hors formules (orthographe, grammaire, mise en page) ; tout changement d'une formule, d'un symbole, d'un indice, d'un quantificateur ou d'une inégalité est une erreur, pas un défaut de forme ;
-- **numérotation** : préfère la stabilité (insertion en 4.3′ ou 4.3a). Si une renumérotation est inévitable, mets à jour tous les renvois, internes et externes, et consigne la correspondance ancien → nouveau ;
-- **bibliographie** : ne corrige une référence que contre sa source (PDF local, page de l'éditeur, DBLP…) ; sinon marque-la « à vérifier » et laisse-la telle quelle. N'invente jamais une métadonnée : pages, DOI, numéro de théorème ;
-- pour chaque classe de défaut corrigée, ajoute une règle au lint, pour qu'elle soit désormais détectée mécaniquement.
+- rerun the lint and fix what it reports;
+- fix typos outside formulas (spelling, grammar, layout); any change to a formula, symbol, index, quantifier or inequality is an error, not a form defect;
+- **numbering**: prefer stability (insertion as 4.3′ or 4.3a). If renumbering is unavoidable, update all cross-references, internal and external, and record the old → new mapping;
+- **bibliography**: only fix a reference against its source (local PDF, publisher's page, DBLP…); otherwise mark it "to be checked" and leave it as is. Never invent metadata: pages, DOI, theorem number;
+- for each class of defect fixed, add a rule to the lint, so that it is detected mechanically from now on.
 
-## Phase 6 — Clôture de l'itération
+## Phase 6 — End of iteration
 
-Exécute tout le corpus et le lint : tout doit être vert. Commite localement dans le worktree (message listant les identifiants des erreurs et défauts traités), seulement tes fichiers, sans push. Mets à jour le journal du registre.
+Run the whole corpus and the lint: everything must be green. Commit locally in the worktree (message listing the identifiers of the errors and defects handled), only your files, without pushing. Update the register's log.
 
-## Phase 7 — Boucle et arrêt
+## Phase 7 — Loop and stop
 
-Reviens à la phase 1 avec de nouveaux agents. Arrête-toi à la première condition remplie :
+Go back to phase 1 with new agents. Stop at the first condition met:
 
-1. **Convergence** : une détection complète à froid ne produit aucune erreur confirmée. Si l'itération précédente a modifié l'énoncé ou le cadrage d'un résultat, exige une seconde détection propre : c'est là que naissent les nouvelles erreurs.
-2. **Boucle causale** : le graphe des causes contient un cycle (phase 3).
-3. **Récidive** : une erreur est identique à une erreur déjà CORRIGÉE. Arrête sans recorriger : soit la correction n'a pas tenu, soit deux corrections se contredisent. Rapporte les deux entrées et le diff en cause.
-4. **Oscillation** : une correction proposée annulerait, même en partie, une correction antérieure de l'audit ; ou une même correction a engendré deux erreurs confirmées successives.
-5. **Non-convergence** : le nombre d'erreurs confirmées ne diminue pas sur deux itérations consécutives. Le document demande sans doute une reprise humaine plutôt que des rustines.
-6. **Budget** : `--max-iter` atteint.
-7. **Épuisement** : la détection ne relève plus que des défauts de forme. Termine la voie éditoriale, relance le lint et le corpus, puis arrête.
+1. **Convergence**: a complete cold detection produces no confirmed error. If the previous iteration changed the statement or the scoping of a result, require a second clean detection: that is where new errors are born.
+2. **Causal loop**: the cause graph contains a cycle (phase 3).
+3. **Recurrence**: an error is identical to an already FIXED error. Stop without fixing again: either the fix did not hold, or two fixes contradict each other. Report both entries and the diff at fault.
+4. **Oscillation**: a proposed fix would undo, even partially, an earlier fix of the audit; or the same fix has produced two successive confirmed errors.
+5. **Non-convergence**: the number of confirmed errors does not decrease over two consecutive iterations. The document probably needs human rework rather than patches.
+6. **Budget**: `--max-iter` reached.
+7. **Exhaustion**: detection only finds form defects. Finish the editorial track, rerun the lint and the corpus, then stop.
 
-Ne conclus jamais « le document est correct ». Conclus « N détections indépendantes n'ont plus relevé d'erreur confirmée », en disant ce qui n'a pas été vérifié.
+Never conclude "the document is correct". Conclude "N independent detections found no further confirmed error", stating what was not checked.
 
-## Rapport final
+## Final report
 
-Écris-le dans `spec-audit/<slug>/rapport.md`, dans le worktree ; le résumé à l'utilisateur vient avec la clôture (phase 8) :
+Write it in `spec-audit/<slug>/report.md`, in the worktree; the summary to the user comes with closing (phase 8):
 
 ```markdown
-# Audit de précision — <document>
+# Precision audit — <document>
 
-## Résultat
-Motif d'arrêt, itérations, erreurs confirmées / réfutées / résolues par leur cause / indécises / bloquées, défauts de forme corrigés, commits.
+## Result
+Stop reason, iterations, errors confirmed / refuted / resolved by their cause / undecided / blocked, form defects fixed, commits.
 
-## Graphe des causes
-Par itération : racines, chaînes, et pour chaque arc sa justification. Cycle éventuel en tête.
+## Cause graph
+Per iteration: roots, chains, and for each edge its justification. Any cycle first.
 
-## Énoncés modifiés
-Pour chaque résultat touché : avant → après, nature (correctif, cadrage, preuve), contre-exemple, gardes.
+## Modified statements
+For each result touched: before → after, nature (statement fix, scoping, proof), counterexample, guards.
 
-## Erreurs
-| ID | Gravité | Type | Causes | Statut | Correction | Gardes | Commit |
+## Errors
+| ID | Severity | Type | Causes | Status | Fix | Guards | Commit |
 
-## Points ouverts
-Indécises et chaînes qu'elles bloquent, références à vérifier, récidives, oscillations, gardes modifiées, corrections critiques en attente, détection non saturée.
+## Open points
+Undecided errors and the chains they block, references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated.
 
 ## Corpus
-Gardes ajoutées, règles de lint ajoutées, commande pour tout rejouer.
+Guards added, lint rules added, command to replay everything.
 
-## Portée de la vérification
-Ce qui a été vérifié et comment (relecture par agent, test exhaustif borné, preuve mécanisée), et ce qui ne l'a pas été.
+## Scope of verification
+What was checked and how (agent review, bounded exhaustive test, mechanized proof), and what was not.
 ```
 
-Termine le rapport par la branche et le worktree (chemin, branche `audit/<slug>`, base, commits) et par l'issue de l'audit avec l'option de clôture recommandée (phase 8).
+End the report with the branch and the worktree (path, branch `audit/<slug>`, base, commits) and with the audit outcome and the recommended closing option (phase 8).
 
-Une relecture par des agents et des tests bornés ne sont ni une relecture par les pairs ni une preuve. N'écris jamais qu'une preuve est « vérifiée » sans dire par quoi ; seule une preuve mécanisée peut être dite vérifiée par machine.
+Review by agents and bounded tests are neither peer review nor proof. Never write that a proof is "verified" without saying by what; only a mechanized proof can be called machine-verified.
 
-## Phase 8 — Clôture
+## Phase 8 — Closing
 
-La clôture se décide avec l'utilisateur, par une question à choix multiple, après qu'il a pu lire le rapport.
+Closing is decided with the user, through a multiple-choice question, after they have been able to read the report.
 
-### 8.1 Classer l'issue
+### 8.1 Classify the outcome
 
-| Issue | Condition |
+| Outcome | Condition |
 |---|---|
-| **Succès** | arrêt par convergence ou épuisement ; corpus et lint verts ; aucune erreur INDÉCISE, aucune chaîne BLOQUÉE, aucune correction critique en attente |
-| **Partiel, à poursuivre** | arrêt sur budget, ou détection non saturée ; corpus et lint verts |
-| **Partiel, à arbitrer** | points qui attendent une décision humaine : erreur INDÉCISE, chaîne BLOQUÉE, correction critique refusée ou en attente ; corpus et lint verts |
-| **Échec** | boucle causale, récidive, oscillation, non-convergence, corpus ou lint rouges, ou arrêt sur une erreur d'exécution |
+| **Success** | stop by convergence or exhaustion; corpus and lint green; no UNDECIDED error, no BLOCKED chain, no pending critical fix |
+| **Partial, to continue** | stop on budget, or detection not saturated; corpus and lint green |
+| **Partial, needs decision** | points awaiting a human decision: UNDECIDED error, BLOCKED chain, critical fix refused or pending; corpus and lint green |
+| **Failure** | causal loop, recurrence, oscillation, non-convergence, corpus or lint red, or stop on an execution error |
 
-### 8.2 Présenter le rapport
+### 8.2 Present the report
 
-Résume l'audit dans la session (issue, motif d'arrêt, erreurs confirmées et corrigées, énoncés modifiés, points ouverts) et donne le chemin du rapport complet, `<worktree>/spec-audit/<slug>/rapport.md`, à lire avant de choisir.
+Summarize the audit in the session (outcome, stop reason, errors confirmed and fixed, modified statements, open points) and give the path of the full report, `<worktree>/spec-audit/<slug>/report.md`, to be read before choosing.
 
-### 8.3 Poser la question
+### 8.3 Ask the question
 
-Utilise l'outil de question à choix multiple (AskUserQuestion) : une seule question, d'en-tête « Clôture », qui rappelle l'issue et le chemin du rapport. Les options :
+Use the multiple-choice question tool (AskUserQuestion): a single question, with the header "Closing", that recalls the outcome and the report path. The options:
 
-| Option | Effet |
+| Option | Effect |
 |---|---|
-| **Accepter et fusionner** | fusion de `audit/<slug>` dans la branche d'origine après les contrôles de sécurité (8.5), puis suppression du worktree et de la branche |
-| **Refaire une vérification** | nouvelle série d'itérations dans le même worktree (8.7), sans rien fusionner |
-| **Conserver le worktree** | ni fusion ni suppression ; rapport et patch archivés dans la branche d'origine ; décision reportée |
-| **Abandonner** | rapport, registre et patch archivés dans la branche d'origine, puis suppression du worktree et de la branche (8.6) |
+| **Accept and merge** | merge of `audit/<slug>` into the original branch after the safety checks (8.5), then removal of the worktree and the branch |
+| **Run another check** | new series of iterations in the same worktree (8.7), without merging anything |
+| **Keep the worktree** | neither merge nor removal; report and patch archived in the original branch; decision postponed |
+| **Abandon** | report, register and patch archived in the original branch, then removal of the worktree and the branch (8.6) |
 
-L'outil ajoute toujours une réponse libre (« Autre »).
+The tool always adds a free answer ("Other").
 
-Mets l'option recommandée en premier, avec « (recommandé) » à la fin de son libellé. C'est l'option la plus sûre pour l'issue :
+Put the recommended option first, with "(Recommended)" at the end of its label. It is the safest option for the outcome:
 
-| Issue | Recommandée | Proposées aussi | Pourquoi |
+| Outcome | Recommended | Also offered | Why |
 |---|---|---|---|
-| Succès | Accepter et fusionner | Refaire, Conserver, Abandonner | chaque correction est confirmée et gardée, le corpus est vert |
-| Partiel, à poursuivre | Refaire une vérification | Accepter, Conserver, Abandonner | une nouvelle série peut fermer les points restants sans toucher à la branche d'origine |
-| Partiel, à arbitrer | Conserver le worktree | Accepter, Refaire, Abandonner | une nouvelle passe ne tranchera pas ce qui attend une décision humaine, et conserver ne perd rien |
-| Échec | Abandonner | Conserver ; Accepter seulement si corpus et lint sont verts | le processus automatique ne peut plus progresser, et l'archive garde tout |
+| Success | Accept and merge | Run another check, Keep, Abandon | every fix is confirmed and guarded, the corpus is green |
+| Partial, to continue | Run another check | Accept, Keep, Abandon | a new series can close the remaining points without touching the original branch |
+| Partial, needs decision | Keep the worktree | Accept, Run another check, Abandon | a new pass will not settle what awaits a human decision, and keeping loses nothing |
+| Failure | Abandon | Keep; Accept only if corpus and lint are green | the automatic process can no longer make progress, and the archive keeps everything |
 
-Règles :
+Rules:
 
-- Ne propose jamais « Accepter » si le corpus ou le lint sont rouges.
-- Ne propose pas « Refaire » après une boucle causale, une récidive, une oscillation ou une non-convergence : une nouvelle passe tournerait en rond. Après un « Refaire » qui n'a corrigé aucune nouvelle erreur, recommande « Conserver » plutôt que « Refaire ».
-- Interprète une réponse libre ; si elle est ambiguë, repose la question. Ne fusionne et ne supprime jamais sur une réponse ambiguë.
-- Si la question ne peut pas être posée (session non interactive), ou avec `--keep`, applique « Conserver le worktree » : c'est la seule option qui ne change rien et ne perd rien.
-- Consigne au registre la question, l'option recommandée et la réponse.
+- Never offer "Accept" if the corpus or the lint is red.
+- Do not offer "Run another check" after a causal loop, a recurrence, an oscillation or a non-convergence: a new pass would go round in circles. After a "Run another check" that fixed no new error, recommend "Keep" rather than "Run another check".
+- Interpret a free answer; if it is ambiguous, ask again. Never merge or delete on an ambiguous answer.
+- If the question cannot be asked (non-interactive session), or with `--keep`, apply "Keep the worktree": it is the only option that changes nothing and loses nothing.
+- Record in the register the question, the recommended option and the answer.
 
-### 8.4 Rapatrier le rapport
+### 8.4 Bring the report back
 
-Dans tous les cas, avant toute suppression :
+In every case, before any removal:
 
-- **Dans la session** : le résumé de 8.2, complété par la clôture effectuée (commit de fusion, archive, worktree conservé ou supprimé).
-- **Dans la branche d'origine** :
-  - *Accepter* : le rapport, le registre, l'inventaire et les gardes arrivent avec la fusion.
-  - *Conserver* ou *Abandonner* : commite d'abord dans le worktree tout travail en cours, avec un message qui le marque comme non vérifié. Copie ensuite dans le dépôt d'origine, sous `spec-audit/<slug>/<AAAA-MM-JJ>-<issue>/`, le `rapport.md`, le `registre.md` et un `corrections.patch` produit par `git -C "<worktree>" diff <base> audit/<slug>`. Ce patch contient les corrections et les gardes : rien n'est perdu, même après l'abandon. Commite seulement ces fichiers (`git add -- <chemins>` puis `git commit -m "<message>" -- <chemins>`), pour n'embarquer aucune modification d'une autre session. Si les règles du projet interdisent ce commit, laisse les fichiers non commités et dis-le.
-  - *Refaire* : rien pour l'instant ; le rapport de la série suivante passera par cette même clôture.
+- **In the session**: the summary from 8.2, completed with the closing performed (merge commit, archive, worktree kept or removed).
+- **In the original branch**:
+  - *Accept*: the report, the register, the inventory and the guards arrive with the merge.
+  - *Keep* or *Abandon*: first commit in the worktree any work in progress, with a message marking it as unverified. Then copy into the original repository, under `spec-audit/<slug>/<YYYY-MM-DD>-<outcome>/`, the `report.md`, the `register.md` and a `corrections.patch` produced by `git -C "<worktree>" diff <base> audit/<slug>`. This patch contains the fixes and the guards: nothing is lost, even after abandoning. Commit only these files (`git add -- <paths>` then `git commit -m "<message>" -- <paths>`), so as not to carry along any change from another session. If the project rules forbid this commit, leave the files uncommitted and say so.
+  - *Run another check*: nothing for now; the report of the next series will go through this same closing.
 
-N'abandonne jamais un worktree avant que ce rapatriement ait réussi.
+Never abandon a worktree before this return has succeeded.
 
-### 8.5 Fusion (« Accepter et fusionner »)
+### 8.5 Merge ("Accept and merge")
 
-1. Vérifie que le dépôt d'origine est toujours sur la branche relevée en phase 0. Sinon, ne fusionne pas : conserve le worktree et repose la question.
-2. Si la branche d'origine a avancé depuis la base, intègre-la dans le worktree : `git -C "<worktree>" merge <branche d'origine>`. En cas de conflit, `git merge --abort`, conserve le worktree et rapporte que la fusion est bloquée ; l'audit, lui, n'a pas échoué.
-3. Relance tout le corpus et le lint dans le worktree : tout doit être vert, sinon conserve le worktree et rapporte.
-4. Fusionne dans le dépôt d'origine : `git -C "<dépôt d'origine>" merge --no-ff audit/<slug> -m "<message selon les conventions du projet>"`. La branche d'audit contenant déjà la tête d'origine, il n'y a plus de conflit possible ; si git refuse à cause de modifications non commitées dans le dépôt d'origine, ne force pas et ne stashe pas : conserve le worktree et rapporte.
-5. Supprime le worktree (`git worktree remove "<worktree>"`), puis la branche (`git branch -d audit/<slug>`, qui refuse de supprimer une branche non fusionnée).
-6. Ne pousse jamais.
+1. Check that the original repository is still on the branch recorded in phase 0. Otherwise, do not merge: keep the worktree and ask the question again.
+2. If the original branch has moved since the base, integrate it into the worktree: `git -C "<worktree>" merge <original branch>`. On conflict, `git merge --abort`, keep the worktree and report that the merge is blocked; the audit itself has not failed.
+3. Rerun the whole corpus and the lint in the worktree: everything must be green, otherwise keep the worktree and report.
+4. Merge into the original repository: `git -C "<original repository>" merge --no-ff audit/<slug> -m "<message following the project's conventions>"`. Since the audit branch already contains the original head, no conflict is possible any more; if git refuses because of uncommitted changes in the original repository, do not force and do not stash: keep the worktree and report.
+5. Remove the worktree (`git worktree remove "<worktree>"`), then the branch (`git branch -d audit/<slug>`, which refuses to delete an unmerged branch).
+6. Never push.
 
-### 8.6 Abandon (« Abandonner »)
+### 8.6 Abandon ("Abandon")
 
-Après le rapatriement : `git worktree remove --force "<worktree>"`, puis `git branch -D audit/<slug>`. Le patch archivé permet de rejouer tout ou partie des corrections, ou de les examiner.
+After the return: `git worktree remove --force "<worktree>"`, then `git branch -D audit/<slug>`. The archived patch makes it possible to replay all or part of the fixes, or to examine them.
 
-### 8.7 Nouvelle vérification (« Refaire une vérification »)
+### 8.7 New check ("Run another check")
 
-Reprends à la phase 1 dans le même worktree, avec de nouveaux agents et un nouveau budget égal à `--max-iter`. Le registre continue (les identifiants ne sont jamais réattribués), les gardes restent en place, et la série se termine à nouveau par cette phase 8.
+Resume at phase 1 in the same worktree, with new agents and a new budget equal to `--max-iter`. The register continues (identifiers are never reassigned), the guards stay in place, and the series ends again with this phase 8.
 
 ### 8.8 Interruption
 
-Si la session s'interrompt avant la clôture (erreur, arrêt par l'utilisateur), le worktree et la branche restent en place : `--resume` reprend l'audit, ou la phase 8 peut être rejouée seule.
+If the session is interrupted before closing (error, stop by the user), the worktree and the branch stay in place: `--resume` resumes the audit, or phase 8 can be replayed on its own.
