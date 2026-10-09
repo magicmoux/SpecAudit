@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "spec-audit",
+  "owner": { "name": "Max Brönnimann" },
+  "metadata": {
+    "description": "Marketplace du plugin spec-audit : audit itératif de précision de spécifications théoriques, techniques ou mathématiques."
+  },
+  "plugins": [
+    {
+      "name": "spec-audit",
+      "source": "./",
+      "description": "Audite un document formel (article, preuve, spécification d'algorithme, de protocole ou de format) : relecteurs neufs, erreurs confirmées par contre-exemple exécuté, correction des causes avant les conséquences, gardes anti-régression, le tout dans un worktree git dédié.",
+      "category": "productivity"
+    }
+  ]
+}

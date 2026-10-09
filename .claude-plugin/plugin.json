@@ -1,0 +1,10 @@
+{
+  "name": "spec-audit",
+  "version": "0.5.0",
+  "description": "Audit itératif de précision de spécifications théoriques, techniques ou mathématiques : détection complète à froid, graphe des causes, correction de bas en haut confirmée par contre-exemple exécuté, gardes anti-régression dans un corpus global, voie éditoriale séparée, arrêt sur convergence, budget, récidive ou boucle causale.",
+  "author": { "name": "Max Brönnimann" },
+  "homepage": "https://github.com/magicmoux/SpecAudit",
+  "repository": "https://github.com/magicmoux/SpecAudit",
+  "license": "MIT",
+  "keywords": ["specification", "audit", "review", "proof", "mathematics", "algorithms", "counterexample", "regression-guards"]
+}
