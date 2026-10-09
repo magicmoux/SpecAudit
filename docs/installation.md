@@ -1,50 +1,50 @@
 # Installation
 
-## Prérequis
+## Requirements
 
-| Élément | Pourquoi |
+| Item | Why |
 |---|---|
-| Claude Code avec la prise en charge des plugins (`/plugin`, `claude plugin`) | le skill et ses agents sont livrés en plugin |
-| git | l'audit travaille dans un worktree dédié et y commite localement |
-| Accès au modèle Opus | les agents `spec-reviewer` et `spec-adjudicator` déclarent `model: opus` |
-| Un interpréteur pour les gardes (Python 3 par défaut) | contre-exemples et gardes sont des scripts exécutés ; le skill suit le lanceur de tests du projet s'il en a un |
-| Une session interactive (recommandé) | les corrections critiques et la clôture passent par une question à l'utilisateur ; sans elle, le worktree est conservé et rien n'est fusionné |
+| Claude Code with plugin support (`/plugin`, `claude plugin`) | the skill and its agents ship as a plugin |
+| git | the audit works in a dedicated worktree and commits locally there |
+| Access to the Opus model | the `spec-reviewer` and `spec-adjudicator` agents declare `model: opus` |
+| An interpreter for the guards (Python 3 by default) | counterexamples and guards are executed scripts; the skill follows the project's test runner if it has one |
+| An interactive session (recommended) | critical fixes and closing go through a question to the user; without one, the worktree is kept and nothing is merged |
 
-## 1. Depuis la marketplace GitHub (recommandé)
+## 1. From the GitHub marketplace (recommended)
 
-Le dépôt est à la fois le plugin et sa propre marketplace (`.claude-plugin/marketplace.json`), nommée `spec-audit`.
+The repository is both the plugin and its own marketplace (`.claude-plugin/marketplace.json`), named `spec-audit`.
 
-Dans Claude Code :
+In Claude Code:
 
 ```text
 /plugin marketplace add magicmoux/SpecAudit
 /plugin install spec-audit@spec-audit
 ```
 
-En ligne de commande :
+From the command line:
 
 ```bash
 claude plugin marketplace add magicmoux/SpecAudit
 claude plugin install spec-audit@spec-audit
 ```
 
-### Portée de l'installation
+### Installation scope
 
-`claude plugin install` accepte `--scope` :
+`claude plugin install` accepts `--scope`:
 
-| Portée | Effet |
+| Scope | Effect |
 |---|---|
-| `user` (défaut) | le plugin est disponible dans tous vos projets |
-| `project` | inscrit dans `.claude/settings.json` du projet, donc partagé par git avec l'équipe |
-| `local` | ce projet seulement, pour vous seul (`.claude/settings.local.json`) |
+| `user` (default) | the plugin is available in all your projects |
+| `project` | recorded in the project's `.claude/settings.json`, hence shared with the team through git |
+| `local` | this project only, for you only (`.claude/settings.local.json`) |
 
 ```bash
 claude plugin install spec-audit@spec-audit --scope project
 ```
 
-## 2. Pour une équipe
+## 2. For a team
 
-Pour que chaque membre se voie proposer le plugin en ouvrant le projet, ajoutez à `.claude/settings.json` :
+To have the plugin offered to every member when they open the project, add to `.claude/settings.json`:
 
 ```json
 {
@@ -59,7 +59,7 @@ Pour que chaque membre se voie proposer le plugin en ouvrant le projet, ajoutez 
 }
 ```
 
-## 3. Depuis un clone local
+## 3. From a local clone
 
 ```bash
 git clone https://github.com/magicmoux/SpecAudit.git
@@ -67,17 +67,17 @@ claude plugin marketplace add ./SpecAudit
 claude plugin install spec-audit@spec-audit
 ```
 
-Pour essayer une version modifiée sans l'installer, chargez-la pour une seule session :
+To try a modified version without installing it, load it for a single session:
 
 ```bash
 claude --plugin-dir ./SpecAudit
 ```
 
-## 4. Sans système de plugins
+## 4. Without the plugin system
 
-Copiez le skill et les agents dans votre configuration utilisateur.
+Copy the skill and the agents into your user configuration.
 
-Bash :
+Bash:
 
 ```bash
 mkdir -p ~/.claude/skills ~/.claude/agents
@@ -85,7 +85,7 @@ cp -r SpecAudit/skills/spec-audit ~/.claude/skills/
 cp SpecAudit/agents/*.md ~/.claude/agents/
 ```
 
-PowerShell :
+PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force "$HOME\.claude\skills", "$HOME\.claude\agents" | Out-Null
@@ -93,46 +93,46 @@ Copy-Item -Recurse SpecAudit\skills\spec-audit "$HOME\.claude\skills\"
 Copy-Item SpecAudit\agents\*.md "$HOME\.claude\agents\"
 ```
 
-Pour un seul projet, copiez-les plutôt dans `.claude/skills/` et `.claude/agents/` à la racine du projet.
+For a single project, copy them into `.claude/skills/` and `.claude/agents/` at the project root instead.
 
-Les noms changent : le skill s'appelle `/spec-audit`, les agents `spec-reviewer` et `spec-adjudicator` (au lieu de `/spec-audit:spec-audit`, `spec-audit:spec-reviewer` et `spec-audit:spec-adjudicator`). Le skill reconnaît les deux formes.
+The names change: the skill is called `/spec-audit`, the agents `spec-reviewer` and `spec-adjudicator` (instead of `/spec-audit:spec-audit`, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`). The skill recognizes both forms.
 
-## Vérifier l'installation
+## Check the installation
 
 ```bash
 claude plugin list
 claude plugin details spec-audit
 ```
 
-Le plugin doit apparaître comme `spec-audit@spec-audit`, avec un skill et deux agents. Dans une session, `/agents` liste `spec-audit:spec-reviewer` et `spec-audit:spec-adjudicator`, et la saisie de `/spec-audit` propose `/spec-audit:spec-audit`.
+The plugin must appear as `spec-audit@spec-audit`, with one skill and two agents. In a session, `/agents` lists `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`, and typing `/spec-audit` suggests `/spec-audit:spec-audit`.
 
-## Mettre à jour
+## Update
 
 ```bash
 claude plugin marketplace update spec-audit
 claude plugin update spec-audit@spec-audit
 ```
 
-La nouvelle version est chargée à la session suivante. Les changements sont décrits dans le [journal des modifications](../CHANGELOG.md).
+The new version is loaded in the next session. Changes are described in the [changelog](../CHANGELOG.md).
 
-## Désinstaller
+## Uninstall
 
 ```bash
 claude plugin uninstall spec-audit@spec-audit
 claude plugin marketplace remove spec-audit
 ```
 
-Pour une installation manuelle, supprimez `~/.claude/skills/spec-audit/`, `~/.claude/agents/spec-reviewer.md` et `~/.claude/agents/spec-adjudicator.md`.
+For a manual installation, delete `~/.claude/skills/spec-audit/`, `~/.claude/agents/spec-reviewer.md` and `~/.claude/agents/spec-adjudicator.md`.
 
-Les audits déjà menés ne sont pas touchés : leurs rapports, registres et gardes restent dans vos dépôts.
+Audits already carried out are not affected: their reports, registers and guards stay in your repositories.
 
-## Dépannage
+## Troubleshooting
 
-| Symptôme | Cause et remède |
+| Symptom | Cause and remedy |
 |---|---|
-| Les agents apparaissent deux fois (`spec-reviewer` et `spec-audit:spec-reviewer`) | une installation manuelle coexiste avec le plugin : supprimez les copies manuelles (section précédente) |
-| `Filename too long` en clonant sous Windows | activez les chemins longs : `git config --global core.longpaths true` |
-| `marketplace add` échoue avec une erreur d'authentification | le dépôt n'est pas public ou git n'a pas d'accès : connectez-vous (`gh auth login`) ou utilisez un clone local |
-| Le skill ne se déclenche pas sur une demande en langage naturel | invoquez-le explicitement : `/spec-audit:spec-audit <document>` |
-| Les agents sont introuvables | le skill lance alors un agent généraliste neuf avec le contenu de `agents/spec-reviewer.md` ou `agents/spec-adjudicator.md` comme consigne ; vérifiez tout de même l'installation, car les agents dédiés limitent les outils autorisés |
-| Le modèle Opus n'est pas disponible | le modèle est fixé par l'en-tête des agents : installez depuis un clone local (section 3) et modifiez `model:` dans `agents/*.md` |
+| The agents appear twice (`spec-reviewer` and `spec-audit:spec-reviewer`) | a manual installation coexists with the plugin: delete the manual copies (previous section) |
+| `Filename too long` when cloning on Windows | enable long paths: `git config --global core.longpaths true` |
+| `marketplace add` fails with an authentication error | the repository is not public or git has no access to it: sign in (`gh auth login`) or use a local clone |
+| The skill does not trigger on a natural-language request | invoke it explicitly: `/spec-audit:spec-audit <document>` |
+| The agents cannot be found | the skill then launches a fresh general-purpose agent with the content of `agents/spec-reviewer.md` or `agents/spec-adjudicator.md` as instructions; check the installation anyway, since the dedicated agents restrict the allowed tools |
+| The Opus model is not available | the model is set in the agents' frontmatter: install from a local clone (section 3) and change `model:` in `agents/*.md` |

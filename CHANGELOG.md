@@ -1,16 +1,16 @@
-# Journal des modifications
+# Changelog
 
-Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et les versions suivent le [versionnage sémantique](https://semver.org/lang/fr/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [0.5.0] — 2026-10-09
 
-Première publication open source.
+First open-source release.
 
-### Ajouté
+### Added
 
-- Skill `spec-audit` : audit itératif en worktree dédié, détection complète à froid, tri par empreintes, graphe des causes, correction de bas en haut, gardes écrites rouges avant la correction, voie éditoriale avec lint mécanique, sept conditions d'arrêt, rapport final et clôture par question à choix multiple.
-- Agent `spec-reviewer` : relecteur neuf, sans historique, qui rend erreurs et défauts de forme au format YAML.
-- Agent `spec-adjudicator` : arbitre qui cherche à réfuter puis à confirmer chaque erreur par un contre-exemple exécuté.
-- Référence `references/registre.md` : formats du registre, des entrées d'erreur et de défaut, et d'un fichier de garde.
-- Marketplace `.claude-plugin/marketplace.json` : installation par `/plugin marketplace add magicmoux/SpecAudit`.
-- Documentation : README, installation, utilisation, fonctionnement, spécification de démonstration, guide de contribution.
+- `spec-audit` skill: iterative audit in a dedicated worktree, complete cold detection, triage by fingerprints, cause graph, bottom-up fixing, guards written and seen red before the fix, editorial track with a mechanical lint, seven stop conditions, final report and closing through a multiple-choice question.
+- `spec-reviewer` agent: fresh reviewer with no history, returning errors and form defects in YAML.
+- `spec-adjudicator` agent: adjudicator that tries to refute, then to confirm each error with an executed counterexample.
+- `references/register.md` reference: formats of the register, of error and form defect entries, and of a guard file.
+- `.claude-plugin/marketplace.json` marketplace: installation with `/plugin marketplace add magicmoux/SpecAudit`.
+- Documentation: README, installation, usage, how it works, demo specification, contributing guide.

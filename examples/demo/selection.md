@@ -1,39 +1,39 @@
-# Sélection incrémentale des k plus petits éléments
+# Incremental selection of the k smallest elements
 
-**Résumé.** On définit l'opérateur P_k qui extrait les k plus petits éléments d'une liste d'entiers, on montre qu'il se calcule par blocs, et on en déduit un algorithme incrémental qui renvoie toujours exactement k éléments.
+**Abstract.** We define the operator P_k that extracts the k smallest elements of a list of integers, show that it can be computed block by block, and derive an incremental algorithm that always returns exactly k elements.
 
-## 1. Définitions
+## 1. Definitions
 
-**Définition 1.** Une *liste* est une suite finie L = (x_1, …, x_n) d'entiers ; n = |L| est sa longueur, et L ++ M désigne la concaténation des listes L et M. On note tri(L) la liste des éléments de L rangés par ordre croissant, doublons compris.
+**Definition 1.** A *list* is a finite sequence L = (x_1, …, x_n) of integers; n = |L| is its length, and L ++ M denotes the concatenation of the lists L and M. We write sort(L) for the list of the elements of L in increasing order, duplicates included.
 
-**Définition 2.** Pour un entier k ≥ 0 et une liste L de longueur n, P_k(L) est la liste formée des min(k, n) premiers éléments de tri(L).
+**Definition 2.** For an integer k ≥ 0 and a list L of length n, P_k(L) is the list formed by the first min(k, n) elements of sort(L).
 
-## 2. Résultats
+## 2. Results
 
-**Lemme 3.** Pour tout entier k ≥ 0 et toute liste L, |P_k(L)| = k.
+**Lemma 3.** For every integer k ≥ 0 and every list L, |P_k(L)| = k.
 
-*Preuve.* Par la Définition 2, P_k(L) est formée des k premiers éléments de tri(L). ∎
+*Proof.* By Definition 2, P_k(L) is formed by the first k elements of sort(L). ∎
 
-**Proposition 4.** Pour tout entier k ≥ 0 et toutes listes L et M, P_k(L ++ M) = P_k(P_k(L) ++ P_k(M)).
+**Proposition 4.** For every integer k ≥ 0 and all lists L and M, P_k(L ++ M) = P_k(P_k(L) ++ P_k(M)).
 
-*Preuve.* Soit x un élément de P_k(L ++ M) qui provient de L. Au plus k − 1 éléments de L précèdent x dans tri(L ++ M), donc x figure parmi les k premiers éléments de tri(L), c'est-à-dire dans P_k(L). Il en va de même pour un élément provenant de M. Ainsi P_k(L ++ M) est une sous-liste de P_k(L) ++ P_k(M), elle-même sous-liste de L ++ M ; elle en contient donc les plus petits éléments, d'où l'égalité. ∎
+*Proof.* Let x be an element of P_k(L ++ M) that comes from L. At most k − 1 elements of L precede x in sort(L ++ M), so x is among the first k elements of sort(L), that is, in P_k(L). The same holds for an element that comes from M. Thus P_k(L ++ M) is a sublist of P_k(L) ++ P_k(M), itself a sublist of L ++ M; it therefore contains its smallest elements, hence the equality. ∎
 
-**Corollaire 5.** Pour tout entier k ≥ 0 et toutes listes L et M, |P_k(L ++ M)| = k.
+**Corollary 5.** For every integer k ≥ 0 and all lists L and M, |P_k(L ++ M)| = k.
 
-*Preuve.* Immédiat par la Proposition 4 et le Lemme 3. ∎
+*Proof.* Immediate from Proposition 4 and Lemma 3. ∎
 
-**Exemple 6.** Pour L = (5, 1, 4, 1) et k = 2, on a tri(L) = (1, 1, 4, 5), donc P_2(L) = (1, 4).
+**Example 6.** For L = (5, 1, 4, 1) and k = 2, we have sort(L) = (1, 1, 4, 5), hence P_2(L) = (1, 4).
 
-## 3. Algorithme
+## 3. Algorithm
 
-**Algorithme 7 (sélection incrémentale).** Entrée : un entier k ≥ 0 et des blocs B_1, …, B_r. Sortie : P_k(B_1 ++ … ++ B_r).
+**Algorithm 7 (incremental selection).** Input: an integer k ≥ 0 and blocks B_1, …, B_r. Output: P_k(B_1 ++ … ++ B_r).
 
 1. R ← ()
-2. pour i de 1 à r : R ← P_k(R ++ B_i)
-3. rendre R
+2. for i from 1 to r: R ← P_k(R ++ B_i)
+3. return R
 
-*Correction.* Par récurrence sur i, la Proposition 4 donne R = P_k(B_1 ++ … ++ B_i) à l'issue de l'étape i. D'après le Corollaire 8, R contient en outre exactement k élements à chaque étape.
+*Correctness.* By induction on i, Proposition 4 gives R = P_k(B_1 ++ … ++ B_i) at the end of step i. By Corollary 8, R moreover contains exactly k elemnts at every step.
 
 ## 4. Conclusion
 
-L'opérateur P_k se calcule par blocs, et l'Algorithme 7 renvoie toujours exactement k éléments, quels que soient les blocs reçus.
+The operator P_k can be computed block by block, and Algorithm 7 always returns exactly k elements, whatever blocks it receives.
