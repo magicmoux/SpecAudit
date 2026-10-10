@@ -44,23 +44,21 @@ A document may combine profiles: a main one, and sections under another (a "Rela
 By order of precedence:
 
 1. **`--profile <name>`** on the command, for a one-off audit.
-2. **The project configuration**, `spec-audit/config.json`, versioned with the project, so that the choice is reviewed and the audit replayable:
+2. **The project configuration**, `.specaudit.md` or `.specaudit/config.md` (implemented, see [usage](usage.md#project-configuration)): its `profiles` key maps document patterns to profiles.
 
-   ```json
-   {
-     "profiles": {
-       "observation-derivative-calculus*.md": "formal",
-       "42.*_CANDIDATE_*.md": "formal",
-       "4[04]_*.md": "research",
-       "51_OUT_benchmark_harness.md": "experimental"
-     },
-     "resources": { "research": ["sources/"] }
-   }
+   ```yaml
+   profiles:
+     "observation-derivative-calculus*.md": formal
+     "42.*_CANDIDATE_*.md": formal
+     "4[04]_*.md": research
+     "51_OUT_benchmark_harness.md": experimental
+   resources:
+     research: [sources/]
    ```
 
-3. **A heuristic**, when nothing is configured, from signals in the document: theorem, lemma, proof, quantifiers → `formal`; numbered requirements (REQ-…), "shall / must", user stories, acceptance criteria → `functional`; screens, components, journeys, links to mock-ups → `ui`; dense citations, positioning, state of the art → `research`. The heuristic never decides alone: phase 0 proposes its result in one question, then writes the answer into `spec-audit/config.json`, so that the next audit does not ask again.
+3. **A heuristic**, when nothing is configured, from signals in the document: theorem, lemma, proof, quantifiers → `formal`; numbered requirements (REQ-…), "shall / must", user stories, acceptance criteria → `functional`; screens, components, journeys, links to mock-ups → `ui`; dense citations, positioning, state of the art → `research`. The heuristic never decides alone: phase 0 proposes its result in one question, then offers to write the answer into the project configuration, so that the next audit does not ask again.
 
-**Existing project or initial roadmap.** Both end in the same file. On an existing project, the first audit scans the documents and proposes a complete `config.json` for the user to validate. On a new project, the roadmap or initial plan declares which deliverable falls under which profile, and the configuration is written with it.
+**Existing project or initial roadmap.** Both end in the same configuration. On an existing project, the first audit scans the documents and proposes a complete configuration for the user to validate. On a new project, the roadmap or initial plan declares which deliverable falls under which profile, and the configuration is written with it.
 
 ## Resources on demand
 
@@ -85,7 +83,7 @@ A skill that only brings instructions or know-how fills none of these roles: it 
 ## Implementation steps
 
 1. Move the formal rules into `profiles/formal.md`, with no change in behavior. **Done.**
-2. Write `profiles/functional.md`; make the agents generic (taxonomy, evidence and angles passed in their message); add `--profile` and `spec-audit/config.json`.
+2. Write `profiles/functional.md`; make the agents generic (taxonomy, evidence and angles passed in their message); add `--profile`. (The project configuration, `.specaudit.md` or `.specaudit/`, is done.)
 3. Add the heuristic and the configuration proposal at phase 0.
 4. Add the resources flow (frozen sources, executable oracles, normative references).
 5. Write `research`, then `ui` and `experimental`, each tested on a real document of its domain.

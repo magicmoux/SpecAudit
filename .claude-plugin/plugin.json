@@ -1,6 +1,6 @@
 {
   "name": "spec-audit",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Iterative precision audit of theoretical, technical or mathematical specifications: complete cold detection, cause graph, bottom-up fixing confirmed by executed counterexamples, regression guards in a global corpus, separate editorial track, stop on convergence, budget, recurrence or causal loop.",
   "author": { "name": "Max Brönnimann" },
   "homepage": "https://github.com/magicmoux/SpecAudit",

@@ -34,6 +34,32 @@ State the document's **normative dependencies** (the files whose definitions it 
 | `--model-version <v>` | `latest` | version of that family, `5.5` for instance; `latest` passes the alias, a version passes `claude-<family>-<version>` (`claude-opus-5-5`); ignored when `--model` is a full id |
 | `--keep` | no | at closing, asks no question and keeps the worktree; only the report is brought back |
 
+## Project configuration
+
+A project can keep its audit settings in a configuration tracked by git, so that every audit starts from the same choices:
+
+- **`.specaudit.md`** at the root, when the configuration is all the audit needs;
+- **`.specaudit/`**, with `config.md` plus the files the audit needs that the project does not have: normative references (`normative/`) and project extensions of a profile (`profiles/<profile>.md`).
+
+Both use one format: a YAML front matter (profile per document pattern, normative dependencies, version convention, defaults of the command's options), then free notes for the orchestrator.
+
+```markdown
+---
+profiles:
+  "observation-derivative-calculus*.md": formal
+normative:
+  "observation-derivative-calculus*.md": [42_STATE_theory.md]
+version-convention: new revision ("<name> - revision N.md")
+defaults:
+  max-iter: 3
+  corpus: mechanization/Guards
+---
+
+Scope of the theory, results not to be changed, status of the proofs.
+```
+
+An option on the command wins over `defaults`. The reviewers and the adjudicators never read the configuration, which describes the audit; they receive only the normative files it declares. If the configuration is untracked or ignored by git, the skill warns and asks before creating the worktree: track it and commit it alone (recommended), use it for this audit only (copied, SHA-256 recorded), or ignore it. The worktree holds only what git tracks, so an untracked configuration would otherwise be missing from it.
+
 ## Examples
 
 ```text

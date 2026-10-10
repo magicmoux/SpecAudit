@@ -50,6 +50,35 @@ What counts as an error, as evidence and as a guard depends on the kind of docum
 - `--model-version <v>`: version of that family, `5.5` for instance (default `latest`). The audit session gets `--model <family>` for `latest`, since the alias names the latest version of the family, otherwise `--model claude-<family>-<version with hyphens>` (`claude-opus-5-5`). Ignored when `--model` is a full id, or with `--in-session`.
 - `--keep`: at closing, ask no question and keep the worktree; only the report is brought back (phase 8).
 
+An option given on the command wins over the project configuration's `defaults`, which win over the defaults above.
+
+## Project configuration
+
+A project describes how its documents are audited in a configuration that lives with it, so that every audit of the project starts from the same choices and the choices themselves are reviewed like the rest of the repository:
+
+- **`.specaudit.md`** at the repository root, when the configuration is all the audit needs;
+- **`.specaudit/`**, with `config.md` and the files the audit needs that the project does not already have: normative references (`normative/`, glossaries, style guides, standards), project extensions of a profile (`profiles/<profile>.md`, extra errors or lint rules, added to the plugin's profile, never replacing it).
+
+`config.md` and `.specaudit.md` share one format: a YAML front matter, then free notes for the orchestrator.
+
+```markdown
+---
+profiles:                      # document pattern → profile ("formal" only, for now)
+  "observation-derivative-calculus*.md": formal
+normative:                     # document pattern → normative dependencies given to the reviewers
+  "observation-derivative-calculus*.md": [42_STATE_theory.md, .specaudit/normative/notation.md]
+version-convention: new revision ("<name> - revision N.md")
+defaults:                      # same names as the command's options
+  max-iter: 3
+  corpus: mechanization/Guards
+  model: opus
+---
+
+Notes for the orchestrator: scope of the theory, results not to be changed, status of the proofs.
+```
+
+The configuration is read by the launcher and the orchestrator only. It describes the audit (its scope, its focus, what not to touch), which is exactly what a cold reviewer must not know: the reviewers and the adjudicators never read it, and they receive only the normative files it declares, as normative dependencies. If both `.specaudit.md` and `.specaudit/` exist, ask which one holds, and change nothing until the user answers. When a single file needs a companion (a normative reference the project does not have), offer to turn `.specaudit.md` into `.specaudit/config.md`.
+
 ## Roles
 
 | Role | Who | Sees | Writes |
@@ -71,7 +100,7 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
 
 ## Phase 0 — Preparation (once)
 
-1. **Project rules.** Read `CLAUDE.md`, the project's conventions and memory: they take precedence over this skill (attribution headers, document versioning, push policy, scope of the theory, status of proofs).
+1. **Project rules.** Read `CLAUDE.md`, the project's conventions and memory: they take precedence over this skill (attribution headers, document versioning, push policy, scope of the theory, status of proofs). Read the project configuration (`.specaudit.md` or `.specaudit/config.md`, see "Project configuration"), if there is one: its profile, normative dependencies, version convention and defaults apply to this audit, and its notes guide you. A document whose configured profile does not exist yet: say so, and ask whether to audit it with `formal` or to stop.
 2. **Version convention.** Does the project fix the document in place, or create a new revision (new file, history section)? Follow the convention; if it is unclear, ask once.
 3. **Dedicated worktree.** Unless `--no-worktree` is given, the whole audit runs in a git worktree created for it: the document is modified there, the corpus grows there, the commits stay there, without touching the user's directory or the sessions working in it in parallel.
    - `<slug>`: the document name without extension, in lowercase ASCII, words separated by hyphens.
@@ -82,6 +111,12 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
      - `--no-worktree`: **Use a worktree** (Recommended), or **Continue**, the folder ignored by the agents only.
 
      A session-history folder in git is almost always a mistake, and only a worktree keeps the folder physically out of the agents' reach; the agents' instructions forbid reading it in every case, but an instruction is a weaker barrier than an absent file. Changing the project's `.gitignore` or index is the user's decision, hence the question. Record the folders found and the answer in the register.
+   - **Configuration tracked by git.** The worktree holds only what git tracks, so an untracked or ignored configuration would not exist in it, and an audit run from an untracked configuration cannot be replayed or reviewed. If `.specaudit.md` or `.specaudit/` exists but `git ls-files` does not list it, or `git check-ignore` reports it ignored, warn the user and ask, with AskUserQuestion (header "Configuration"), before creating the worktree:
+     - **Track it** (Recommended): `git add` it (with `-f` if a rule of `.gitignore` covers it, after saying which rule) and commit it alone in the original repository, so that the worktree is created with it;
+     - **Use it for this audit only**: copy it into the worktree and record its SHA-256 in the register, as for an unversioned input;
+     - **Ignore it**: audit without it.
+
+     A configuration with uncommitted changes is handled like the document: audit the committed version, or commit first. Record the configuration used (path, commit or SHA-256) in the register.
    - Name the branch `audit/<slug>` and the directory `<parent of the repository root>/<repository name>-audit-<slug>`. If either already exists outside `--resume`, add a suffix `-2`, `-3`…
    - Create it: `git worktree add "<directory>" -b audit/<slug> <base>`, where `<base>` is `--base` or `HEAD`. With `--resume`, find it instead with `git worktree list`.
    - From now on, all commands run in the worktree (absolute paths, or `git -C "<directory>"`), and agents receive absolute paths in the worktree.

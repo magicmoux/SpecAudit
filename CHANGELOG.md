@@ -2,7 +2,7 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
-## [0.7.1] — 2026-10-10
+## [0.8.0] — 2026-10-10
 
 ### Changed
 
@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- Project configuration, tracked by git: `.specaudit.md`, or `.specaudit/` with `config.md`, normative references and project extensions of a profile. YAML front matter (profile per document pattern, normative dependencies, version convention, defaults of the options) and notes for the orchestrator; an option on the command wins over its defaults. The reviewers and the adjudicators never read it and receive only the normative files it declares. An untracked or ignored configuration triggers a warning and a question before the worktree is created: track it (recommended), use it for this audit only (SHA-256 recorded), or ignore it.
 - `docs/profiles.md`: design of the audit profiles (functional, UI, research, experimental), their choice (`--profile`, `spec-audit/config.json`, heuristic confirmed at phase 0) and resources on demand (frozen sources, executable oracles, normative references).
 
 ## [0.7.0] — 2026-10-10
