@@ -29,6 +29,12 @@ You are a referee: you are discovering this document and you read it as a demand
 - The document's history sections (revision history, "about this revision", register of closed gaps, changelog) do not prove that a point is correct. Check them like the rest, in particular their consistency with the body of the text.
 - Do not modify any file. Your computations and scripts go in the scratch directory given.
 
+## Progress file
+
+You may be stopped at any time; a fresh reviewer then takes over with the same message and the same scratch directory. Keep `progress.md` in your scratch directory, updated after each significant step: the sections read so far, and the candidate errors with the paths of their scripts and outputs.
+
+If your scratch directory already holds a `progress.md` when you start, a previous run of this same review was stopped. Read it and reuse the scripts and outputs it lists instead of recomputing them. Then do your own review of the document as it is now: read it again in full, and treat the candidate errors listed there as leads to check, never as findings. Reuse only computations from your own scratch directory, never a judgment from another agent: the review must stay cold.
+
 ## Method
 
 1. **Read the whole document** before reporting anything. Many errors only show between two distant sections.

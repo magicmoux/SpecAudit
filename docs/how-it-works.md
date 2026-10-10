@@ -182,6 +182,8 @@ The outcome is classified (success, partial to continue, partial needing a decis
 
 The audit can also be stopped at any time, from the session that launched it only (its register records the session id): the audit session's process is stopped, which ends its agents (with `--in-session`, the agents are stopped), the last internal revision is reported, marked incomplete, and the user chooses to suspend the audit, keep that revision as the new base, or cancel. Details: [usage](usage.md#stopping-an-audit).
 
+Claude Code cannot pause an agent, so the audit is made safe to interrupt in two ways. Questions to the user wait until no agent is running, since a question blocks the orchestrator but not the agents. And every agent is replaceable: it keeps a `progress.md` with its scripts and outputs in its scratch directory, the register lists every agent with its state, and an interrupted agent is never resumed but replaced, at resume, by a fresh one given the same message and scratch directory. The replacement reuses the computations and redoes the judgment on the current text; a reviewer never takes over another agent's judgment, so the review stays cold.
+
 ## What the audit guarantees, and what it does not
 
 The audit guarantees that each fix answers an error confirmed by an independent adjudicator, that it is the weakest possible, and that a guard seen red before it protects it. It does not guarantee the absence of errors: review by agents and bounded tests are neither peer review nor proof. The report says so explicitly, separating what was checked, and how, from what was not.

@@ -15,4 +15,4 @@ An audit can only be stopped from the session that launched it. Another session 
    - if its state is already `suspended` or `closed`, say so.
 
    If no audit is found, say so and stop.
-2. **Stop it.** Follow "8.9 Stop on request" of the start skill (`/spec-audit:start`). In the default mode, that begins by stopping the audit session's process.
+2. **Stop it.** Follow "8.9 Stop on request" of the start skill (`/spec-audit:start`). In the default mode, that begins by stopping the audit session's process. The stop report lists the interrupted agents and their scratch directories: at resume they are replaced by fresh agents that reuse those directories, never resumed.

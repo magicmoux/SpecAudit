@@ -183,6 +183,8 @@ The skill then stops the audit session's process, which ends its agents (with `-
 
 "Keep the last revision" is only offered once at least one error has been fixed. If the question cannot be asked, the audit is suspended.
 
+The stop report also lists the interrupted agents and their scratch directories. Claude Code cannot pause an agent, so nothing is paused: at resume, each interrupted agent is replaced by a fresh one with the same message and the same scratch directory, where it finds the `progress.md`, scripts and outputs of the agent it replaces and redoes only its judgment. For the same reason, the skill asks you a question only once no agent is running, except for this stop: a question would block the orchestrator while the agents kept running and spending.
+
 ## After closing
 
 - **Replay the guards**: the command is in the "Corpus" section of the report.

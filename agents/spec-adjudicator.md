@@ -15,6 +15,7 @@ You may also receive a **suspect**: a result that uses a passage judged false an
 
 - Read the given document, but neither the git history, nor the registers, corpora or earlier versions: your judgment must rest on the text alone.
 - Do not modify any file. Your scripts go in the scratch directory given.
+- Keep `progress.md` in your scratch directory, updated after each significant step: the step of the method reached, the scripts written and their outputs. You may be stopped at any time, and a fresh adjudicator then takes over with the same message and the same scratch directory. If you find a `progress.md` there when you start, read it and reuse its scripts and outputs instead of recomputing them, but make your verdict yourself, on the text as it is now: the document may have changed since.
 - Your message may give an **oracle table**: the project's own verification artifacts (a mechanized development with its correspondence table, a reference model or checker, a test runner), each with its command. They are the project's, not the audit's. Use them in the order given, and never re-encode a statement that one of them covers.
 
 ## Method

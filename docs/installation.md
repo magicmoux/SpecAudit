@@ -137,4 +137,5 @@ Audits already carried out are not affected: their reports, registers and guards
 | `marketplace add` fails with an authentication error | the repository is not public or git has no access to it: sign in (`gh auth login`) or use a local clone |
 | The skill does not trigger on a natural-language request | invoke it explicitly: `/spec-audit:start <document>` |
 | The agents cannot be found | the skill then launches a fresh general-purpose agent with the content of `agents/spec-reviewer.md` or `agents/spec-adjudicator.md` as instructions; check the installation anyway, since the dedicated agents restrict the allowed tools |
+| With `--in-session` and tokenforge's lean mode, `TaskStop` and `SendMessage` are denied | the stop asks you to stop the agents yourself with `/tasks` (or the desktop app's tasks pane); the resume still works, since interrupted agents are replaced by fresh ones, never resumed with `SendMessage`. The default mode is not affected: the audit session loads none of your settings |
 | A model is not available to you | choose another one with `--model` (family alias or full id) and `--model-version` (default `latest`); the agents inherit it |

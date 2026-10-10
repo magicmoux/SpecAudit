@@ -35,6 +35,14 @@ Worktree autonomy, from the original directory <path>:
 | sources/paper.pdf | input | copy | <path>, sha256:… |
 | mechanization/.lake/build | build output | none, rebuilt | — |
 
+## Agents
+
+Every agent launched, in launch order. Its scratch directory holds its scripts, their outputs and its `progress.md` (sections read or method step reached, candidate errors or verdict in progress, scripts and outputs), so that a replacement can reuse them.
+
+| Name | Role | Error or wave | Scratch | State |
+|---|---|---|---|---|
+| audit-<slug>-reviewer-i1-w1-a | reviewer | iteration 1, wave 1, full | <scratch>/iter-1/reviewer-a | running \| done \| stopped \| replaced by <name> |
+
 ## Iteration log
 
 | Iter. | Detection waves | Saturated | Errors detected | Roots | Confirmed | Refuted | Resolved by their cause | Undecided | Blocked | Suspects | Form defects | Guards added | Corpus | Commit |
