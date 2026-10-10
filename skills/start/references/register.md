@@ -42,9 +42,9 @@ Worktree autonomy, from the original directory <path>:
 
 Every agent launched, in launch order. Its scratch directory holds its scripts, their outputs and its `progress.md` (sections read or method step reached, candidate errors or verdict in progress, scripts and outputs), so that a replacement can reuse them.
 
-| Name | Role | Error or wave | Scratch | State |
-|---|---|---|---|---|
-| audit-<slug>-reviewer-i1-w1-a | reviewer | iteration 1, wave 1, full | <scratch>/iter-1/reviewer-a | running \| done \| stopped \| replaced by <name> |
+| Name | Id | Role | Error or wave | Scratch | State |
+|---|---|---|---|---|---|
+| audit-<slug>-reviewer-i1-w1-a | <agent id returned at launch, for a background agent> | reviewer | iteration 1, wave 1, full | <scratch>/iter-1/reviewer-a | running \| done \| stopped \| replaced by <name> |
 
 ## Iteration log
 

@@ -18,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 - The skill names its own files from `${CLAUDE_SKILL_DIR}` (profile, register format) and the plugin's `agents/` and `docs/` from two levels up. With bare relative paths, the orchestrator could resolve `profiles/formal.md` against an inferred plugin root, have the read refused, and stop at phase 0.
 - A counterexample is always executed: the adjudicator runs a script even for an obvious case, a confirmation evaluated by hand is UNDECIDED, and the orchestrator checks the script and its output before accepting a CONFIRMED verdict. The eval suite caught an adjudicator confirming at the ad hoc level with no script.
+- Agents are named through their `description`, since the Agent tool has no name parameter, and the agent table records the id the launch returns, which is what `TaskStop` takes.
+- An internal revision is committed only once the register holds the error's entry, its guards' red and green results, the agents involved and the revision's row: an audit session had fixed four errors with every table of its register still empty. Commits stage by path, so that test caches and bytecode stay out of the corpus.
+- The oracle table records the exact command that was run and passed: an audit session failed its baseline on `python3 -m pytest` where only the `pytest` executable was installed.
+- Eval graders that passed on any run: the Lemma 3 fix (Definition 2 already contains `min(k, n)`) and "red first" (`red` matched "ignored"); `local-e2e.sh` no longer loses its revision check to SIGPIPE under `pipefail`.
 
 ## [0.7.0] — 2026-10-10
 

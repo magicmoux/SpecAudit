@@ -26,9 +26,10 @@ check "inventory written" "[ -f '$DIR/inventory.md' ]"
 check "report written" "[ -f '$DIR/report.md' ]"
 check "lemma 3 fixed" "grep -qE '^\*\*Lemma 3\.\*\*.*(min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n)' '$AUDIT/selection.md'"
 check "proposition 4 unchanged" "grep -qF 'P_k(L ++ M) = P_k(P_k(L) ++ P_k(M))' '$AUDIT/selection.md'"
-check "guard red first recorded" "grep -qiE 'red' '$DIR/register.md'"
+check "guard red first recorded" "grep -qiwE 'red' '$DIR/register.md'"
 check "agent table filled" "grep -qE 'audit-selection-(reviewer|adjudicator)' '$DIR/register.md'"
-check "internal revision committed" "git -C '$AUDIT' log --oneline | grep -q 'incomplete: audit in progress'"
+# git log --grep rather than a pipe into grep -q: under pipefail, grep -q exits at the first match and git log's SIGPIPE fails the check.
+check "internal revision committed" "[ -n \"\$(git -C '$AUDIT' log --oneline -F --grep 'incomplete: audit in progress')\" ]"
 check "report does not claim correctness" "! grep -qiE 'the document is correct' '$DIR/report.md'"
 python -X utf8 -c "import json; d = json.load(open('result.json', encoding='utf-8')); print('cost USD', d.get('total_cost_usd'), '| turns', d.get('num_turns'), '| denials', len(d.get('permission_denials', [])))" 2>/dev/null
 echo "$fails failure(s); artifacts in $WORK"

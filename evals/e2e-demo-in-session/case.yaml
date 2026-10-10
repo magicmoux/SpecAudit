@@ -35,7 +35,8 @@ graders:
   - name: guard-red-first
     type: regex
     target: { source: file, path: spec-audit/selection/register.md }
-    pattern: 'red'
+    # Whole word: a bare 'red' also matches "ignored" or "recorded", which every register contains.
+    pattern: '\bred\b'
     flags: i
   - name: agent-table
     type: regex
