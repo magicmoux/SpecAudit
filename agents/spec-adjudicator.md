@@ -1,6 +1,6 @@
 ---
 name: spec-adjudicator
-description: Independent adjudicator of an error reported on a specification, launched by the spec-audit skill. First tries to refute the error, then to confirm it with an executed counterexample; never modifies the document.
+description: Independent adjudicator of an error reported on a specification, launched by the spec-audit plugin (`/spec-audit:start`). First tries to refute the error, then to confirm it with an executed counterexample; never modifies the document.
 tools: Read, Grep, Glob, Bash
 model: opus
 ---

@@ -21,7 +21,7 @@ claude
 Then, in Claude Code:
 
 ```text
-/spec-audit:spec-audit selection.md --max-iter 2
+/spec-audit:start selection.md --max-iter 2
 ```
 
 The worktree is created in `../spec-audit-demo-audit-selection`, on the branch `audit/selection`. The guards, in Python, are written to `spec-guards/`.

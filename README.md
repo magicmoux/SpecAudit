@@ -54,7 +54,7 @@ Installation for a project or a team, from a local clone, or without the plugin 
 From the git repository that contains the document:
 
 ```text
-/spec-audit:spec-audit docs/specification.md
+/spec-audit:start docs/specification.md
 ```
 
 The skill also triggers on natural-language requests, for example: "Check the proofs in `docs/specification.md` before submission."
@@ -117,8 +117,8 @@ SpecAudit/
 │   ├── plugin.json            plugin manifest
 │   └── marketplace.json       the repository is also a marketplace
 ├── skills/
-│   ├── spec-audit/
-│   │   ├── SKILL.md           orchestrator: phases 0 to 8
+│   ├── start/
+│   │   ├── SKILL.md           /spec-audit:start, orchestrator: phases 0 to 8
 │   │   └── references/
 │   │       └── register.md    formats of the register, its entries and the guards
 │   └── stop/

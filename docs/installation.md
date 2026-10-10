@@ -81,7 +81,8 @@ Bash:
 
 ```bash
 mkdir -p ~/.claude/skills ~/.claude/agents
-cp -r SpecAudit/skills/spec-audit ~/.claude/skills/
+cp -r SpecAudit/skills/start ~/.claude/skills/spec-audit-start
+cp -r SpecAudit/skills/stop ~/.claude/skills/spec-audit-stop
 cp SpecAudit/agents/*.md ~/.claude/agents/
 ```
 
@@ -89,13 +90,14 @@ PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force "$HOME\.claude\skills", "$HOME\.claude\agents" | Out-Null
-Copy-Item -Recurse SpecAudit\skills\spec-audit "$HOME\.claude\skills\"
+Copy-Item -Recurse SpecAudit\skills\start "$HOME\.claude\skills\spec-audit-start"
+Copy-Item -Recurse SpecAudit\skills\stop "$HOME\.claude\skills\spec-audit-stop"
 Copy-Item SpecAudit\agents\*.md "$HOME\.claude\agents\"
 ```
 
 For a single project, copy them into `.claude/skills/` and `.claude/agents/` at the project root instead.
 
-The names change: the skill is called `/spec-audit`, the agents `spec-reviewer` and `spec-adjudicator` (instead of `/spec-audit:spec-audit`, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`). The skill recognizes both forms.
+The names change: a skill takes the name of its folder, so the commands are `/spec-audit-start` and `/spec-audit-stop`, and the agents `spec-reviewer` and `spec-adjudicator` (instead of `/spec-audit:start`, `/spec-audit:stop`, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`). The skill recognizes both forms of the agent names.
 
 ## Check the installation
 
@@ -104,7 +106,7 @@ claude plugin list
 claude plugin details spec-audit
 ```
 
-The plugin must appear as `spec-audit@spec-audit`, with one skill and two agents. In a session, `/agents` lists `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`, and typing `/spec-audit` suggests `/spec-audit:spec-audit`.
+The plugin must appear as `spec-audit@spec-audit`, with two skills (`start`, `stop`) and two agents. In a session, `/agents` lists `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`, and typing `/spec-audit` suggests `/spec-audit:start` and `/spec-audit:stop`.
 
 ## Update
 
@@ -122,7 +124,7 @@ claude plugin uninstall spec-audit@spec-audit
 claude plugin marketplace remove spec-audit
 ```
 
-For a manual installation, delete `~/.claude/skills/spec-audit/`, `~/.claude/agents/spec-reviewer.md` and `~/.claude/agents/spec-adjudicator.md`.
+For a manual installation, delete `~/.claude/skills/spec-audit-start/`, `~/.claude/skills/spec-audit-stop/`, `~/.claude/agents/spec-reviewer.md` and `~/.claude/agents/spec-adjudicator.md`.
 
 Audits already carried out are not affected: their reports, registers and guards stay in your repositories.
 
@@ -133,6 +135,6 @@ Audits already carried out are not affected: their reports, registers and guards
 | The agents appear twice (`spec-reviewer` and `spec-audit:spec-reviewer`) | a manual installation coexists with the plugin: delete the manual copies (previous section) |
 | `Filename too long` when cloning on Windows | enable long paths: `git config --global core.longpaths true` |
 | `marketplace add` fails with an authentication error | the repository is not public or git has no access to it: sign in (`gh auth login`) or use a local clone |
-| The skill does not trigger on a natural-language request | invoke it explicitly: `/spec-audit:spec-audit <document>` |
+| The skill does not trigger on a natural-language request | invoke it explicitly: `/spec-audit:start <document>` |
 | The agents cannot be found | the skill then launches a fresh general-purpose agent with the content of `agents/spec-reviewer.md` or `agents/spec-adjudicator.md` as instructions; check the installation anyway, since the dedicated agents restrict the allowed tools |
 | The Opus model is not available | the model is set in the agents' frontmatter: install from a local clone (section 3) and change `model:` in `agents/*.md` |
