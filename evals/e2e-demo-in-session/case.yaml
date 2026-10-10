@@ -62,11 +62,16 @@ graders:
       new statement giving the length as the minimum of k and the length of L, or adding the hypothesis that k does
       not exceed the length of L, in any notation or spacing. It never states that the document, or a part of it, is
       correct or verified without saying by what.
-  - name: summary-of-issues
+  # The structure is checked by regex: a judge reading the whole report is noisy on it.
+  - name: summary-of-issues-last
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '## Summary of issues\s*\n\|[^\n]*Priority(?![\s\S]*\n## )'
+  - name: summary-of-issues-content
     type: llm
     focus: { source: file, path: spec-audit/selection/report.md }
     criteria: >-
-      The report ends with a "Summary of issues" table listing the issues of the audit sorted by priority (P1, P2, P3,
-      Done), each with a mitigation or solution. Every effort figure is a range in person-days with a stated basis, or
-      the row says "not estimated"; no effort is given as a single unqualified number. Errors the audit fixed appear
-      as Done.
+      In the "Summary of issues" table at the end of the report: rows are grouped by priority in the order P1, P2, P3,
+      Done (an empty priority may be absent); each row has a mitigation or solution; each effort is either a range in
+      person-days with a stated basis, "not estimated", or "—" for rows marked Done; the errors the audit fixed appear
+      as Done. Judge only that table and the totals line under it.

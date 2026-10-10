@@ -37,6 +37,11 @@ graders:
     pattern: 'distinct'
     flags: i
     match: not_contains
+  - name: replacement-seen-red
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    pattern: '### G-\d+-\d+[\s\S]*?\*\*Settlement\*\*:[^\n]*\bred\b'
+    flags: i
   - name: circuit-recorded
     type: llm
     focus: { source: file, path: spec-audit/selection/register.md }
