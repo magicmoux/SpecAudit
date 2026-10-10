@@ -141,7 +141,7 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
    - Also with `--resume`, before any other step of the audit, the orchestrator replaces every agent that the register's agent table shows `running` or `stopped` (Roles, "Replacing an agent"): none of them still works for this audit, and their scratch directories hold what they had done.
 6. **Audit session.** Unless `--in-session` is given, the audit runs in a session of its own, so that nothing of your session (plugins, skills, connectors, hooks, memory, conversation) reaches it, and so that what it may run is exactly the oracle table. From the worktree:
    - Write in your scratch directory, regenerated at each launch and at each `--resume`: `protocol.md`, this skill followed by the profile (`profiles/formal.md`) and `references/register.md`, preceded by the line "You are the orchestrator of an audit prepared by its launcher: phase 0, steps 1 to 6, is done and recorded in the register; continue at step 7; launch no agent other than `spec-reviewer` and `spec-adjudicator`; never run phase 8, which the launcher does from your report"; and `agents.json`, the two agents of the plugin's `agents/` folder as the `--agents` format wants them (`description`, `prompt` = the body of the file, `tools`, `model`), under their names `spec-reviewer` and `spec-adjudicator`.
-   - Build the Bash allow list from the oracle table: `Bash(git *)` and, per oracle, its runner only (`Bash(python *)`, `Bash(pytest *)`, `Bash(lake *)`, `Bash(mvn *)`). Nothing else: no network tool, no package installation, and `git push` denied.
+   - Build the Bash allow list from the oracle table: `Bash(git *)` and, per oracle, its runner only (`Bash(python *)`, `Bash(pytest *)`, `Bash(lake *)`, `Bash(mvn *)`); and the interpreter of the agents' own scripts, restricted to their scratch root, `<worktree>-scratch/` (`Bash(python3 <worktree>-scratch/*)`, with the interpreter phase 0 found and ran once). Nothing else: no network tool, no package installation, and `git push` denied. The interpreter rule is what lets an adjudicator execute an ad hoc counterexample, the only evidence when no oracle covers a statement; without it, every such error could only stay UNDECIDED, or be confirmed by you, which the protocol forbids. Restricting it to the scratch root keeps it to the agents' scripts.
    - Launch it in the background, from the worktree, and record its process id and `--session-id` in the register:
 
      ```text
@@ -225,7 +225,7 @@ As long as its cause is not fixed, a consequence is **ignored**: status BLOCKED 
 
 ### 4.1 Confirmation
 
-The root goes to a fresh adjudicator, with the error alone (without the reviewer's identity or the other errors), the document paths, the oracle table of the register (phase 0, step 4) and a scratch directory. Do not adjudicate yourself, especially an error that touches a passage you fixed: you would be judging your own work.
+The root goes to a fresh adjudicator, with the error alone (without the reviewer's identity or the other errors), the document paths, the oracle table of the register (phase 0, step 4) and a scratch directory. Do not adjudicate yourself, especially an error that touches a passage you fixed: you would be judging your own work. For the same reason, never run a counterexample in an adjudicator's place: if it reports that it could not execute (a tool refused, an interpreter missing), the verdict is UNDECIDED and the cause is an environment problem, recorded in the register and reported, to be fixed before a fresh adjudicator is launched.
 
 - **CONFIRMED** (with executed evidence) → mark its suspects (below), then 4.2.
 - **REFUTED** (with the reason) → remove its outgoing edges; its consequences with no other open cause become roots. If the adjudicator flagged a `misleading_wording`, open an "ambiguity" form defect with it (phase 5): the passage is correct, but a referee who misread it is a reader the document will meet again.
@@ -369,7 +369,7 @@ What was checked and how (agent review, bounded exhaustive test, mechanized proo
 
 ## Summary of issues
 | Priority | ID | Issue | Location | Status | Mitigation or solution | Effort (person-days) | Basis |
-Totals per priority, of the estimated rows only, with the number of rows not estimated.
+Totals per priority: the sum of the estimated ranges (low sum – high sum, in person-days), with the number of rows not estimated.
 ```
 
 **Summary of issues.** The last section, because it is what a reader acts on after closing the report: one row per issue of the audit, open or settled, sorted by priority, so that the work left can be planned without rereading the sections above.
