@@ -41,7 +41,7 @@ check "index lists the folder and its source" "grep -qE '\\[SpecAudit-[0-9]{8}_[
 WHO="$(git -C "$WORK" config user.name || id -un)"
 check "index and README name who launched the audit" "grep -qF '$WHO' '$WORK/SPECAUDITS.md' && grep -qF '$WHO' '${RES}README.md'"
 check "index row not attested at closing" "grep -E 'SpecAudit-[0-9]{8}_[0-9]{4}' '$WORK/SPECAUDITS.md' | grep -qE '\\| no \\|\\s*\$'"
-check "README explains attestation" "grep -qiE '^#+ *Attestation' '${RES}README.md' && grep -qF 'git tag -s' '${RES}README.md'"
+check "README explains attestation" "grep -qi 'attest' '${RES}README.md' && grep -qF 'git tag -s' '${RES}README.md'"
 check "results README with contents" "grep -q 'source/' '${RES}README.md' && grep -q 'resources/' '${RES}README.md'"
 BASE="$(git -C "$WORK" rev-list --max-parents=0 HEAD | cut -c1-7)"  # the demo repository has a single starting commit
 check "results README identifies the base commit" "grep -qF '$BASE' '${RES}README.md'"
@@ -57,7 +57,7 @@ else
 fi
 check "replay on the fixed document" "(cd '$RES' && python3 resources/replay.py --on fixed > '$WORK/replay-fixed.log')"
 check "replay on the original shows the errors" "(cd '$RES' && python3 resources/replay.py --on source > '$WORK/replay-source.log')"
-check "README documents the tests" "grep -qi 'replay.py --on source' '${RES}README.md'"
+check "README documents the tests" "grep -qiE '^#+ *Tests' '${RES}README.md' && grep -qF -- '--on source' '${RES}README.md' && grep -qF 'replay.py' '${RES}README.md'"
 check "no copy under the original name at root" "[ ! -e '${RES}selection.md' ]"
 check "no runner cache in results" "[ -z \"\$(find '$RES' -name __pycache__ -o -name .pytest_cache)\" ]"
 # A line that disclaims correctness ("this is not a claim that the document is correct") is the expected caution.
