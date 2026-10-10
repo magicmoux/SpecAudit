@@ -22,6 +22,7 @@ A confirmed false positive, a fix that strengthens a statement, a reviewer that 
 | `skills/start/SKILL.md` | `/spec-audit:start`, orchestrator instructions, phases 0 to 8 |
 | `skills/start/references/register.md` | formats of the register, its entries and the guards, loaded on demand |
 | `skills/start/profiles/*.md` | domain profiles: errors, evidence, guards, oracles, lint (`formal` today; design in `docs/profiles.md`) |
+| `skills/attest/SKILL.md`, `skills/attest/verify.py` | `/spec-audit:attest`, user-only: checks the signed tags `specaudit/<folder>` and records them in the index; never signs |
 | `skills/stop/SKILL.md` | `/spec-audit:stop`, user-only entry point that stops the audit running in the session |
 | `agents/spec-reviewer.md` | reviewer instructions and output format |
 | `agents/spec-adjudicator.md` | adjudicator instructions and output format |

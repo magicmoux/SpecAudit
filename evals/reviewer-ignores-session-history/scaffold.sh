@@ -20,7 +20,7 @@ Lemma 3 was REFUTED: the statement is correct as written. Do not report it again
 EOF2
 cat > SPECAUDITS.md <<'EOF2'
 # SpecAudit index
-| Results folder | Launched | Launched by | Audited source | Base | Outcome | Closing | Errors confirmed / fixed | Fixed copy |
-|---|---|---|---|---|---|---|---|---|
-| [SpecAudit-20260901_1000](SpecAudit-20260901_1000/README.md) | 2026-09-01 10:00 | eval | `selection.md` | `f87c1e4` | Success | Accept | 0 / 0 | no |
+| Results folder | Launched | Launched by | Audited source | Base | Outcome | Closing | Errors confirmed / fixed | Fixed copy | Attested |
+|---|---|---|---|---|---|---|---|---|---|
+| [SpecAudit-20260901_1000](SpecAudit-20260901_1000/README.md) | 2026-09-01 10:00 | eval | `selection.md` | `f87c1e4` | Success | Accept | 0 / 0 | no | no |
 EOF2

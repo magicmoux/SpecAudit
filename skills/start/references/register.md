@@ -8,7 +8,7 @@
 - Document(s): <paths>
 - Normative dependencies: <paths>
 - Corpus: <directory>, runner: <command>
-- Launched by: <git user.name> <git user.email> | <system user> (no git identity); Resumed by: <same>, if a `--resume` came from someone else
+- Launched by: <name> <e-mail> (<source: git | GIT_AUTHOR_* | system user | unknown>, <context: local | cloud session | CI | routine>); Resumed by: <same>, if a `--resume` came from someone else
 - Launched: <YYYYmmdd_HHmm>, local time, UTC<offset> (launch of `/spec-audit:start`; kept by `--resume`; names the results folder `SpecAudit-<YYYYmmdd_HHmm>/`)
 - Original repository: <path>, remote <URL | none>, branch <name>, head <hash>
 - Worktree: <path>, branch audit/<slug>, base <hash>
@@ -111,15 +111,15 @@ Identifiers are never reassigned. A refuted error stays in the register: it is w
 ```markdown
 # SpecAudit index
 
-Results of the audits of this project, newest first: one row per results folder, added at closing by `/spec-audit:start`. Rows are never rewritten.
+Results of the audits of this project, newest first: one row per results folder, added at closing by `/spec-audit:start`. Rows are never rewritten, except their "Attested" cell, which `/spec-audit:attest` sets from the signed tags it verifies.
 
-| Results folder | Launched | Launched by | Audited source | Base | Outcome | Closing | Errors confirmed / fixed | Fixed copy |
-|---|---|---|---|---|---|---|---|---|
-| [SpecAudit-20261010_2137](SpecAudit-20261010_2137/README.md) | 2026-10-10 21:37 UTC+0200 | Ada Lovelace | `docs/spec/` (folder, 3 documents) | `831ef36` on `main` | Partial, needs decision | Keep | 5 / 4 | no |
-| [SpecAudit-20260901_1000](SpecAudit-20260901_1000/README.md) | 2026-09-01 10:00 UTC+0200 | Alan Turing | `selection.md` | `f87c1e4` on `main` | Success | Accept | 3 / 3 | `selection.fixed.md` |
+| Results folder | Launched | Launched by | Audited source | Base | Outcome | Closing | Errors confirmed / fixed | Fixed copy | Attested |
+|---|---|---|---|---|---|---|---|---|---|
+| [SpecAudit-20261010_2137](SpecAudit-20261010_2137/README.md) | 2026-10-10 21:37 UTC+0200 | Ada Lovelace | `docs/spec/` (folder, 3 documents) | `831ef36` on `main` | Partial, needs decision | Keep | 5 / 4 | no | no |
+| [SpecAudit-20260901_1000](SpecAudit-20260901_1000/README.md) | 2026-09-01 10:00 UTC+0200 | Alan Turing | `selection.md` | `f87c1e4` on `main` | Success | Accept | 3 / 3 | `selection.fixed.md` | yes: alan@example.org, 2026-09-02 |
 ```
 
-"Launched by" is the name only (git `user.name`, or the system user); the e-mail stays in the folder's README, which keeps the index short. The audited source is written as given on the command line, a file or a folder; for a folder, with its number of documents (the list is in the folder's README and register).
+"Attested" is `no` at closing; only `/spec-audit:attest --update` changes it, to what it verified (a signed tag `specaudit/<folder>`), and it is the only cell rewritten after closing. "Launched by" is the name only (git `user.name`, or the system user); the e-mail stays in the folder's README, which keeps the index short. The audited source is written as given on the command line, a file or a folder; for a folder, with its number of documents (the list is in the folder's README and register).
 
 ## Corpus error entry
 

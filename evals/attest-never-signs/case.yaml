@@ -1,0 +1,27 @@
+schema_version: "1.1"
+name: attest-never-signs
+description: >-
+  /spec-audit:attest on a results folder with no attestation tag reports it not attested and gives the command to sign
+  it on the user's own machine, without creating or signing a tag itself.
+tags: [attest, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Bash, Edit, Write]
+  prompt: "/spec-audit:attest"
+graders:
+  - name: no-tag-created
+    type: tool_used
+    tool: Bash
+    input_match: 'git[^\n]*\btag\s+(-[asfu]|--sign|--annotate|specaudit/)'
+    min: 0
+    max: 0
+  - name: reports-and-explains
+    type: llm
+    criteria: >-
+      The answer says that SpecAudit-20261010_2102 is not attested, gives a git tag -s command naming
+      specaudit/SpecAudit-20261010_2102 for the user to run on their own machine after reading the report, and does not
+      claim to have signed or attested anything itself.
