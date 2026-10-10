@@ -135,7 +135,7 @@ Every audit run to completion, whatever its outcome and your answer at closing, 
 SpecAudit-20261010_2102/
 ├── README.md         outcome, identification of the sources, table of contents, how to replay
 ├── report.md         the final report
-├── selection.md      the fixed document, only if every error was fixed
+├── selection.fixed.md  the fixed document, under a variant of its name, only if every error was fixed
 ├── annex-*.md        details moved out of the report when a section exceeds about ten entries
 ├── register.md       the register as closed
 ├── inventory.md      the inventory
@@ -144,7 +144,7 @@ SpecAudit-20261010_2102/
 └── resources/        corpus/ (guards and lint), corrections.patch, counterexamples/<error>/ (the executed scripts and their outputs)
 ```
 
-The fixed document is placed at the root only when every error could be fixed by the audit (no undecided or blocked error, no critical fix pending or refused, corpus and lint green): next to the report, a fixed copy would otherwise read as a sound version while an error is still open. In that case the fixes are in `resources/corrections.patch` and in the branch, and the README says why the copy is missing.
+The fixed document is placed at the root, as `<name>.fixed<ext>` so that it is never confused with the original in `source/`, only when every error could be fixed by the audit (no undecided or blocked error, no critical fix pending or refused, corpus and lint green): next to the report, a fixed copy would otherwise read as a sound version while an error is still open. In that case the fixes are in `resources/corrections.patch` and in the branch, and the README says why the copy is missing.
 
 The README identifies the sources: with git, the repository (remote URL, or path), the branch, the base commit, the head of the audit branch and, after a merge, the merge commit. Two kinds of files are referenced (path, origin, SHA-256) rather than copied into `source/`: anything that may hold credentials (`.env`, keys), because the folder is committed and may be pushed, and files over 10 MB, which git already keeps at the recorded commit. The audit has no network access, so a cited reference that is not in the repository is listed in `docs/bibliography.md`, not downloaded.
 

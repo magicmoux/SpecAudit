@@ -45,11 +45,12 @@ check "report and patch in results" "[ -f '${RES}report.md' ] && [ -f '${RES}res
 check "executed counterexamples kept" "[ -n \"\$(find '${RES}resources/counterexamples' -name '*.py' 2>/dev/null)\" ]"
 # The demo run stops after one iteration, usually with its critical fix pending, so the fixed copy may be absent; if it
 # is there, it must be the fixed text, and if it is not, the README must say why.
-if [ -f "${RES}selection.md" ]; then
-  check "fixed copy at root is fixed" "grep -qE '^\*\*Lemma 3\.\*\*.*(min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n)' '${RES}selection.md'"
+if [ -f "${RES}selection.fixed.md" ]; then
+  check "fixed copy at root is fixed" "grep -qE '^\*\*Lemma 3\.\*\*.*(min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n)' '${RES}selection.fixed.md'"
 else
   check "README explains the missing fixed copy" "grep -qiE 'pending|open|not (all )?fixed|corrections.patch' '${RES}README.md'"
 fi
+check "no copy under the original name at root" "[ ! -e '${RES}selection.md' ]"
 check "no runner cache in results" "[ -z \"\$(find '$RES' -name __pycache__ -o -name .pytest_cache)\" ]"
 check "report does not claim correctness" "! grep -qiE 'the document is correct' '$DIR/report.md'"
 python -X utf8 -c "import json; d = json.load(open('result.json', encoding='utf-8')); print('cost USD', d.get('total_cost_usd'), '| turns', d.get('num_turns'), '| denials', len(d.get('permission_denials', [])))" 2>/dev/null
