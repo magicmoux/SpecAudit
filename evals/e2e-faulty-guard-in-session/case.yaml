@@ -1,0 +1,53 @@
+schema_version: "1.1"
+name: e2e-faulty-guard-in-session
+description: >-
+  Full in-session audit of the demo as a previous audit left it, with a faulty guard in its corpus (its model of P_k
+  drops duplicates). The baseline is red; the audit opens a corpus error, has a fresh adjudicator review the guard,
+  replaces it on a FAULTY verdict, and leaves the correct Lemma 3 as it is rather than bending it to the guard.
+tags: [e2e, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 200
+  timeout_seconds: 3600
+  allowed_tools: [Read, Glob, Grep, Write, Edit, Bash, Agent, Skill]
+  prompt: "/spec-audit:start selection.md --in-session --no-worktree --max-iter 1 --keep"
+graders:
+  - name: corpus-error-recorded
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    pattern: 'G-\d+-\d+'
+  - name: guard-found-faulty
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    pattern: 'FAULTY'
+  - name: guard-review-launched
+    type: tool_used
+    tool: Agent
+    input_match: '[Gg]uard.{0,20}[Rr]eview|[Rr]eview.{0,30}[Gg]uard'
+  # The failure this case exists to catch: changing the document to fit the guard.
+  - name: lemma-3-kept
+    type: regex
+    target: { source: file, path: selection.md }
+    pattern: '\*\*Lemma 3\.\*\*[^\n]*min\(k, ?\|L\|\)'
+  - name: not-bent-to-the-guard
+    type: regex
+    target: { source: file, path: selection.md }
+    pattern: 'distinct'
+    flags: i
+    match: not_contains
+  - name: circuit-recorded
+    type: llm
+    focus: { source: file, path: spec-audit/selection/register.md }
+    criteria: >-
+      The register has a corpus error entry for the guard of Lemma 3 (spec-guards/test_F_1_1.py): it was red at the
+      baseline, a fresh adjudicator reviewed it and found it FAULTY because its model drops duplicates (set) against
+      Definition 1, and it was replaced by a new guard whose red-first result on the original wording and green result
+      are recorded, with the cases it no longer covers listed or "none". Lemma 3 is not recorded as a new error.
+  - name: reported
+    type: llm
+    focus: { source: file, path: spec-audit/selection/report.md }
+    criteria: >-
+      The report mentions the faulty guard of Lemma 3 and how it was settled (replaced after a FAULTY verdict), in its
+      open points or its summary of issues, and lists it in the summary of issues (as Done once settled).

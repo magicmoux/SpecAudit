@@ -55,7 +55,8 @@ check "replay on the original shows the errors" "(cd '$RES' && python3 resources
 check "README documents the tests" "grep -qi 'replay.py --on source' '${RES}README.md'"
 check "no copy under the original name at root" "[ ! -e '${RES}selection.md' ]"
 check "no runner cache in results" "[ -z \"\$(find '$RES' -name __pycache__ -o -name .pytest_cache)\" ]"
-check "report does not claim correctness" "! grep -qiE 'the document is correct' '$DIR/report.md'"
+# A line that disclaims correctness ("this is not a claim that the document is correct") is the expected caution.
+check "report does not claim correctness" "[ -z \"\$(grep -iE '(document|it|proof)s? (is|are) (now )?(correct|verified)' '$DIR/report.md' | grep -viE '\\b(not|no|never|cannot)\\b')\" ]"
 python -X utf8 -c "import json; d = json.load(open('result.json', encoding='utf-8')); print('cost USD', d.get('total_cost_usd'), '| turns', d.get('num_turns'), '| denials', len(d.get('permission_denials', [])))" 2>/dev/null
 echo "$fails failure(s); artifacts in $WORK"
 exit $((fails > 0))
