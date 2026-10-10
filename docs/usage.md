@@ -141,7 +141,7 @@ SpecAudit-20261010_2102/
 ├── inventory.md      the inventory
 ├── source/           the audited files as they were at the start: document(s), normative dependencies, configuration, unversioned inputs
 ├── docs/             documents consulted (internal, external, normative) and bibliography.md, each reference with what was checked
-└── resources/        corpus/ (guards and lint), corrections.patch, counterexamples/<error>/ (the executed scripts and their outputs)
+└── resources/        corpus/ (guards and lint), replay.py and manifest.json, corrections.patch, counterexamples/<error>/ (the executed scripts and their outputs)
 ```
 
 The fixed document is placed at the root, as `<name>.fixed<ext>` so that it is never confused with the original in `source/`, only when every error could be fixed by the audit (no undecided or blocked error, no critical fix pending or refused, corpus and lint green): next to the report, a fixed copy would otherwise read as a sound version while an error is still open. In that case the fixes are in `resources/corrections.patch` and in the branch, and the README says why the copy is missing.
@@ -248,7 +248,15 @@ The stop report also lists the interrupted agents and their scratch directories.
 
 ## After closing
 
-- **Replay the guards**: the command is in the "Corpus" section of the report.
+- **Replay the guards**: the command is in the "Corpus" section of the report. From a results folder, the corpus replays on either version of the document, without the project or the worktree:
+
+  ```bash
+  cd SpecAudit-<YYYYmmdd_HHmm>
+  python3 resources/replay.py --on fixed    # every guard green: the fixes hold
+  python3 resources/replay.py --on source   # each fixed error's text guard red: the corpus sees the error in the text
+  ```
+
+  Every error has a text guard, which reads the document and fails on its original wording; the other guards check an encoding of the statement and pass in both modes. `--on source` lists any error without a text guard, which a revert of the text would not show. The README of the folder has a "Tests" section with these commands, the project's own suites and their results at closing.
 - **Apply the patch of a results folder** (or of an archive, `spec-audit/<slug>/<YYYY-MM-DD>-<outcome>/corrections.patch`), in whole or in part:
 
   ```bash

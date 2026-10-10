@@ -50,6 +50,9 @@ if [ -f "${RES}selection.fixed.md" ]; then
 else
   check "README explains the missing fixed copy" "grep -qiE 'pending|open|not (all )?fixed|corrections.patch' '${RES}README.md'"
 fi
+check "replay on the fixed document" "(cd '$RES' && python3 resources/replay.py --on fixed > '$WORK/replay-fixed.log')"
+check "replay on the original shows the errors" "(cd '$RES' && python3 resources/replay.py --on source > '$WORK/replay-source.log')"
+check "README documents the tests" "grep -qi 'replay.py --on source' '${RES}README.md'"
 check "no copy under the original name at root" "[ ! -e '${RES}selection.md' ]"
 check "no runner cache in results" "[ -z \"\$(find '$RES' -name __pycache__ -o -name .pytest_cache)\" ]"
 check "report does not claim correctness" "! grep -qiE 'the document is correct' '$DIR/report.md'"

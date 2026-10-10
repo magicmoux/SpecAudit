@@ -142,6 +142,42 @@ def test_F_2_5_consequence_holds_on_cause_witness():
     assert proposition_4_6(WITNESS)
 ```
 
+## Text guard (Python example)
+
+A text guard reads the document through `SPEC_DOCS`, a JSON map from the document's path in the project to the file to read; without it, the path itself is read, from the directory the runner starts in. The replay of a results folder sets it to the original or to the fixed copy.
+
+```python
+# Text guard F-2-3 — the fixed wording of Proposition 4.2 is in the document, the original one is not
+import json, os
+from pathlib import Path
+
+def doc(path):
+    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
+
+def test_F_2_3_text():
+    text = doc("spec/merge.md")
+    assert "<original wording, exact>" not in text
+    assert "<fixed wording, exact>" in text
+```
+
+## Manifest of a results folder (`resources/manifest.json`)
+
+```json
+{
+  "documents": {"spec/merge.md": {"source": "source/spec/merge.md", "fixed": "spec/merge.fixed.md"}},
+  "guards": [
+    {"error": "F-2-3", "file": "resources/corpus/test_F_2_3.py", "text": false,
+     "command": ["pytest", "-q", "-p", "no:cacheprovider", "resources/corpus/test_F_2_3.py"]},
+    {"error": "F-2-3", "file": "resources/corpus/test_F_2_3_text.py", "text": true,
+     "command": ["pytest", "-q", "-p", "no:cacheprovider", "resources/corpus/test_F_2_3_text.py"]},
+    {"error": "lint", "file": "resources/corpus/test_lint.py", "text": true,
+     "command": ["pytest", "-q", "-p", "no:cacheprovider", "resources/corpus/test_lint.py"]}
+  ]
+}
+```
+
+Commands run from the root of the results folder. `"fixed"` is `resources/<name>.partial<ext>` when an error stays open. The lint is a text check of the whole document: on the original it goes red if a form defect was fixed.
+
 ## Guard file (Lean example, for a formal oracle)
 
 The module is added to the build target, so that replaying the corpus is `lake build`. The witness refutes the original statement as it is mapped in the development (correspondence table), and the fixed statement is re-proved or decided on the same instances. `native_decide` may find a witness; the recorded guard uses `decide`, `simp` or a proof.

@@ -49,7 +49,7 @@ The level is recorded in the register (`Evidence`). A statement of level 1 confi
 ## Guards
 
 - Exact arithmetic (integers, rationals, symbolic computation), never equality between floats; fixed seeds.
-- A guard is written for the oracle that confirmed the error, at its level: for a formal oracle, a theorem or a decided check in a module that the project's build compiles, so that replaying the corpus is the build (Lean example in `references/register.md`); for a model, a test that runs the model; otherwise a test of the runner (Python example in `references/register.md`). "Red first" then means that the theorem refuting the original statement on the witness compiles, and "green" that the fixed statement is re-proved, or passes its bounded check, in the same build. A decision procedure that extends the trusted base (`native_decide`) serves the search, never the recorded guard.
+- A guard is written for the oracle that confirmed the error, at its level: for a formal oracle, a theorem or a decided check in a module that the project's build compiles, so that replaying the corpus is the build (Lean example in `references/register.md`); for a model, a test that runs the model; otherwise a test of the runner (Python example in `references/register.md`). "Red first" then means that the theorem refuting the original statement on the witness compiles, and "green" that the fixed statement is re-proved, or passes its bounded check, in the same build. The text guard reads the document, not the development: write it for the corpus's script runner (Python example in `references/register.md`), even when the other guards are Lean theorems. A decision procedure that extends the trusted base (`native_decide`) serves the search, never the recorded guard.
 
 ## Fixes
 
