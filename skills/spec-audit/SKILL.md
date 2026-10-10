@@ -47,7 +47,7 @@ Only errors follow the full protocol: cause graph, counterexample, guards, botto
 - `--corpus <dir>`: the global guard corpus. By default, the project's existing verification corpus if there is one (follow its conventions), otherwise `spec-guards/` at the root.
 - `--max-iter N`: maximum number of iterations (default 5).
 - `--auto`: also apply critical fixes without pausing (see 4.3).
-- `--resume`: resume an interrupted audit from its register, in its existing worktree.
+- `--resume`: resume an interrupted or suspended audit from its register, in its existing worktree, from its last internal revision (4.3).
 - `--base <ref>`: starting branch or commit of the worktree (default: `HEAD` of the current repository).
 - `--no-worktree`: work in the current directory, without a worktree, when it is already isolated for the audit.
 - `--keep`: at closing, ask no question and keep the worktree; only the report is brought back (phase 8).
@@ -60,7 +60,7 @@ Only errors follow the full protocol: cause graph, counterexample, guards, botto
 | Reviewer | `spec-reviewer` agent, fresh for each wave | the document and its normative dependencies, nothing else | nothing, outside its scratch directory |
 | Adjudicator | `spec-adjudicator` agent, fresh for each error | one error and the document | nothing, outside its scratch directory |
 
-Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `spec-adjudicator`; installed as a plugin, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`. If they are not available, launch a fresh general-purpose agent, giving it the content of `spec-reviewer.md` or `spec-adjudicator.md` as instructions (in `~/.claude/agents/`, or in the plugin's `agents/` folder). Never use a "fork" agent: it would inherit the conversation, hence the history.
+Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `spec-adjudicator`; installed as a plugin, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`. If they are not available, launch a fresh general-purpose agent, giving it the content of `spec-reviewer.md` or `spec-adjudicator.md` as instructions (in `~/.claude/agents/`, or in the plugin's `agents/` folder). Never use a "fork" agent: it would inherit the conversation, hence the history. Give every agent a name at launch, `audit-<slug>-<role>-<id>` (for example `audit-selection-adjudicator-F-1-3`): the name is what lets the audit stop it (8.9).
 
 ## Phase 0 — Preparation (once)
 
@@ -77,7 +77,9 @@ Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `s
    - With `--no-worktree`, work in place, but record `git status`: other sessions may be working in parallel, and their changes are not yours.
    - Outside a git repository, ask whether to initialize one: without git, there is neither isolation nor commits.
    - In all cases, commit only your files and never push.
-4. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end.
+4. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end. Record in it this session, `${CLAUDE_SESSION_ID}`, and the state `running`: only the session that runs the audit may stop it (8.9), because only it knows the step in progress and the agents running.
+   - Name this session `[AUDIT] <slug>` if a tool lets you rename it (Claude desktop app); otherwise suggest once that the user run `/rename [AUDIT] <slug>`. The name tells the user which session to stop the audit from.
+   - With `--resume`: if the register's state is `running` or `stopping` and its session is not this one, the audit may still be running there: ask the user to confirm that it is not before taking over, then record this session. The last commit of the audit branch is always a verified state (an internal revision, 4.3); the uncommitted changes after it were never verified. Save those to the document and the corpus, untracked files included, as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch`, restore the document and the corpus to the last commit, and redo the step in progress recorded in the register.
 5. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every definition, lemma, proposition, theorem and algorithm, with its statement and the results it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).
 6. **Baseline.** Run the whole corpus. It must be green; a guard that is already red becomes an iteration-0 error, never a test to be touched up.
 7. **Mechanical lint.** Write once in the corpus a deterministic script that checks: continuity and uniqueness of numbering, existence of the target of each cross-reference, presence of each cited key in the bibliography and citation of each entry, balance of math delimiters, symbols used before their definition when detectable. It feeds the editorial track.
@@ -121,12 +123,12 @@ Compare it, on meaning and not on wording, with the other findings of the iterat
 Sort the detected errors into causal chains. Since an error can have several causes and several consequences, this is a directed graph: an edge `A → B` means "A causes B".
 
 - **There is an edge `A → B`** when B's defect comes from A: B cites or applies A, or inherits its definition, and its defect would disappear if A were correct as stated; or B's counterexample is A's, or derives from it; or the same missing scoping (hypothesis, context restriction) propagates from A to B.
-- **A dependency is not a causation**: B may use A and have its own error. In that case, no edge.
+- **A dependency is not a causation**: there is no edge when B's own defect would remain even if A were true. B is then a root for that defect. But B still uses A, and its use of A is not covered by its own fix: if A is confirmed, B also becomes a suspect behind A (4.1). B can thus be both a root for its own error and a suspect behind A.
 - Rely on the inventory and on the probable causes reported by the reviewers. Justify each edge in one sentence in the register.
 - **Doubtful link**: no edge, B is treated as a root, but the processing order follows the inventory's dependencies, so B comes after its presumed cause anyway.
 - **Roots**: errors with no open cause.
 
-**Causal loop.** If the graph contains a cycle (A causes B which causes A, directly or not), stop the verification: no more fixes, immediate report to the user with the errors of the cycle and the justification of each edge. There is no bottom to start from: either the document reasons in a circle, or the causal analysis is wrong, and in both cases the decision belongs to a human. Redo this check every time the graph changes (4.4, 4.5).
+**Causal loop.** If the graph contains a cycle (A causes B which causes A, directly or not), stop the verification: no more fixes, immediate report to the user with the errors of the cycle and the justification of each edge. There is no bottom to start from: either the document reasons in a circle, or the causal analysis is wrong, and in both cases the decision belongs to a human. Redo this check every time the graph changes (4.1, 4.4, 4.5).
 
 ## Phase 4 — Bottom-up fixing
 
@@ -135,8 +137,8 @@ while an open error remains in the graph:
     current roots = open errors all of whose causes are
                     FIXED, REFUTED or RESOLVED
     for each root, in the inventory's dependency order:
-        4.1 confirmation → 4.2 guards (red) → 4.3 fix (green) → 4.4 propagation
-    for each consequence all of whose causes are handled:
+        4.1 confirmation (+ suspects) → 4.2 guards (red) → 4.3 fix (green) → 4.4 propagation
+    for each consequence all of whose causes are handled, suspects included:
         4.5 reassessment
     cycle check (phase 3)
 ```
@@ -147,13 +149,26 @@ As long as its cause is not fixed, a consequence is **ignored**: status BLOCKED 
 
 The root goes to a fresh adjudicator, with the error alone (without the reviewer's identity or the other errors), the document paths and a scratch directory. Do not adjudicate yourself, especially an error that touches a passage you fixed: you would be judging your own work.
 
-- **CONFIRMED** (with executed evidence) → 4.2.
+- **CONFIRMED** (with executed evidence) → mark its suspects (below), then 4.2.
 - **REFUTED** (with the reason) → remove its outgoing edges; its consequences with no other open cause become roots.
-- **UNDECIDED** (with what would settle it) → escalated to the user, no change; its consequences remain BLOCKED and appear in the report.
+- **UNDECIDED** (with what would settle it) → escalated to the user, no change; its consequences, suspects included, remain BLOCKED and appear in the report. Its uses are not marked as suspects: nothing in the text changes, so there is nothing to reassess; the final report lists them as conditional results.
+
+A user decision on an escalated error counts as the adjudicator's verdict: judged false, the error becomes CONFIRMED and its suspects are marked at that point; judged correct, it becomes REFUTED.
 
 An error of type "false statement" requires an **executed** counterexample; otherwise it is downgraded to incomplete proof or UNDECIDED.
 
 If the adjudicator names an **upstream cause**, the root was not one: if that cause is already an error in the graph, add the edge; otherwise open a new error for it, in phase 3. The root goes back to BLOCKED behind its cause, and the cycle check is redone.
+
+**Suspects.** A result C that uses A is correct if A is granted, so no reviewer flags it. Once A is confirmed false, nobody knows whether C holds until A is fixed, and a conditional result must never leave the audit presented as safe. So, as soon as A is CONFIRMED and before 4.2, every result or passage that uses A directly becomes a **suspect**, even if it is correct granting A. The list is the union of the uses of A recorded in the inventory and of the adjudicator's `impact` field. Each suspect that is not already a consequence of A in the graph is added to it, with the origin `suspect (uses F-…)` in the register:
+
+- as a consequence of A, with the edge `A → C` justified by "uses F-…, confirmed false as stated";
+- with the status BLOCKED (by F-…).
+
+A result already in the graph for its own defect, without an edge from A (phase 3), still gets this suspect entry: it is a root for its own error and a suspect behind A, and the two are settled separately.
+
+The same rule applies when a consequence is CONFIRMED in 4.5: its own uses become suspects in turn. Propagation is thus transitive, but only along confirmed links: the uses of a suspect that turns out to hold are never marked. Redo the cycle check after these additions.
+
+A suspect is settled only once its cause is fixed (4.5). If the cause stays unfixed (UNDECIDED, critical fix refused or pending, fix reverted after a regression), its suspects stay BLOCKED until the end of the audit, and the report lists them as results conditional on an unresolved error.
 
 ### 4.2 Documentation and guards, before the fix
 
@@ -185,21 +200,30 @@ Choose the nature of the fix, and record it:
 They can be combined if needed. In all cases:
 
 - **Minimal fix**: the weakest change that makes the statement true and keeps its uses valid. Never strengthen a statement, do not introduce a new result to plug a gap, never delete a result silently: a withdrawn result is marked as such, with the reason and the counterexample.
-- **Critical fixes**: changing the statement of a main result (theorem, result cited in the abstract) or withdrawing a result changes what the document claims. By default, first handle the non-critical roots, then present the pending critical fixes to the user together (statement before and after, counterexample, impact) and wait for their approval; their chains remain BLOCKED until then. With `--auto`, apply them and flag it in the report.
-- **Green**: run the error's guard, then the whole corpus. A green guard that turns red is a regression: revert the fix and set the error back to UNDECIDED.
+- **Critical fixes**: changing the statement of a main result (theorem, result cited in the abstract) or withdrawing a result changes what the document claims. By default, first handle the non-critical roots, then present the pending critical fixes to the user together (statement before and after, counterexample, impact) and wait for their approval; their chains, suspects included, remain BLOCKED until then, and stay BLOCKED if the user refuses. With `--auto`, apply them and flag it in the report.
+- **Green**: run the error's guard, then the whole corpus. A green guard that turns red is a regression: revert the fix and set the error back to UNDECIDED; its consequences and suspects stay BLOCKED.
+- **Internal revision**: once the error is FIXED, commit in the worktree the document, its guards and the register as internal revision r<N> (numbered from 1 over the whole audit), with a message that marks it incomplete: `spec-audit(<slug>): r<N> — F-… fixed [incomplete: audit in progress]`. Record it in the register. Each revision is a verified state, every guard green, to which a stop or an interruption can return without losing the fixes already made. It is incomplete because the consequences of the error may not have been reassessed yet. The mark stays in the commit message and the register, never in the document: the reviewers read the document and must not learn that an audit is running.
 - **Traceability**: if the document has an errata, history or revision section, or if the project versions its documents, record the fix according to that convention.
 
 ### 4.4 Propagation
 
-Starting from the inventory, recheck everything that depends on the fixed statement: later results, proofs that cite it, examples, tables, abstract, introduction, conclusion, other project documents, code or mechanization that refer to it. A scoping addition forces every user of the statement to satisfy the new hypothesis: every use that no longer satisfies it becomes a new error, a consequence of the root (edge root → new error), handled in the same loop.
+Starting from the inventory, recheck everything that depends on the fixed statement: later results, proofs that cite it, examples, tables, abstract, introduction, conclusion, other project documents, code or mechanization that refer to it. This covers every use, including those without an edge in phase 3: a result with its own defect still uses the statement, and the fix can break it in another way. What a use must still get from the fixed statement depends on the nature of the fix:
+
+- **statement fix**: the conclusion has changed, so every use that relied on the original conclusion becomes a new error, unless the fixed conclusion still gives it what it needs;
+- **scoping addition**: every use must satisfy the new hypothesis; a use that no longer satisfies it becomes a new error;
+- **proof completion or repair**: the statement is unchanged, so its uses are not affected.
+
+A new error is a consequence of the root (edge root → new error), handled in the same loop. Uses already in the graph as suspects are not duplicated: their reassessment (4.5) settles them. Propagation catches the uses that the inventory and the adjudicator missed when the suspects were marked.
 
 ### 4.5 Reassessment of consequences
 
-When all the causes of a consequence are handled, send it to a fresh adjudicator, who judges it against the fixed text:
+When all the causes of a consequence are handled, send it to a fresh adjudicator, who judges it against the fixed text. Suspects are reassessed the same way. To limit the cost, a single fresh adjudicator can reassess all the suspects of the same cause, with one verdict per suspect: they all read the same fixed passage.
 
-- **REFUTED** → status RESOLVED (by F-…). Add its case to the cause's guards: if the cause regressed, the consequence would show it too.
-- **CONFIRMED** → it becomes a root and follows the full protocol (4.2 to 4.4).
+- **REFUTED** → status RESOLVED (by F-…); for a suspect, this means that the result holds against the fixed text. Add its case to the cause's guards: if the cause regressed, the consequence would show it too.
+- **CONFIRMED** → it becomes a root and follows the full protocol (4.2 to 4.4); its own uses become suspects in turn (4.1).
 - **Change of nature** → new error, added to the graph.
+
+**Proof repaired, statement unchanged.** If the cause was an incomplete proof repaired without any change to its statement, its suspects go straight to RESOLVED (by F-…), without adjudication: they were only conditional on the repair, and nothing they use has changed.
 
 ## Phase 5 — Editorial track
 
@@ -213,7 +237,7 @@ After the iteration's substantive fixes, which can move the text and the numbers
 
 ## Phase 6 — End of iteration
 
-Run the whole corpus and the lint: everything must be green. Commit locally in the worktree (message listing the identifiers of the errors and defects handled), only your files, without pushing. Update the register's log.
+Run the whole corpus and the lint: everything must be green. Commit locally in the worktree (message listing the identifiers of the errors and defects handled), only your files, without pushing; this commit is also an internal revision (4.3). Update the register's log.
 
 ## Phase 7 — Loop and stop
 
@@ -237,7 +261,7 @@ Write it in `spec-audit/<slug>/report.md`, in the worktree; the summary to the u
 # Precision audit — <document>
 
 ## Result
-Stop reason, iterations, errors confirmed / refuted / resolved by their cause / undecided / blocked, form defects fixed, commits.
+Stop reason, iterations, errors confirmed / refuted / resolved by their cause / undecided / blocked, suspects added / cleared / confirmed (counted apart from the errors), form defects fixed, commits.
 
 ## Cause graph
 Per iteration: roots, chains, and for each edge its justification. Any cycle first.
@@ -250,6 +274,7 @@ For each result touched: before → after, nature (statement fix, scoping, proof
 
 ## Open points
 Undecided errors and the chains they block, references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated.
+Results conditional on an unresolved error, directly or through another result: for each, the error it depends on and the chain through which it uses it.
 
 ## Corpus
 Guards added, lint rules added, command to replay everything.
@@ -257,6 +282,8 @@ Guards added, lint rules added, command to replay everything.
 ## Scope of verification
 What was checked and how (agent review, bounded exhaustive test, mechanized proof), and what was not.
 ```
+
+**Conditional results.** Before writing "Open points", take each unresolved error: UNDECIDED or ESCALATED, CONFIRMED with a critical fix refused or pending, or with a fix reverted after a regression. From the inventory, collect every result that depends on it, directly or through another result, and list them grouped by direct use, each with what it uses. Suspects only cover the direct uses of a confirmed error; this closure also reaches the uses of an undecided error and the results that depend on a suspect. It changes nothing in the graph: the text has not changed, so there is nothing to reassess, only results that must not be presented as safe.
 
 End the report with the branch and the worktree (path, branch `audit/<slug>`, base, commits) and with the audit outcome and the recommended closing option (phase 8).
 
@@ -270,9 +297,9 @@ Closing is decided with the user, through a multiple-choice question, after they
 
 | Outcome | Condition |
 |---|---|
-| **Success** | stop by convergence or exhaustion; corpus and lint green; no UNDECIDED error, no BLOCKED chain, no pending critical fix |
+| **Success** | stop by convergence or exhaustion; corpus and lint green; no UNDECIDED error, no BLOCKED chain or suspect, no pending critical fix |
 | **Partial, to continue** | stop on budget, or detection not saturated; corpus and lint green |
-| **Partial, needs decision** | points awaiting a human decision: UNDECIDED error, BLOCKED chain, critical fix refused or pending; corpus and lint green |
+| **Partial, needs decision** | points awaiting a human decision: UNDECIDED error, BLOCKED chain, result conditional on an unresolved error (BLOCKED suspect), critical fix refused or pending; corpus and lint green |
 | **Failure** | causal loop, recurrence, oscillation, non-convergence, corpus or lint red, or stop on an execution error |
 
 ### 8.2 Present the report
@@ -307,7 +334,7 @@ Rules:
 - Do not offer "Run another check" after a causal loop, a recurrence, an oscillation or a non-convergence: a new pass would go round in circles. After a "Run another check" that fixed no new error, recommend "Keep" rather than "Run another check".
 - Interpret a free answer; if it is ambiguous, ask again. Never merge or delete on an ambiguous answer.
 - If the question cannot be asked (non-interactive session), or with `--keep`, apply "Keep the worktree": it is the only option that changes nothing and loses nothing.
-- Record in the register the question, the recommended option and the answer.
+- Record in the register the question, the recommended option and the answer, and its new state: `closed` after "Accept" or "Abandon", `suspended` after "Keep the worktree", still `running` after "Run another check".
 
 ### 8.4 Bring the report back
 
@@ -340,4 +367,25 @@ Resume at phase 1 in the same worktree, with new agents and a new budget equal t
 
 ### 8.8 Interruption
 
-If the session is interrupted before closing (error, stop by the user), the worktree and the branch stay in place: `--resume` resumes the audit, or phase 8 can be replayed on its own.
+If the session is interrupted before closing (error, session closed), the worktree and the branch stay in place, and the last internal revision is the latest verified state: `--resume` resumes the audit from it (phase 0, step 4), or phase 8 can be replayed on its own.
+
+### 8.9 Stop on request
+
+The user can stop the audit at any time, from this session only: by pressing Esc then running `/spec-audit:stop`, or by asking in words. Esc alone interrupts your turn, not the background agents.
+
+1. **Stop the agents.** Launch nothing new. Stop every audit agent still running with `TaskStop`, using the name given at launch; if that tool is not available, ask the user to stop them (`/tasks`, or the tasks pane of the desktop app). Ignore any result that arrives afterwards. The agents write only to their scratch directories, so a late one cannot damage the document: stopping them saves cost and keeps the stop clean.
+2. **Take stock.** Set the register's state to `stopping`, and record the step in progress and the uncommitted changes since the last internal revision: they are unverified.
+3. **Report** in the session: the last internal revision (commit, errors fixed up to it), marked incomplete, with what it lacks (consequences not yet reassessed, errors not yet handled, detection not finished), the step in progress, and the path of the register.
+4. **Ask**, with AskUserQuestion: a single question with the header "Stop". It is the user, not the audit, who decides whether the last revision becomes the new base:
+
+| Option | Effect |
+|---|---|
+| **Suspend** | nothing is merged or deleted; state `suspended`; `--resume` continues from the last revision |
+| **Keep the last revision as the new base** | save the uncommitted changes to the document and the corpus as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch` and restore them to the last revision; write the report, marked "Incomplete audit — stopped at r<N>"; commit the register, the report and the patch; then merge as in 8.5, with a merge message marking the audit incomplete. A later audit starts from this base |
+| **Cancel** | write the report, marked "Incomplete audit — cancelled"; archive as for "Abandon" (8.4), then remove the worktree and the branch (8.6) |
+
+- Put "Suspend" first, with "(Recommended)": it changes nothing and loses nothing.
+- Offer "Keep the last revision" only if a revision exists, that is, once at least one error has been fixed.
+- If the merge does not go through (8.5), keep the worktree: the audit stays suspended.
+- Interpret a free answer; if it is ambiguous, ask again. Never merge or delete on an ambiguous answer. If the question cannot be asked, suspend.
+- Record the question and the answer in the register, and set its state to `suspended` or `closed`.

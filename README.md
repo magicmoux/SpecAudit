@@ -3,7 +3,7 @@
 **A Claude Code plugin for iterative precision audits of theoretical, technical and mathematical specifications.**
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Version 0.5.0](https://img.shields.io/badge/version-0.5.0-informational.svg)
+![Version 0.6.0](https://img.shields.io/badge/version-0.6.0-informational.svg)
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A63D2.svg)
 
 SpecAudit audits formal documents — papers, proofs, algorithm, protocol or format specifications — for logical, mathematical and algorithmic errors. Fresh reviewer agents with no history detect the errors; an independent adjudicator agent confirms each one with an executed counterexample; confirmed errors are ordered into a cause graph and fixed bottom-up, each fix being preceded by a regression guard in a growing test corpus. The whole audit runs in a dedicated git worktree and ends with a report and a multiple-choice closing question.
@@ -29,6 +29,7 @@ Three principles guide everything else:
 - **Git isolation**: everything happens in an `audit/<slug>` worktree, with local commits, without touching your working directory and without ever pushing.
 - **Explicit stop conditions**: convergence, budget, recurrence, oscillation, non-convergence, causal loop or exhaustion.
 - **You decide the closing**: full report, then a multiple-choice question (accept and merge, run another check, keep, abandon), the safest option being recommended.
+- **Stop at any time**: `/spec-audit:stop`, from the audit's session, stops its agents and reports its last internal revision, a verified but incomplete state committed after each fixed error; you then suspend the audit, keep that revision as the new base, or cancel.
 
 ## Installation
 
@@ -115,10 +116,13 @@ SpecAudit/
 ├── .claude-plugin/
 │   ├── plugin.json            plugin manifest
 │   └── marketplace.json       the repository is also a marketplace
-├── skills/spec-audit/
-│   ├── SKILL.md               orchestrator: phases 0 to 8
-│   └── references/
-│       └── register.md        formats of the register, its entries and the guards
+├── skills/
+│   ├── spec-audit/
+│   │   ├── SKILL.md           orchestrator: phases 0 to 8
+│   │   └── references/
+│   │       └── register.md    formats of the register, its entries and the guards
+│   └── stop/
+│       └── SKILL.md           /spec-audit:stop, stops the audit running in the session
 ├── agents/
 │   ├── spec-reviewer.md       fresh reviewer, no history
 │   └── spec-adjudicator.md    adjudicator: refute first, then confirm by execution

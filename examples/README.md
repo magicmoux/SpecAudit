@@ -45,6 +45,8 @@ Read this section after the audit, to compare with its report.
 
 Proposition 4 and the output of Algorithm 7 are correct: a fix that changed them would be an over-correction. The expected minimal fix of Lemma 3 is |P_k(L)| = min(k, |L|), or the added hypothesis k ≤ |L|, after which the consequences are fixed in turn.
 
+If the reviewers miss a link of this chain — say the Abstract — it still enters the graph: once the correctness claim of Algorithm 7 is confirmed, the passages that use it, Abstract and Conclusion, become suspects (origin `suspect (uses F-…)`), blocked until the claim is fixed, then reassessed against the fixed text.
+
 The reviewers may also raise genuine but unplanted proof gaps: the handling of duplicates in the proof of Proposition 4, or the idempotence P_k(P_k(L)) = P_k(L), used without being stated in the correctness argument of Algorithm 7.
 
 </details>

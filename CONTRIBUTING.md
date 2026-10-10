@@ -21,6 +21,7 @@ A confirmed false positive, a fix that strengthens a statement, a reviewer that 
 | `.claude-plugin/marketplace.json` | the repository is its own marketplace |
 | `skills/spec-audit/SKILL.md` | orchestrator instructions, phases 0 to 8 |
 | `skills/spec-audit/references/register.md` | formats of the register, its entries and the guards, loaded on demand |
+| `skills/stop/SKILL.md` | `/spec-audit:stop`, user-only entry point that stops the audit running in the session |
 | `agents/spec-reviewer.md` | reviewer instructions and output format |
 | `agents/spec-adjudicator.md` | adjudicator instructions and output format |
 | `docs/` | user documentation |
