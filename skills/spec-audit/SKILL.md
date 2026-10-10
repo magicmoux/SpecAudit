@@ -149,7 +149,9 @@ The root goes to a fresh adjudicator, with the error alone (without the reviewer
 
 - **CONFIRMED** (with executed evidence) → mark its suspects (below), then 4.2.
 - **REFUTED** (with the reason) → remove its outgoing edges; its consequences with no other open cause become roots.
-- **UNDECIDED** (with what would settle it) → escalated to the user, no change; its consequences, suspects included, remain BLOCKED and appear in the report.
+- **UNDECIDED** (with what would settle it) → escalated to the user, no change; its consequences, suspects included, remain BLOCKED and appear in the report. Its uses are not marked as suspects: nothing in the text changes, so there is nothing to reassess; the final report lists them as conditional results.
+
+A user decision on an escalated error counts as the adjudicator's verdict: judged false, the error becomes CONFIRMED and its suspects are marked at that point; judged correct, it becomes REFUTED.
 
 An error of type "false statement" requires an **executed** counterexample; otherwise it is downgraded to incomplete proof or UNDECIDED.
 
@@ -269,7 +271,7 @@ For each result touched: before → after, nature (statement fix, scoping, proof
 
 ## Open points
 Undecided errors and the chains they block, references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated.
-Results conditional on an unresolved error: for each, the error it depends on and what it uses from it.
+Results conditional on an unresolved error, directly or through another result: for each, the error it depends on and the chain through which it uses it.
 
 ## Corpus
 Guards added, lint rules added, command to replay everything.
@@ -277,6 +279,8 @@ Guards added, lint rules added, command to replay everything.
 ## Scope of verification
 What was checked and how (agent review, bounded exhaustive test, mechanized proof), and what was not.
 ```
+
+**Conditional results.** Before writing "Open points", take each unresolved error: UNDECIDED or ESCALATED, CONFIRMED with a critical fix refused or pending, or with a fix reverted after a regression. From the inventory, collect every result that depends on it, directly or through another result, and list them grouped by direct use, each with what it uses. Suspects only cover the direct uses of a confirmed error; this closure also reaches the uses of an undecided error and the results that depend on a suspect. It changes nothing in the graph: the text has not changed, so there is nothing to reassess, only results that must not be presented as safe.
 
 End the report with the branch and the worktree (path, branch `audit/<slug>`, base, commits) and with the audit outcome and the recommended closing option (phase 8).
 

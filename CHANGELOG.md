@@ -11,7 +11,8 @@ Closes a gap in the protocol: results that use a confirmed error without having 
 - Suspects: as soon as an error is CONFIRMED, every result or passage that uses it directly (inventory and adjudicator's `impact`) enters the cause graph as a suspect, BLOCKED behind it, even if it is correct granting the error. The same applies to a consequence confirmed in 4.5, so propagation is transitive along confirmed links only.
 - Suspect reassessment in 4.5: one fresh adjudicator can handle all the suspects of a cause, one verdict per suspect; REFUTED means the suspect holds and makes it RESOLVED. Suspects of an incomplete proof repaired without changing its statement are RESOLVED without adjudication.
 - Register: `Origin` field on error entries (`reviewer (R…, wave …)` or `suspect (uses F-…)`) and `Suspects` column (added / cleared / confirmed) in the iteration log.
-- Report: suspects counted apart from the errors; "Open points" lists the results conditional on an unresolved error.
+- Report: suspects counted apart from the errors; "Open points" lists the results conditional on an unresolved error (undecided, critical fix refused or pending, fix reverted), computed from the inventory, directly or through another result. An undecided error creates no suspects, since nothing in the text changes.
+- A user decision on an escalated error counts as the adjudicator's verdict: judged false, the error becomes CONFIRMED and its suspects are marked.
 
 ### Changed
 

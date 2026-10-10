@@ -97,6 +97,8 @@ A result C that uses A is correct if A is granted, so no reviewer flags it. Yet 
 
 A suspect is settled only once its cause is fixed. If the cause stays unfixed (undecided, critical fix refused or pending, fix reverted after a regression), its suspects stay BLOCKED, and the report lists them as results conditional on an unresolved error, never as correct results.
 
+An undecided error creates no suspects: nothing in the text changes, so there is nothing to reassess. Instead, the final report computes from the inventory every result that depends on an unresolved error, directly or through another result, and lists them as conditional. This closure also covers the results that depend on a suspect, which suspects alone do not reach.
+
 ### Guards, before the fix
 
 Written after the fix, a guard tends to test the fix rather than the error. For each confirmed error:

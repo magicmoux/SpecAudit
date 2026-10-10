@@ -87,7 +87,7 @@ If you choose "Keep" or "Abandon", an archive is committed in the original branc
 | Cause graph | roots and chains of each iteration, with the justification of each edge; any cycle first |
 | Modified statements | for each result touched: before → after, nature of the fix, counterexample, guards |
 | Errors | table: identifier, severity, type, causes, status, fix, guards, commit |
-| Open points | undecided errors and blocked chains, results conditional on an unresolved error (with the error each one depends on and what it uses from it), references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated |
+| Open points | undecided errors and blocked chains, results conditional on an unresolved error, directly or through another result (with the error each one depends on and the chain through which it uses it), references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated |
 | Corpus | guards and lint rules added, command to replay everything |
 | Scope of verification | what was checked and how, and what was not |
 
