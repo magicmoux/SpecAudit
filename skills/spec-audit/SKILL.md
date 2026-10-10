@@ -121,12 +121,12 @@ Compare it, on meaning and not on wording, with the other findings of the iterat
 Sort the detected errors into causal chains. Since an error can have several causes and several consequences, this is a directed graph: an edge `A → B` means "A causes B".
 
 - **There is an edge `A → B`** when B's defect comes from A: B cites or applies A, or inherits its definition, and its defect would disappear if A were correct as stated; or B's counterexample is A's, or derives from it; or the same missing scoping (hypothesis, context restriction) propagates from A to B.
-- **A dependency is not a causation**: B may use A and have its own error. In that case, no edge.
+- **A dependency is not a causation**: there is no edge when B's own defect would remain even if A were true. B is then a root for that defect. But B still uses A, and its use of A is not covered by its own fix: if A is confirmed, B also becomes a suspect behind A (4.1). B can thus be both a root for its own error and a suspect behind A.
 - Rely on the inventory and on the probable causes reported by the reviewers. Justify each edge in one sentence in the register.
 - **Doubtful link**: no edge, B is treated as a root, but the processing order follows the inventory's dependencies, so B comes after its presumed cause anyway.
 - **Roots**: errors with no open cause.
 
-**Causal loop.** If the graph contains a cycle (A causes B which causes A, directly or not), stop the verification: no more fixes, immediate report to the user with the errors of the cycle and the justification of each edge. There is no bottom to start from: either the document reasons in a circle, or the causal analysis is wrong, and in both cases the decision belongs to a human. Redo this check every time the graph changes (4.4, 4.5).
+**Causal loop.** If the graph contains a cycle (A causes B which causes A, directly or not), stop the verification: no more fixes, immediate report to the user with the errors of the cycle and the justification of each edge. There is no bottom to start from: either the document reasons in a circle, or the causal analysis is wrong, and in both cases the decision belongs to a human. Redo this check every time the graph changes (4.1, 4.4, 4.5).
 
 ## Phase 4 — Bottom-up fixing
 
@@ -135,8 +135,8 @@ while an open error remains in the graph:
     current roots = open errors all of whose causes are
                     FIXED, REFUTED or RESOLVED
     for each root, in the inventory's dependency order:
-        4.1 confirmation → 4.2 guards (red) → 4.3 fix (green) → 4.4 propagation
-    for each consequence all of whose causes are handled:
+        4.1 confirmation (+ suspects) → 4.2 guards (red) → 4.3 fix (green) → 4.4 propagation
+    for each consequence all of whose causes are handled, suspects included:
         4.5 reassessment
     cycle check (phase 3)
 ```
@@ -147,13 +147,24 @@ As long as its cause is not fixed, a consequence is **ignored**: status BLOCKED 
 
 The root goes to a fresh adjudicator, with the error alone (without the reviewer's identity or the other errors), the document paths and a scratch directory. Do not adjudicate yourself, especially an error that touches a passage you fixed: you would be judging your own work.
 
-- **CONFIRMED** (with executed evidence) → 4.2.
+- **CONFIRMED** (with executed evidence) → mark its suspects (below), then 4.2.
 - **REFUTED** (with the reason) → remove its outgoing edges; its consequences with no other open cause become roots.
-- **UNDECIDED** (with what would settle it) → escalated to the user, no change; its consequences remain BLOCKED and appear in the report.
+- **UNDECIDED** (with what would settle it) → escalated to the user, no change; its consequences, suspects included, remain BLOCKED and appear in the report.
 
 An error of type "false statement" requires an **executed** counterexample; otherwise it is downgraded to incomplete proof or UNDECIDED.
 
 If the adjudicator names an **upstream cause**, the root was not one: if that cause is already an error in the graph, add the edge; otherwise open a new error for it, in phase 3. The root goes back to BLOCKED behind its cause, and the cycle check is redone.
+
+**Suspects.** A result C that uses A is correct if A is granted, so no reviewer flags it. Once A is confirmed false, nobody knows whether C holds until A is fixed, and a conditional result must never leave the audit presented as safe. So, as soon as A is CONFIRMED and before 4.2, every result or passage that uses A directly becomes a **suspect**, even if it is correct granting A. The list is the union of the uses of A recorded in the inventory and of the adjudicator's `impact` field. Each suspect that is not already a consequence of A in the graph is added to it, with the origin `suspect (uses F-…)` in the register:
+
+- as a consequence of A, with the edge `A → C` justified by "uses F-…, confirmed false as stated";
+- with the status BLOCKED (by F-…).
+
+A result already in the graph for its own defect, without an edge from A (phase 3), still gets this suspect entry: it is a root for its own error and a suspect behind A, and the two are settled separately.
+
+The same rule applies when a consequence is CONFIRMED in 4.5: its own uses become suspects in turn. Propagation is thus transitive, but only along confirmed links: the uses of a suspect that turns out to hold are never marked. Redo the cycle check after these additions.
+
+A suspect is settled only once its cause is fixed (4.5). If the cause stays unfixed (UNDECIDED, critical fix refused or pending, fix reverted after a regression), its suspects stay BLOCKED until the end of the audit, and the report lists them as results conditional on an unresolved error.
 
 ### 4.2 Documentation and guards, before the fix
 
@@ -185,21 +196,29 @@ Choose the nature of the fix, and record it:
 They can be combined if needed. In all cases:
 
 - **Minimal fix**: the weakest change that makes the statement true and keeps its uses valid. Never strengthen a statement, do not introduce a new result to plug a gap, never delete a result silently: a withdrawn result is marked as such, with the reason and the counterexample.
-- **Critical fixes**: changing the statement of a main result (theorem, result cited in the abstract) or withdrawing a result changes what the document claims. By default, first handle the non-critical roots, then present the pending critical fixes to the user together (statement before and after, counterexample, impact) and wait for their approval; their chains remain BLOCKED until then. With `--auto`, apply them and flag it in the report.
-- **Green**: run the error's guard, then the whole corpus. A green guard that turns red is a regression: revert the fix and set the error back to UNDECIDED.
+- **Critical fixes**: changing the statement of a main result (theorem, result cited in the abstract) or withdrawing a result changes what the document claims. By default, first handle the non-critical roots, then present the pending critical fixes to the user together (statement before and after, counterexample, impact) and wait for their approval; their chains, suspects included, remain BLOCKED until then, and stay BLOCKED if the user refuses. With `--auto`, apply them and flag it in the report.
+- **Green**: run the error's guard, then the whole corpus. A green guard that turns red is a regression: revert the fix and set the error back to UNDECIDED; its consequences and suspects stay BLOCKED.
 - **Traceability**: if the document has an errata, history or revision section, or if the project versions its documents, record the fix according to that convention.
 
 ### 4.4 Propagation
 
-Starting from the inventory, recheck everything that depends on the fixed statement: later results, proofs that cite it, examples, tables, abstract, introduction, conclusion, other project documents, code or mechanization that refer to it. A scoping addition forces every user of the statement to satisfy the new hypothesis: every use that no longer satisfies it becomes a new error, a consequence of the root (edge root → new error), handled in the same loop.
+Starting from the inventory, recheck everything that depends on the fixed statement: later results, proofs that cite it, examples, tables, abstract, introduction, conclusion, other project documents, code or mechanization that refer to it. This covers every use, including those without an edge in phase 3: a result with its own defect still uses the statement, and the fix can break it in another way. What a use must still get from the fixed statement depends on the nature of the fix:
+
+- **statement fix**: the conclusion has changed, so every use that relied on the original conclusion becomes a new error, unless the fixed conclusion still gives it what it needs;
+- **scoping addition**: every use must satisfy the new hypothesis; a use that no longer satisfies it becomes a new error;
+- **proof completion or repair**: the statement is unchanged, so its uses are not affected.
+
+A new error is a consequence of the root (edge root → new error), handled in the same loop. Uses already in the graph as suspects are not duplicated: their reassessment (4.5) settles them. Propagation catches the uses that the inventory and the adjudicator missed when the suspects were marked.
 
 ### 4.5 Reassessment of consequences
 
-When all the causes of a consequence are handled, send it to a fresh adjudicator, who judges it against the fixed text:
+When all the causes of a consequence are handled, send it to a fresh adjudicator, who judges it against the fixed text. Suspects are reassessed the same way. To limit the cost, a single fresh adjudicator can reassess all the suspects of the same cause, with one verdict per suspect: they all read the same fixed passage.
 
-- **REFUTED** → status RESOLVED (by F-…). Add its case to the cause's guards: if the cause regressed, the consequence would show it too.
-- **CONFIRMED** → it becomes a root and follows the full protocol (4.2 to 4.4).
+- **REFUTED** → status RESOLVED (by F-…); for a suspect, this means that the result holds against the fixed text. Add its case to the cause's guards: if the cause regressed, the consequence would show it too.
+- **CONFIRMED** → it becomes a root and follows the full protocol (4.2 to 4.4); its own uses become suspects in turn (4.1).
 - **Change of nature** → new error, added to the graph.
+
+**Proof repaired, statement unchanged.** If the cause was an incomplete proof repaired without any change to its statement, its suspects go straight to RESOLVED (by F-…), without adjudication: they were only conditional on the repair, and nothing they use has changed.
 
 ## Phase 5 — Editorial track
 
@@ -237,7 +256,7 @@ Write it in `spec-audit/<slug>/report.md`, in the worktree; the summary to the u
 # Precision audit — <document>
 
 ## Result
-Stop reason, iterations, errors confirmed / refuted / resolved by their cause / undecided / blocked, form defects fixed, commits.
+Stop reason, iterations, errors confirmed / refuted / resolved by their cause / undecided / blocked, suspects added / cleared / confirmed (counted apart from the errors), form defects fixed, commits.
 
 ## Cause graph
 Per iteration: roots, chains, and for each edge its justification. Any cycle first.
@@ -250,6 +269,7 @@ For each result touched: before → after, nature (statement fix, scoping, proof
 
 ## Open points
 Undecided errors and the chains they block, references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated.
+Results conditional on an unresolved error: for each, the error it depends on and what it uses from it.
 
 ## Corpus
 Guards added, lint rules added, command to replay everything.
@@ -270,9 +290,9 @@ Closing is decided with the user, through a multiple-choice question, after they
 
 | Outcome | Condition |
 |---|---|
-| **Success** | stop by convergence or exhaustion; corpus and lint green; no UNDECIDED error, no BLOCKED chain, no pending critical fix |
+| **Success** | stop by convergence or exhaustion; corpus and lint green; no UNDECIDED error, no BLOCKED chain or suspect, no pending critical fix |
 | **Partial, to continue** | stop on budget, or detection not saturated; corpus and lint green |
-| **Partial, needs decision** | points awaiting a human decision: UNDECIDED error, BLOCKED chain, critical fix refused or pending; corpus and lint green |
+| **Partial, needs decision** | points awaiting a human decision: UNDECIDED error, BLOCKED chain, result conditional on an unresolved error (BLOCKED suspect), critical fix refused or pending; corpus and lint green |
 | **Failure** | causal loop, recurrence, oscillation, non-convergence, corpus or lint red, or stop on an execution error |
 
 ### 8.2 Present the report

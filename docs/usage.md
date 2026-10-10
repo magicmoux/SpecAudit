@@ -83,11 +83,11 @@ If you choose "Keep" or "Abandon", an archive is committed in the original branc
 
 | Section | Content |
 |---|---|
-| Result | stop reason, iterations, count of errors by status, form defects fixed, commits |
+| Result | stop reason, iterations, count of errors by status, suspects counted apart (added / cleared / confirmed), form defects fixed, commits |
 | Cause graph | roots and chains of each iteration, with the justification of each edge; any cycle first |
 | Modified statements | for each result touched: before → after, nature of the fix, counterexample, guards |
 | Errors | table: identifier, severity, type, causes, status, fix, guards, commit |
-| Open points | undecided errors and blocked chains, references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated |
+| Open points | undecided errors and blocked chains, results conditional on an unresolved error (with the error each one depends on and what it uses from it), references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated |
 | Corpus | guards and lint rules added, command to replay everything |
 | Scope of verification | what was checked and how, and what was not |
 
@@ -96,14 +96,16 @@ If you choose "Keep" or "Abandon", an archive is committed in the original branc
 | Status | Meaning |
 |---|---|
 | DETECTED | raised by a reviewer, not yet handled |
-| BLOCKED (by F-…) | consequence of an error not yet fixed: neither adjudicated nor fixed |
+| BLOCKED (by F-…) | consequence or suspect of an error not yet fixed: neither adjudicated nor fixed |
 | CONFIRMED | confirmed by the adjudicator, with executed evidence |
 | REFUTED | dismissed by the adjudicator; it stays in the register to discard the same false positive later |
 | UNDECIDED | the adjudicator could not settle it; no change |
 | ESCALATED | raised to the user, awaiting their decision |
 | FIXED | fix applied, guards green |
-| RESOLVED (by F-…) | disappeared with the fix of its cause; its case joins the cause's guards |
+| RESOLVED (by F-…) | disappeared with the fix of its cause, or suspect that holds against the fixed text; its case joins the cause's guards |
 | RECURRENCE | reappearance of an already fixed error: the audit stops |
+
+A **suspect** is a result that uses a confirmed error without having been reported itself. It is correct if the error is granted, so it stays BLOCKED until the error is fixed, then is reassessed against the fixed text. Its register entry has the origin `suspect (uses F-…)`; if its cause is never fixed, the report lists it as a result conditional on an unresolved error.
 
 ## Closing
 
@@ -113,7 +115,7 @@ The audit's outcome determines the recommended option, always the safest one:
 |---|---|---|
 | Success | stop by convergence or exhaustion, corpus and lint green, nothing pending | Accept and merge |
 | Partial, to continue | budget reached or detection not saturated, corpus and lint green | Run another check |
-| Partial, needs decision | undecided error, blocked chain or pending critical fix | Keep the worktree |
+| Partial, needs decision | undecided error, blocked chain, result conditional on an unresolved error, or pending critical fix | Keep the worktree |
 | Failure | causal loop, recurrence, oscillation, non-convergence, corpus or lint red, execution error | Abandon |
 
 | Option | Effect |

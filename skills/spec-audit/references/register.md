@@ -15,8 +15,10 @@
 
 ## Iteration log
 
-| Iter. | Detection waves | Saturated | Errors detected | Roots | Confirmed | Refuted | Resolved by their cause | Undecided | Blocked | Form defects | Guards added | Corpus | Commit |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Iter. | Detection waves | Saturated | Errors detected | Roots | Confirmed | Refuted | Resolved by their cause | Undecided | Blocked | Suspects | Form defects | Guards added | Corpus | Commit |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+
+Suspects: added / cleared / confirmed. They are counted only in this column, so that they inflate neither the errors detected nor those resolved by their cause.
 
 ## Cause graph — iteration <k>
 
@@ -24,6 +26,7 @@
 
 - F-k-1 → F-k-4: Proposition 4.6 applies Lemma 4.3, false for k > n; its counterexample is the same.
 - F-k-1 → F-k-7: …
+- F-k-1 → F-k-9 (suspect): Theorem 5.2 uses F-k-1, confirmed false as stated.
 
 Initial roots: F-k-1, F-k-2. Processing order: F-k-2, F-k-1 (inventory dependencies).
 Cycle: none | <errors of the cycle> → stop.
@@ -39,6 +42,7 @@ Cycle: none | <errors of the cycle> → stop.
 ### F-<iteration>-<n> — <short title>
 
 - **Fingerprint**: [type] object — defect — witness
+- **Origin**: reviewer (R…, wave …) | suspect (uses F-…)
 - **Status**: DETECTED | BLOCKED (by F-…) | CONFIRMED | REFUTED | UNDECIDED | FIXED | RESOLVED (by F-…) | ESCALATED | RECURRENCE
 - **Type**: false statement | incomplete proof | insufficient scoping | definition | algorithm or complexity | inconsistency
 - **Severity**: critical (false result) | major (incomplete proof, missing hypothesis) | minor (local imprecision)
@@ -54,6 +58,8 @@ Cycle: none | <errors of the cycle> → stop.
 - **Fix**: nature (statement fix | scoping addition | proof completion); before → after; commit
 - **Links**: errors of the same class
 ```
+
+A suspect entry starts with its origin, its location (the result, and what it uses from F-…), its cause and the status BLOCKED; its fingerprint, type, counterexample and fix are filled in only if it is confirmed.
 
 Identifiers are never reassigned. A refuted error stays in the register: it is what makes it possible to discard the same false positive in the next pass.
 

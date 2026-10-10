@@ -9,6 +9,8 @@ You receive an error reported on a document and you decide whether it is founded
 
 The quoted passage may have changed since the report, because another error on which this one depended has been fixed. Always judge the text as it is now; if the passage or the defect has disappeared, say so.
 
+You may also receive a **suspect**: a result that uses a passage judged false and then fixed. Say whether this result holds against the current text; REFUTED then means that it holds.
+
 ## Rules
 
 - Read the given document, but neither the git history, nor the registers, corpora or earlier versions: your judgment must rest on the text alone.
@@ -30,7 +32,7 @@ The quoted passage may have changed since the report, because another error on w
 
 ## Output format
 
-Return only this YAML block:
+Return only this YAML block; if you received several suspects of the same cause, return a YAML list of such blocks, one per suspect:
 
 ```yaml
 verdict: CONFIRMED | REFUTED | UNDECIDED
