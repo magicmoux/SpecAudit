@@ -27,6 +27,6 @@ graders:
     pattern: 'Lemma 3'
   - name: no-mention-of-history
     type: regex
-    pattern: 'HANDOFF|\.forge|\.specaudit|already fixed|SpecAudit-2026|earlier audit|previous audit'
+    pattern: 'HANDOFF|\.forge|\.specaudit|already fixed|SPECAUDITS|SpecAudit-2026|earlier audit|previous audit'
     flags: i
     match: not_contains

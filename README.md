@@ -90,7 +90,7 @@ In the worktree `<repository>-audit-<slug>`, on the branch `audit/<slug>`:
 - `spec-audit/<slug>/report.md`: the final report;
 - the guard corpus and the lint script, replayable at any time.
 
-Whatever the outcome, the report comes back to the session, and every audit run to completion leaves its results folder at the root of the project, `SpecAudit-YYYYmmdd_HHmm/` (the launch time of the command): a README with the table of contents and the identification of the sources (repository, branch, commit), the report and its annexes, `source/` (the audited files as they were at the start), `docs/` (documents consulted and bibliography) and `resources/` (corpus, `corrections.patch`, executed counterexamples).
+Whatever the outcome, the report comes back to the session, and every audit run to completion leaves its results folder at the root of the project, listed with the source it audited in the index `SPECAUDITS.md`, `SpecAudit-YYYYmmdd_HHmm/` (the launch time of the command): a README with the table of contents and the identification of the sources (repository, branch, commit), the report and its annexes, `source/` (the audited files as they were at the start), `docs/` (documents consulted and bibliography) and `resources/` (corpus, `corrections.patch`, executed counterexamples).
 
 ## Requirements
 

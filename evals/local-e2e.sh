@@ -37,6 +37,7 @@ check "internal revision committed" "[ -n \"\$(git -C '$AUDIT' log --oneline -F 
 # named by the launch time of the command, which this script takes just before launching.
 RES="$(ls -d "$WORK"/SpecAudit-*/ 2>/dev/null | head -1)"
 check "results folder named by launch time" "echo '$RES' | grep -qE '/SpecAudit-$LAUNCH(-[0-9]+)?/\$'"
+check "index lists the folder and its source" "grep -qE '\\[SpecAudit-[0-9]{8}_[0-9]{4}[^]]*\\]\\(SpecAudit-[0-9]{8}_[0-9]{4}[^)]*\\)[^\\n]*selection\\.md' '$WORK/SPECAUDITS.md'"
 check "results README with contents" "grep -q 'source/' '${RES}README.md' && grep -q 'resources/' '${RES}README.md'"
 BASE="$(git -C "$WORK" rev-list --max-parents=0 HEAD | cut -c1-7)"  # the demo repository has a single starting commit
 check "results README identifies the base commit" "grep -qF '$BASE' '${RES}README.md'"

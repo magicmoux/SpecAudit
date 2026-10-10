@@ -105,6 +105,21 @@ A suspect entry starts with its origin, its location (the result, and what it us
 
 Identifiers are never reassigned. A refuted error stays in the register: it is what makes it possible to discard the same false positive in the next pass.
 
+## Index of the results folders (`SPECAUDITS.md`, at the root of the project)
+
+```markdown
+# SpecAudit index
+
+Results of the audits of this project, newest first: one row per results folder, added at closing by `/spec-audit:start`. Rows are never rewritten.
+
+| Results folder | Launched | Audited source | Base | Outcome | Closing | Errors confirmed / fixed | Fixed copy |
+|---|---|---|---|---|---|---|---|
+| [SpecAudit-20261010_2137](SpecAudit-20261010_2137/README.md) | 2026-10-10 21:37 UTC+0200 | `docs/spec/` (folder, 3 documents) | `831ef36` on `main` | Partial, needs decision | Keep | 5 / 4 | no |
+| [SpecAudit-20260901_1000](SpecAudit-20260901_1000/README.md) | 2026-09-01 10:00 UTC+0200 | `selection.md` | `f87c1e4` on `main` | Success | Accept | 3 / 3 | `selection.fixed.md` |
+```
+
+The audited source is written as given on the command line, a file or a folder; for a folder, with its number of documents (the list is in the folder's README and register).
+
 ## Corpus error entry
 
 ```markdown

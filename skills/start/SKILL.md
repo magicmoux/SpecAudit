@@ -40,7 +40,7 @@ What counts as an error, as evidence and as a guard depends on the kind of docum
 
 ## Parameters
 
-- `<document>`: the audited file or files.
+- `<document>`: the audited file or files, or a folder, which stands for the documents it contains: list them at phase 0 (the files of the document's formats, recursively, leaving out what the project ignores) and record the list in the register, so that the audit, its report and its index entry say exactly what was audited.
 - `--corpus <dir>`: the global guard corpus. By default, the project's existing verification corpus if there is one (follow its conventions), otherwise `spec-guards/` at the root.
 - `--max-iter N`: maximum number of iterations (default 5).
 - `--auto`: also apply critical fixes without pausing (see 4.3).
@@ -105,7 +105,7 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
 1. **Project rules.** Read `CLAUDE.md`, the project's conventions and memory: they take precedence over this skill (attribution headers, document versioning, push policy, scope of the theory, status of proofs). Read the project configuration (`.specaudit.md` or `.specaudit/config.md`, see "Project configuration"), if there is one: its profile, normative dependencies, version convention and defaults apply to this audit, and its notes guide you. A document whose configured profile does not exist yet: say so, and ask whether to audit it with `formal` or to stop.
 2. **Version convention.** Does the project fix the document in place, or create a new revision (new file, history section)? Follow the convention; if it is unclear, ask once.
 3. **Dedicated worktree.** Unless `--no-worktree` is given, the whole audit runs in a git worktree created for it: the document is modified there, the corpus grows there, the commits stay there, without touching the user's directory or the sessions working in it in parallel.
-   - `<slug>`: the document name without extension, in lowercase ASCII, words separated by hyphens.
+   - `<slug>`: the document name without extension, or the folder name for a folder, in lowercase ASCII, words separated by hyphens.
    - Record the path of the original repository, its current branch and its head commit, and note them in the register: closing (phase 8) depends on them.
    - Record `git status` of the current repository. If the document, its normative dependencies or the corpus have uncommitted changes, they will not exist in the worktree: ask the user whether to audit the committed version or to commit first. Do not use `git stash`, which is shared between all worktrees.
    - **Session history.** Tools that record your sessions keep their history inside the project: `.forge/` (tokenforge's snapshots and handoffs), or any similar folder of transcripts, session notes or handoffs. A reviewer who lists the folders could read in it what was asked and changed, which would end the cold review. The worktree holds only what git tracks, so an untracked history folder never reaches it; it is within reach only if git tracks it (`git ls-files -- <path>`), or with `--no-worktree`. In those two cases only, warn the user and ask, with AskUserQuestion (header "Session history"), before creating the worktree:
@@ -488,12 +488,16 @@ SpecAudit-<YYYYmmdd_HHmm>/
   - how to replay: `git apply --3way resources/corrections.patch`;
   - **Tests**, when test suites exist (the audit's corpus, the project's own suites in the oracle table): for each suite, what it covers, its command and where it runs (from this folder, or in the project at the recorded commit), and its last result at closing. For the audit's corpus, the two replay modes and what each should show: `python3 resources/replay.py --on fixed`, every guard green; `--on source`, the text guard of each fixed error red, the other guards green. The reader can then check the result without reading the protocol. Omit the section when there is no suite at all, rather than leaving it empty.
 
-Record its path in the register's closing entry (`Results folder: SpecAudit-…/`), and commit the folder on `audit/<slug>`, by path, with the register. Then bring it back:
+Record its path in the register's closing entry (`Results folder: SpecAudit-…/`).
+
+**Index.** Add the folder's row to `SPECAUDITS.md` at the root of the project, creating the file if it does not exist (format in `references/register.md`): one row per results folder, newest first, with the audited source, a file or a folder as given on the command line, so that a reader finds which folder holds the audit of what without opening each one. Insert the row under the table header; never rewrite or reorder the existing rows, which are the record of earlier audits, even when a later audit supersedes them.
+
+Commit the folder and the index on `audit/<slug>`, by path, with the register. Then bring them back:
 
 - **In the session**: the summary from 8.2, completed with the closing performed (merge commit, worktree kept or removed) and the path of the results folder, or of the archive (8.4.1).
 - **In the original branch**:
-  - *Accept*: the results folder arrives with the merge (8.5), with the fixed document and the corpus.
-  - *Keep* or *Abandon*: first commit in the worktree any work in progress, with a message marking it as unverified. Then copy the results folder into the original repository, at its root, and commit only it (`git add -- <folder>` then `git commit -m "<message>" -- <folder>`), so as not to carry along any change from another session. If the project rules forbid this commit, leave it uncommitted and say so.
+  - *Accept*: the results folder and the index arrive with the merge (8.5), with the fixed document and the corpus.
+  - *Keep* or *Abandon*: first commit in the worktree any work in progress, with a message marking it as unverified. Then copy the results folder into the original repository, at its root, add its row to the original repository's `SPECAUDITS.md` (not a copy of the worktree's index: the original may hold rows the worktree does not), and commit only these two (`git add -- <folder> SPECAUDITS.md` then `git commit -m "<message>" -- <folder> SPECAUDITS.md`), so as not to carry along any change from another session. If the project rules forbid this commit, leave it uncommitted and say so.
   - *Run another check*: nothing for now; the next series ends with this same closing.
 
 Never abandon a worktree before this return has succeeded.
@@ -505,7 +509,7 @@ After a stop that cancels (8.9) or a failure on an execution error, there is no 
 ### 8.5 Merge ("Accept and merge")
 
 1. Check that the original repository is still on the branch recorded in phase 0. Otherwise, do not merge: keep the worktree and ask the question again.
-2. If the original branch has moved since the base, integrate it into the worktree: `git -C "<worktree>" merge <original branch>`. On conflict, `git merge --abort`, keep the worktree and report that the merge is blocked; the audit itself has not failed.
+2. If the original branch has moved since the base, integrate it into the worktree: `git -C "<worktree>" merge <original branch>`. A conflict on `SPECAUDITS.md` alone is expected when another audit closed meanwhile: its rows are independent, so resolve it by keeping every row of both sides, newest first, and complete the merge. On any other conflict, `git merge --abort`, keep the worktree and report that the merge is blocked; the audit itself has not failed.
 3. Rerun the whole corpus and the lint in the worktree: everything must be green, otherwise keep the worktree and report.
 4. Merge into the original repository: `git -C "<original repository>" merge --no-ff audit/<slug> -m "<message following the project's conventions>"`. Since the audit branch already contains the original head, no conflict is possible any more; if git refuses because of uncommitted changes in the original repository, do not force and do not stash: keep the worktree and report.
 5. Remove the worktree (`git worktree remove "<worktree>"`), then the branch (`git branch -d audit/<slug>`, which refuses to delete an unmerged branch).
