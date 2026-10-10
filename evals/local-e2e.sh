@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Local end-to-end test of a full audit of the demo, outside `claude plugin eval`, which refuses shell tools on platforms
 # without a sandbox (Windows). It runs as you, in a throwaway repository under the temp directory.
-# Usage: evals/local-e2e.sh [in-session|audit-session] [model]
+# Usage: evals/local-e2e.sh [in-session|audit-session] [model] [audit options, default "--max-iter 1"]
+# With "--auto --max-iter 2", the critical fix is applied and the fixed copy of the document is expected in the results folder.
 set -uo pipefail
 MODE=${1:-in-session}
 MODEL=${2:-sonnet}
@@ -10,7 +11,8 @@ TMP="${TEMP:-${TMPDIR:-/tmp}}"
 WORK="$(mktemp -d "$TMP/sa-e2e-XXXX")"
 cd "$WORK" && . "$PLUGIN/evals/_fixtures/demo-repo.sh"
 
-OPTS="--max-iter 1 --keep --model $MODEL"
+AUDIT_OPTS=${3:---max-iter 1}
+OPTS="$AUDIT_OPTS --keep --model $MODEL"
 [ "$MODE" = in-session ] && OPTS="$OPTS --in-session --no-worktree"
 echo "plugin $PLUGIN, mode $MODE, model $MODEL, repo $WORK"
 NOW=$(date +%s); LAUNCH="($(date -d "@$NOW" +%Y%m%d_%H%M 2>/dev/null || date -r "$NOW" +%Y%m%d_%H%M)|$(date -d "@$((NOW + 60))" +%Y%m%d_%H%M 2>/dev/null || date -r "$((NOW + 60))" +%Y%m%d_%H%M))"  # this minute or the next
@@ -41,6 +43,13 @@ check "results README identifies the base commit" "grep -qF '$BASE' '${RES}READM
 check "original source kept unfixed" "grep -qF '|P_k(L)| = k.' '${RES}source/selection.md'"
 check "report and patch in results" "[ -f '${RES}report.md' ] && [ -f '${RES}resources/corrections.patch' ]"
 check "executed counterexamples kept" "[ -n \"\$(find '${RES}resources/counterexamples' -name '*.py' 2>/dev/null)\" ]"
+# The demo run stops after one iteration, usually with its critical fix pending, so the fixed copy may be absent; if it
+# is there, it must be the fixed text, and if it is not, the README must say why.
+if [ -f "${RES}selection.md" ]; then
+  check "fixed copy at root is fixed" "grep -qE '^\*\*Lemma 3\.\*\*.*(min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n)' '${RES}selection.md'"
+else
+  check "README explains the missing fixed copy" "grep -qiE 'pending|open|not (all )?fixed|corrections.patch' '${RES}README.md'"
+fi
 check "no runner cache in results" "[ -z \"\$(find '$RES' -name __pycache__ -o -name .pytest_cache)\" ]"
 check "report does not claim correctness" "! grep -qiE 'the document is correct' '$DIR/report.md'"
 python -X utf8 -c "import json; d = json.load(open('result.json', encoding='utf-8')); print('cost USD', d.get('total_cost_usd'), '| turns', d.get('num_turns'), '| denials', len(d.get('permission_denials', [])))" 2>/dev/null
