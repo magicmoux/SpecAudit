@@ -6,7 +6,7 @@
 |---|---|
 | Claude Code with plugin support (`/plugin`, `claude plugin`) | the skill and its agents ship as a plugin |
 | git | the audit works in a dedicated worktree and commits locally there |
-| A model for the agents | `spec-reviewer` and `spec-adjudicator` declare `model: inherit`: they run on the audit session's model, your session's by default, or the one given with `--model <id>` |
+| A model for the agents | `spec-reviewer` and `spec-adjudicator` declare `model: inherit`: they run on the audit session's model, your session's by default, or the one given with `--model` and `--model-version` |
 | An interpreter for the guards (Python 3 by default) | counterexamples and guards are executed scripts; the skill follows the project's test runner if it has one |
 | An interactive session (recommended) | critical fixes and closing go through a question to the user; without one, the worktree is kept and nothing is merged |
 
@@ -137,4 +137,4 @@ Audits already carried out are not affected: their reports, registers and guards
 | `marketplace add` fails with an authentication error | the repository is not public or git has no access to it: sign in (`gh auth login`) or use a local clone |
 | The skill does not trigger on a natural-language request | invoke it explicitly: `/spec-audit:start <document>` |
 | The agents cannot be found | the skill then launches a fresh general-purpose agent with the content of `agents/spec-reviewer.md` or `agents/spec-adjudicator.md` as instructions; check the installation anyway, since the dedicated agents restrict the allowed tools |
-| A model is not available to you | choose another one with `--model <id>` (alias or full id); the agents inherit it |
+| A model is not available to you | choose another one with `--model` (family alias or full id) and `--model-version` (default `latest`); the agents inherit it |

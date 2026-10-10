@@ -30,7 +30,8 @@ State the document's **normative dependencies** (the files whose definitions it 
 | `--base <ref>` | `HEAD` | starting branch or commit of the worktree |
 | `--no-worktree` | no | works in the current directory, when it is already isolated for the audit |
 | `--in-session` | no | runs the orchestrator in your session; by default the audit runs in a session of its own, started in the worktree with the file tools, Bash, the two agents and the project's oracles, and nothing of your session |
-| `--model <id>` | your session's model | model of the audit session, inherited by its agents: an alias (`opus`, `sonnet`) or a full model id; ignored with `--in-session`, where the agents inherit your session's model |
+| `--model <family\|id>` | your session's family | model of the audit session, inherited by its agents: a family alias (`opus`, `sonnet`, `fable`, `haiku`) or a full model id; ignored with `--in-session`, where the agents inherit your session's model |
+| `--model-version <v>` | `latest` | version of that family, `5.5` for instance; `latest` passes the alias, a version passes `claude-<family>-<version>` (`claude-opus-5-5`); ignored when `--model` is a full id |
 | `--keep` | no | at closing, asks no question and keeps the worktree; only the report is brought back |
 
 ## Examples
@@ -75,7 +76,7 @@ By default, your session only prepares the audit (project rules, worktree, envir
 
 - no settings file, hence none of your plugins, hooks or connectors (`--setting-sources ""`, `--strict-mcp-config`), no skill (`--disallowedTools Skill`), and nothing of your conversation or memory;
 - the file tools, Bash and the Agent tool only, and the two agents of the plugin, passed with `--agents`;
-- the model given by `--model`, otherwise your session's, which the two agents inherit;
+- the model given by `--model` and `--model-version`, otherwise the latest of your session's family, which the two agents inherit;
 - a permission mode that denies anything not allowed in advance, and an allow list that is exactly `git` (push denied) and the command of each oracle recorded in the register;
 - the protocol as its system prompt, and the register's path in its request.
 

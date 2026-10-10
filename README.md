@@ -74,7 +74,8 @@ To watch a complete audit at no risk, run it on the demo specification in [examp
 | `--base <ref>` | starting branch or commit of the worktree (default: `HEAD`) |
 | `--no-worktree` | work in place, without a worktree |
 | `--in-session` | run the orchestrator in your session instead of a session of its own |
-| `--model <id>` | model of the audit session and of its agents (default: your session's) |
+| `--model <family\|id>` | model of the audit session and of its agents (default: your session's family) |
+| `--model-version <v>` | version of that family (default: `latest`) |
 | `--keep` | ask no question at closing and keep the worktree |
 
 Details and examples: [docs/usage.md](docs/usage.md).
@@ -95,7 +96,7 @@ Whatever the outcome, the report comes back to the session and to the original b
 
 - Claude Code with plugin support;
 - git (the document must be in a repository, otherwise the skill offers to initialize one);
-- a model for the agents: they inherit the audit session's, your session's by default, or the one given with `--model`;
+- a model for the agents: they inherit the audit session's, your session's by default, or the one given with `--model` and `--model-version`;
 - the `claude` CLI on your `PATH`, for the default mode (the audit runs in a session of its own); `--in-session` does without it;
 - an interpreter to run counterexamples and guards: Python 3 by default, or the project's own oracles (mechanized development, reference model, test runner).
 
