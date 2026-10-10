@@ -9,6 +9,7 @@ The audit now runs in a session of its own, and confirms errors on the project's
 ### Added
 
 - Audit session: by default the orchestrator is a `claude -p` process launched by your session in the worktree, with no settings file (hence none of your plugins, hooks or connectors), no skill, no memory or conversation of yours, the two agents passed with `--agents`, and a Bash allow list that is exactly git (push denied) and the project's oracles. Your session prepares the worktree (phase 0, steps 1 to 6), waits, then runs the closing from the report and the register. `--in-session` keeps the former behavior.
+- `--model <id>`: model of the audit session, passed to the `claude -p` process, which its agents inherit (default: the launcher's model). The Opus requirement is gone.
 - Environment, in phase 0: inventory of the session's resources the audit ignores, and **oracle table** of the project's verification artifacts (mechanized development, reference model or checker, test runner), each with its coverage and its command, run once in the worktree and ordered by strength. The table goes to every reviewer and every adjudicator; the register records it.
 - Worktree autonomy: an ignored path an oracle needs is shared by a junction or symbolic link (third-party cache), copied with its SHA-256 recorded (unversioned input) or rebuilt (build output of the project); the baseline must be green from the worktree alone, otherwise the skill asks what to install or share. Once the audit has started, nothing is read in the original directory.
 - Evidence levels on confirmations: formal (counterexample executed on the formal counterpart of the statement, through the document's correspondence table: `#eval`, `decide`, property-based search, or a refuting theorem), model, ad hoc. A statement with a formal counterpart confirmed only ad hoc stays UNDECIDED; the report counts confirmations by level. `Evidence` field in the register, `evidence` and `oracle` fields in the adjudicator's verdict, `oracle` field in the reviewer's errors.
@@ -16,6 +17,7 @@ The audit now runs in a session of its own, and confirms errors on the project's
 
 ### Changed
 
+- Agents declare `model: inherit` instead of `model: opus`: the model is a parameter of the command, not of the plugin.
 - Roles: a Launcher (your session) joins the Orchestrator (the audit session, or you with `--in-session`). Phase 0 is renumbered: 4 Environment, 5 Register, 6 Audit session, 7 Inventory, 8 Baseline, 9 Lint.
 - Stop (8.9) and `/spec-audit:stop`: in the default mode, the audit session's process is stopped first, which ends its agents; the rest of the stop is unchanged. A cleared conversation no longer means a stopped audit while that process is alive.
 - The reviewers and the adjudicators may run the project's oracles named in their message, and must prefer them to their own scripts.

@@ -13,7 +13,7 @@ description: >-
   Use whenever the user wants to proofread, check, audit, harden or make reliable a formal
   document, hunt for errors in theorems, lemmas, algorithms or proofs, or prepare a
   specification for submission or publication, even without saying "audit".
-argument-hint: "<document> [--corpus <dir>] [--max-iter N] [--auto] [--resume] [--base <ref>] [--no-worktree] [--in-session] [--keep]"
+argument-hint: "<document> [--corpus <dir>] [--max-iter N] [--auto] [--resume] [--base <ref>] [--no-worktree] [--in-session] [--model <id>] [--keep]"
 ---
 
 # Precision audit of a specification
@@ -50,6 +50,7 @@ Only errors follow the full protocol: cause graph, counterexample, guards, botto
 - `--base <ref>`: starting branch or commit of the worktree (default: `HEAD` of the current repository).
 - `--no-worktree`: work in the current directory, without a worktree, when it is already isolated for the audit.
 - `--in-session`: run the orchestrator in the current session. By default the audit runs in a session of its own (phase 0, step 6), started in the worktree with the file tools, Bash, the two agents and the project's oracles, and none of the plugins, skills, connectors, hooks or memory of your session.
+- `--model <id>`: model of the audit session, which its agents inherit (`model: inherit` in `agents/`): an alias (`opus`, `sonnet`) or a full model id. Default: the model of your session, as your context names it. With `--in-session`, the agents inherit your session's model and the option is ignored.
 - `--keep`: at closing, ask no question and keep the worktree; only the report is brought back (phase 8).
 
 ## Roles
@@ -98,7 +99,7 @@ In the audit session, the agents are passed at launch (`--agents`, phase 0, step
    - Launch it in the background, from the worktree, and record its process id and `--session-id` in the register:
 
      ```text
-     claude -p --session-id <uuid> --setting-sources "" --strict-mcp-config
+     claude -p --session-id <uuid> --model <id> --setting-sources "" --strict-mcp-config
        --tools "Read,Grep,Glob,Edit,Write,Bash,Agent"
        --disallowedTools Skill "Bash(git push *)"
        --agents "<scratch>/agents.json" --append-system-prompt-file "<scratch>/protocol.md"
@@ -106,7 +107,7 @@ In the audit session, the agents are passed at launch (`--agents`, phase 0, step
        "Audit <document> <options>. Register: spec-audit/<slug>/register.md."
      ```
 
-     `--setting-sources ""` loads no settings file, hence no plugin, no hook and no connector of yours; `--strict-mcp-config` admits no MCP server; `--tools` names the built-in tools, `--disallowedTools Skill` removes the skills, and `dontAsk` denies anything that would prompt, so the allow list is the whole of what the session may run. The CLI's `--bare` mode is not used: it only accepts an API key and refuses the usual sign-in. The built-in agents (general-purpose, Explore, Plan) stay visible to that session; the protocol tells it to launch the two of `agents.json` only.
+     `--setting-sources ""` loads no settings file, hence no plugin, no hook and no connector of yours, and no default model either, which is why `--model` is always given (the skill's `--model`, otherwise your session's model); `--strict-mcp-config` admits no MCP server; `--tools` names the built-in tools, `--disallowedTools Skill` removes the skills, and `dontAsk` denies anything that would prompt, so the allow list is the whole of what the session may run. The CLI's `--bare` mode is not used: it only accepts an API key and refuses the usual sign-in. The built-in agents (general-purpose, Explore, Plan) stay visible to that session; the protocol tells it to launch the two of `agents.json` only.
    - Wait for the process to end. It writes the report (`spec-audit/<slug>/report.md`) and leaves the register in the state it reached; you then run phase 8 from both. In that session, every question of this skill follows its non-interactive rule: a critical fix stays pending (unless `--auto`), an undecided error is escalated in the report, and closing is not run.
    - With `--in-session`, continue here: you are the orchestrator, and the oracle table binds you the same way.
 7. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every definition, lemma, proposition, theorem and algorithm, with its statement and the results it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).

@@ -30,6 +30,7 @@ State the document's **normative dependencies** (the files whose definitions it 
 | `--base <ref>` | `HEAD` | starting branch or commit of the worktree |
 | `--no-worktree` | no | works in the current directory, when it is already isolated for the audit |
 | `--in-session` | no | runs the orchestrator in your session; by default the audit runs in a session of its own, started in the worktree with the file tools, Bash, the two agents and the project's oracles, and nothing of your session |
+| `--model <id>` | your session's model | model of the audit session, inherited by its agents: an alias (`opus`, `sonnet`) or a full model id; ignored with `--in-session`, where the agents inherit your session's model |
 | `--keep` | no | at closing, asks no question and keeps the worktree; only the report is brought back |
 
 ## Examples
@@ -74,6 +75,7 @@ By default, your session only prepares the audit (project rules, worktree, envir
 
 - no settings file, hence none of your plugins, hooks or connectors (`--setting-sources ""`, `--strict-mcp-config`), no skill (`--disallowedTools Skill`), and nothing of your conversation or memory;
 - the file tools, Bash and the Agent tool only, and the two agents of the plugin, passed with `--agents`;
+- the model given by `--model`, otherwise your session's, which the two agents inherit;
 - a permission mode that denies anything not allowed in advance, and an allow list that is exactly `git` (push denied) and the command of each oracle recorded in the register;
 - the protocol as its system prompt, and the register's path in its request.
 
@@ -203,7 +205,7 @@ The skill then stops the audit session's process, which ends its agents (with `-
 
 - **Commit before the audit**: the worktree starts from the committed version.
 - **Provide an existing corpus** with `--corpus` if the project already has tests for its theory: guards will be written following its conventions and the project's runner will be used to replay them.
-- **Bound the spending** with `--max-iter`: each iteration launches several Opus agents.
+- **Bound the spending** with `--max-iter` and `--model`: each iteration launches several agents, on the audit session's model.
 - **Long documents**: the skill splits them by sections, giving each reviewer the definitions, the notation and the list of statements, and adds a cross-section consistency pass.
 - **Project rules**: what `CLAUDE.md` says (attribution, document versioning, commit policy) takes precedence over the skill; write down there the constraints specific to your documents.
 - **Mechanized development**: if the project has one (Lean, Coq, Isabelle, Agda), keep in the document a correspondence table from its results to the formal theorems. The audit then confirms errors on the formal statements, and refuses an ad hoc confirmation of a statement that has a formal counterpart.

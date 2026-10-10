@@ -10,7 +10,7 @@
 - Corpus: <directory>, runner: <command>
 - Original repository: <path>, branch <name>, head <hash>
 - Worktree: <path>, branch audit/<slug>, base <hash>
-- Parameters: max-iter = N, auto = yes/no
+- Parameters: max-iter = N, auto = yes/no, model = <id>
 - Version convention: fix in place | new revision <name>
 - Session: <id>, state: running | stopping | suspended | closed
 - Mode: audit session (pid <pid>, session <id>) | in-session
