@@ -68,4 +68,5 @@ minimal_fix:
   after: "<…>"
   justification: "<why it is the weakest change that suffices>"
 to_settle: "<if UNDECIDED: what would make it possible to decide>"
+misleading_wording: "<if REFUTED and the report came from a plausible misreading of the text: the wording that invited it, and a clearer one with the same meaning; otherwise omit>"
 ```

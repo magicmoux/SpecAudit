@@ -94,7 +94,7 @@ Cycle: none | <errors of the cycle> → stop.
 - **Probable cause**: implicit hypothesis, forgotten edge case, neighboring result copied over, overloaded notation…
 - **Counterexample(s)**: minimal instance, result expected according to the text, result obtained, path of the script and its command (a counterexample is always executed, never evaluated by hand)
 - **Evidence**: formal (<oracle>) | model (<oracle>) | ad hoc
-- **Adjudicator's verdict**: summary, and reason for rejection if any
+- **Adjudicator's verdict**: summary, and reason for rejection if any; misleading wording, if flagged
 - **Impact**: dependent results and passages (from the inventory)
 - **Guards**: paths in the corpus; red state before the fix, green after
 - **Fix**: nature (statement fix | scoping addition | proof completion); before → after; commit

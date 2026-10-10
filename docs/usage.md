@@ -153,9 +153,22 @@ The README identifies the sources: with git, the repository (remote URL, or path
 | Cause graph | roots and chains of each iteration, with the justification of each edge; any cycle first |
 | Modified statements | for each result touched: before → after, nature of the fix, counterexample, guards |
 | Errors | table: identifier, severity, type, causes, status, fix, guards, commit |
-| Open points | undecided errors and blocked chains, results conditional on an unresolved error, directly or through another result (with the error each one depends on and the chain through which it uses it), references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated |
+| Open points | undecided errors and blocked chains, results conditional on an unresolved error, directly or through another result (with the error each one depends on and the chain through which it uses it), references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated; each with its mitigation: what would settle it, the fix or hypothesis proposed, the check that would confirm it |
+| Imprecisions | correct but misleading passages: the misreading they invited and the clarification applied or proposed |
 | Corpus | guards and lint rules added, command to replay everything |
 | Scope of verification | what was checked and how, the confirmations by evidence level (formal, model, ad hoc), the oracles used and the session resources ignored, and what was not checked |
+| Summary of issues | last section: every issue, sorted by priority, with its mitigation or solution and its effort in person-days |
+
+The summary of issues is the list to plan from:
+
+| Priority | Covers |
+|---|---|
+| P1 | a claim of the document false or unsupported now: confirmed error with a critical fix pending or refused, fix reverted, causal loop, recurrence, result of the abstract or conclusion conditional on an unresolved error |
+| P2 | undecided errors and the chains they block, unrepaired incomplete proofs, other conditional results, detection not saturated |
+| P3 | imprecisions, references to check, form defects left open |
+| Done | errors and defects fixed and guarded by the audit; their review is counted once, on its own row |
+
+Effort is a range in person-days of the author or a domain expert (`0.5–1`), with what it rests on (kind of work, number of dependent results in the inventory) and a confidence. It reads "not estimated" when nothing supports a figure, typically for an undecided statement whose truth is unknown: that is research, not a task, and the audit knows neither your team nor its pace. Treat the ranges as an order of magnitude to plan with, not as a quote.
 
 ### Error statuses
 

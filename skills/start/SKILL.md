@@ -228,7 +228,7 @@ As long as its cause is not fixed, a consequence is **ignored**: status BLOCKED 
 The root goes to a fresh adjudicator, with the error alone (without the reviewer's identity or the other errors), the document paths, the oracle table of the register (phase 0, step 4) and a scratch directory. Do not adjudicate yourself, especially an error that touches a passage you fixed: you would be judging your own work.
 
 - **CONFIRMED** (with executed evidence) → mark its suspects (below), then 4.2.
-- **REFUTED** (with the reason) → remove its outgoing edges; its consequences with no other open cause become roots.
+- **REFUTED** (with the reason) → remove its outgoing edges; its consequences with no other open cause become roots. If the adjudicator flagged a `misleading_wording`, open an "ambiguity" form defect with it (phase 5): the passage is correct, but a referee who misread it is a reader the document will meet again.
 - **UNDECIDED** (with what would settle it) → escalated to the user once no agent is running ("Questions only when idle"), no change; its consequences, suspects included, remain BLOCKED and appear in the report. Its uses are not marked as suspects: nothing in the text changes, so there is nothing to reassess; the final report lists them as conditional results.
 
 A user decision on an escalated error counts as the adjudicator's verdict: judged false, the error becomes CONFIRMED and its suspects are marked at that point; judged correct, it becomes REFUTED.
@@ -356,13 +356,31 @@ For each result touched: before → after, nature (statement fix, scoping, proof
 ## Open points
 Undecided errors and the chains they block, references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated.
 Results conditional on an unresolved error, directly or through another result: for each, the error it depends on and the chain through which it uses it.
+Each open point with its mitigation: what would settle it (the adjudicator's `to_settle`), the fix or hypothesis proposed (statement before → after), and the check that would confirm it (oracle, guard to add, expert to consult).
+
+## Imprecisions
+Passages that are correct but misleading: the "ambiguity" form defects (phase 5), and the refuted errors whose adjudicator flagged a `misleading_wording`. For each: the passage, the misreading it invited, the clarification applied or proposed.
 
 ## Corpus
 Guards added, lint rules added, command to replay everything.
 
 ## Scope of verification
 What was checked and how (agent review, bounded exhaustive test, mechanized proof), the confirmations by evidence level (formal, model, ad hoc), the oracles used and the session resources ignored, and what was not checked.
+
+## Summary of issues
+| Priority | ID | Issue | Location | Status | Mitigation or solution | Effort (person-days) | Basis |
+Totals per priority, of the estimated rows only, with the number of rows not estimated.
 ```
+
+**Summary of issues.** The last section, because it is what a reader acts on after closing the report: one row per issue of the audit, open or settled, sorted by priority, so that the work left can be planned without rereading the sections above.
+
+- **Priority**:
+  - **P1**: what leaves a claim of the document false or unsupported now: a confirmed error whose critical fix is pending or refused, a fix reverted, a causal loop, a recurrence, a result of the abstract or of the conclusion conditional on an unresolved error.
+  - **P2**: undecided errors and the chains they block, unrepaired incomplete proofs, the other conditional results, detection not saturated.
+  - **P3**: imprecisions, references to check, form defects left open.
+  - **Done**: errors and defects fixed by the audit, guarded; listed so that the summary is complete, with "—" as effort, since the remaining work is the review of the modified statements, counted once on its own row.
+- **Mitigation or solution**: the fix applied, or the one proposed in "Open points" and "Imprecisions", in one line.
+- **Effort**, only when there is a basis for it, as a range (`0.5–1`) and never a single figure, in person-days of the author or of a domain expert. The basis column says what the range rests on: the kind of work (rewording, a hypothesis added and carried to its uses, a proof to complete, a formal counterpart to write), the number of dependent results from the inventory, and a confidence (low, medium, high). Write "not estimated" when nothing supports a figure, typically an undecided statement whose truth is unknown, which is research rather than a task. The audit sees neither the team nor its pace: an invented figure would read as more reliable than any other part of the report, so it is better absent than wrong.
 
 **Conditional results.** Before writing "Open points", take each unresolved error: UNDECIDED or ESCALATED, CONFIRMED with a critical fix refused or pending, or with a fix reverted after a regression. From the inventory, collect every result that depends on it, directly or through another result, and list them grouped by direct use, each with what it uses. Suspects only cover the direct uses of a confirmed error; this closure also reaches the uses of an undecided error and the results that depend on a suspect. It changes nothing in the graph: the text has not changed, so there is nothing to reassess, only results that must not be presented as safe.
 
