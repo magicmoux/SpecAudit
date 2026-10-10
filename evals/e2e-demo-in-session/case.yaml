@@ -54,8 +54,10 @@ graders:
     focus: { source: file, path: spec-audit/selection/report.md }
     criteria: >-
       The report has the sections Result, Cause graph, Modified statements, Errors, Open points, Corpus and Scope of
-      verification. It reports Lemma 3 as a confirmed and fixed error (with |P_k(L)| = min(k, |L|) or an added
-      hypothesis k ≤ |L|) and does not claim that the document is correct.
+      verification (other sections may be present too). It reports Lemma 3 as a confirmed error that was fixed, its
+      new statement giving the length as the minimum of k and the length of L, or adding the hypothesis that k does
+      not exceed the length of L, in any notation or spacing. It never states that the document, or a part of it, is
+      correct or verified without saying by what.
   - name: summary-of-issues
     type: llm
     focus: { source: file, path: spec-audit/selection/report.md }
