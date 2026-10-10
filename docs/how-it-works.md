@@ -31,6 +31,7 @@ Isolation is at the heart of the design:
 - the adjudicator receives the error alone, without the reviewer's identity or the other errors, and judges the text as it is now;
 - the orchestrator never adjudicates: it would be judging its own work;
 - no agent is launched as a "fork", which would inherit the conversation and therefore the history;
+- no agent reads a session-history folder (tokenforge's `.forge/`, transcripts, handoffs); one that git tracks is untracked before the worktree is created, if the user agrees;
 - the audit runs in a session of its own, with no settings, plugin, skill, connector, hook, memory or conversation of the launcher's, and a Bash allow list that is exactly git and the project's oracles: what it could run is what the register says it ran.
 
 ## Overview

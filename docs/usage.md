@@ -59,6 +59,7 @@ State the document's **normative dependencies** (the files whose definitions it 
    - if the document, its dependencies or the corpus have uncommitted changes: they will not exist in the worktree, so should it audit the committed version or should you commit first?
    - if the project's version convention is unclear: fix in place, or create a new revision?
    - if the folder is not a git repository: should one be initialized?
+   - if a session-history folder such as tokenforge's `.forge/` is tracked by git, or with `--no-worktree`: the reviewers could read your sessions' history there. Should it be untracked and added to `.gitignore` (or a worktree used), or only ignored by the agents? An untracked `.forge/` raises no question: it never reaches the worktree.
    - if an oracle of the project cannot run from the worktree alone (toolchain missing, cache too large to share, runner not installed): what should be installed or shared?
 
    It then creates the worktree `<parent of the repository>/<repository>-audit-<slug>` on the branch `audit/<slug>`, where `<slug>` is the document name in lowercase. It names the session `[AUDIT] <slug>` when the app allows it (Claude desktop app), or suggests that you run `/rename [AUDIT] <slug>`: this is the session from which the audit can be stopped.

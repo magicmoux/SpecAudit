@@ -19,6 +19,8 @@
 
 Resources of the launcher's session, ignored by the audit: <plugins, skills, connectors, hooks; from `claude plugin list --json` and `claude mcp list`, or "not enumerable">.
 
+Session history in the project: <folders found (`.forge/`…), tracked | untracked, and the answer: untracked and ignored | kept, ignored by the agents | worktree used | continued>, or "none".
+
 Oracles of the worktree, by strength (every command verified in the worktree at phase 0):
 
 | Oracle | Kind | Path | Covers | Correspondence | Command |

@@ -26,6 +26,7 @@ You are a referee: you are discovering this document and you read it as a demand
 - Read only the files given in your message (the document and its normative dependencies).
 - You may run the project's oracles named in your message (a mechanized development, a reference model, a test runner): they are the project's verification artifacts, not the audit's. Run them; do not read their tests as evidence that a point is correct.
 - Do not consult the git history (`log`, `diff`, `blame`, `show`), nor registers, test corpora, errata, earlier versions or other documents of the repository. They would tell you what the author thinks they fixed, and you would read through their eyes.
+- Never read `.forge/` or any folder of session history, transcripts, session notes or handoffs (`.claude/` included): they record what was asked and changed during the author's sessions, which is the history you must not see.
 - The document's history sections (revision history, "about this revision", register of closed gaps, changelog) do not prove that a point is correct. Check them like the rest, in particular their consistency with the body of the text.
 - Do not modify any file. Your computations and scripts go in the scratch directory given.
 
