@@ -30,6 +30,15 @@ check "guard red first recorded" "grep -qiwE 'red' '$DIR/register.md'"
 check "agent table filled" "grep -qE 'audit-selection-(reviewer|adjudicator)' '$DIR/register.md'"
 # git log --grep rather than a pipe into grep -q: under pipefail, grep -q exits at the first match and git log's SIGPIPE fails the check.
 check "internal revision committed" "[ -n \"\$(git -C '$AUDIT' log --oneline -F --grep 'incomplete: audit in progress')\" ]"
+# The results folder comes back to the original repository at closing (--keep applies "Keep the worktree").
+RES="$(ls -d "$WORK"/spec-audit/selection/results/*/ 2>/dev/null | head -1)"
+check "results folder named by request time" "echo '$RES' | grep -qE '/results/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z/\$'"
+check "results README with contents" "grep -q 'source/' '${RES}README.md' && grep -q 'resources/' '${RES}README.md'"
+BASE="$(git -C "$WORK" rev-list --max-parents=0 HEAD | cut -c1-7)"  # the demo repository has a single starting commit
+check "results README identifies the base commit" "grep -qF '$BASE' '${RES}README.md'"
+check "original source kept unfixed" "grep -qF '|P_k(L)| = k.' '${RES}source/selection.md'"
+check "report and patch in results" "[ -f '${RES}report.md' ] && [ -f '${RES}resources/corrections.patch' ]"
+check "no runner cache in results" "[ -z \"\$(find '$RES' -name __pycache__ -o -name .pytest_cache)\" ]"
 check "report does not claim correctness" "! grep -qiE 'the document is correct' '$DIR/report.md'"
 python -X utf8 -c "import json; d = json.load(open('result.json', encoding='utf-8')); print('cost USD', d.get('total_cost_usd'), '| turns', d.get('num_turns'), '| denials', len(d.get('permission_denials', [])))" 2>/dev/null
 echo "$fails failure(s); artifacts in $WORK"

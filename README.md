@@ -90,7 +90,7 @@ In the worktree `<repository>-audit-<slug>`, on the branch `audit/<slug>`:
 - `spec-audit/<slug>/report.md`: the final report;
 - the guard corpus and the lint script, replayable at any time.
 
-Whatever the outcome, the report comes back to the session and to the original branch; if you do not merge, a `corrections.patch` is archived with it.
+Whatever the outcome, the report comes back to the session, and a results folder to the original branch, `spec-audit/<slug>/results/<timestamp>/`: a README with the table of contents and the identification of the sources (repository, branch, commit), the report and its annexes, `source/` (the audited files as they were at the start), `docs/` (documents consulted and bibliography) and `resources/` (corpus, `corrections.patch`, executed counterexamples).
 
 ## Requirements
 

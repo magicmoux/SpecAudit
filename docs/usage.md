@@ -127,7 +127,23 @@ In the worktree:
 
 Commits stay on the `audit/<slug>` branch: one **internal revision** per fixed error, plus one per iteration. Each one is a verified state (every guard green), marked incomplete in its commit message until closing, because the consequences of the error may not have been reassessed yet. The skill commits only its own files and never pushes.
 
-If you choose "Keep" or "Abandon", an archive is committed in the original branch, under `spec-audit/<slug>/<YYYY-MM-DD>-<outcome>/`: `report.md`, `register.md` and `corrections.patch` (the full diff of the audit branch, fixes and guards included).
+## Results folder
+
+Every closing that ends a series (accept, keep, abandon, or a stop that keeps the last revision or cancels) leaves a self-contained folder in the original branch: it arrives with the merge after "Accept", and is committed on its own otherwise. Its name is the time you launched the audit, in UTC, so each run has its own folder and a resumed audit adds one beside the first.
+
+```text
+spec-audit/<slug>/results/<YYYY-MM-DDTHH-MM-SSZ>/
+├── README.md         outcome, identification of the sources, table of contents, how to replay
+├── report.md         the final report
+├── annex-*.md        details moved out of the report when a section exceeds about ten entries
+├── register.md       the register as closed
+├── inventory.md      the inventory
+├── source/           the audited files as they were at the start: document(s), normative dependencies, configuration, unversioned inputs
+├── docs/             documents consulted (internal, external, normative) and bibliography.md, each reference with what was checked
+└── resources/        corpus/ (guards and lint), corrections.patch, counterexamples/<error>/ (the executed scripts and their outputs)
+```
+
+The README identifies the sources: with git, the repository (remote URL, or path), the branch, the base commit, the head of the audit branch and, after a merge, the merge commit. Two kinds of files are referenced (path, origin, SHA-256) rather than copied into `source/`: anything that may hold credentials (`.env`, keys), because the folder is committed and may be pushed, and files over 10 MB, which git already keeps at the recorded commit. The audit has no network access, so a cited reference that is not in the repository is listed in `docs/bibliography.md`, not downloaded.
 
 ## Reading the report
 
@@ -184,8 +200,8 @@ The audit's outcome determines the recommended option, always the safest one:
 |---|---|
 | Accept and merge | safety checks, `--no-ff` merge of `audit/<slug>` into the original branch, then removal of the worktree and the branch |
 | Run another check | new series of iterations in the same worktree, with new agents and a new budget; nothing is merged |
-| Keep the worktree | neither merge nor removal; report, register and patch archived in the original branch |
-| Abandon | report, register and patch archived in the original branch, then removal of the worktree and the branch |
+| Keep the worktree | neither merge nor removal; results folder committed in the original branch |
+| Abandon | results folder committed in the original branch, then removal of the worktree and the branch |
 
 "Accept" is never offered if the corpus or the lint is red, and "Run another check" is not offered after a causal loop, a recurrence, an oscillation or a non-convergence. An ambiguous free answer leads to the question being asked again: the skill never merges or deletes on an ambiguous answer.
 
@@ -206,7 +222,7 @@ The skill then stops the audit session's process, which ends its agents (with `-
 |---|---|
 | Suspend (recommended) | nothing is merged or deleted; `--resume` continues from the last revision |
 | Keep the last revision as the new base | the unverified changes after that revision are saved as a patch, the report is written and marked incomplete, then the revision is merged into the original branch with the same safety checks as "Accept and merge"; a later audit starts from it |
-| Cancel | report, register and patch archived in the original branch, then the worktree and the branch are removed |
+| Cancel | results folder, marked incomplete, committed in the original branch, then the worktree and the branch are removed |
 
 "Keep the last revision" is only offered once at least one error has been fixed. If the question cannot be asked, the audit is suspended.
 
@@ -215,10 +231,10 @@ The stop report also lists the interrupted agents and their scratch directories.
 ## After closing
 
 - **Replay the guards**: the command is in the "Corpus" section of the report.
-- **Apply an archived patch**, in whole or in part:
+- **Apply the patch of a results folder**, in whole or in part:
 
   ```bash
-  git apply --3way spec-audit/<slug>/<YYYY-MM-DD>-<outcome>/corrections.patch
+  git apply --3way spec-audit/<slug>/results/<timestamp>/resources/corrections.patch
   ```
 
 - **Resume a kept worktree**: run the skill again with `--resume`, or ask to replay only the closing of the audit.

@@ -8,7 +8,8 @@
 - Document(s): <paths>
 - Normative dependencies: <paths>
 - Corpus: <directory>, runner: <command>
-- Original repository: <path>, branch <name>, head <hash>
+- Requested: <YYYY-MM-DDTHH-MM-SSZ, UTC> (one per launch or `--resume`; the last one names the results folder)
+- Original repository: <path>, remote <URL | none>, branch <name>, head <hash>
 - Worktree: <path>, branch audit/<slug>, base <hash>
 - Parameters: max-iter = N, auto = yes/no, model = <family or id>, version = <v> | latest (passed: `--model <value>`)
 - Version convention: fix in place | new revision <name>
