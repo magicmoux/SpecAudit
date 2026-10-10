@@ -1,0 +1,17 @@
+schema_version: "1.1"
+name: start-skill-triggers
+description: A natural-language request to check the proofs of a formal document loads the start skill.
+tags: [trigger, quick]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 3
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "Check the proofs in selection.md before I submit it, and harden the statements."
+graders:
+  - name: skill-loaded
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?start"'

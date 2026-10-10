@@ -1,0 +1,36 @@
+schema_version: "1.1"
+name: adjudicator-confirms-with-counterexample
+description: A fresh spec-adjudicator confirms the false Lemma 3 with an executed counterexample, at the ad hoc evidence level.
+tags: [agents, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Bash, Agent]
+  prompt: |
+    Launch the agent spec-audit:spec-adjudicator with exactly this message, then reply with its YAML output unchanged:
+
+    Error reported on selection.md (current directory):
+    location: "§2, Lemma 3"
+    quote: "For every integer k ≥ 0 and every list L, |P_k(L)| = k."
+    type: false statement
+    defect: "fails when k exceeds the length of L"
+    Oracle table: none.
+    Scratch directory: ./scratch/adjudicator-F-1-1.
+graders:
+  - name: confirmed
+    type: regex
+    pattern: 'verdict:\s*CONFIRMED'
+  - name: ad-hoc-evidence
+    type: regex
+    pattern: 'evidence:\s*ad hoc'
+  - name: minimal-fix
+    type: regex
+    pattern: 'min\(k|k\s*≤\s*\|L\||k <= len|k\s*≤\s*n'
+  - name: executed
+    type: llm
+    criteria: >-
+      The verdict gives an executed counterexample: a concrete instance with k greater than the length of L
+      (for example k = 3, L = (1, 2)), the script or command that was run, and its actual output.

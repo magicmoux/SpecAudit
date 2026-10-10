@@ -1,0 +1,48 @@
+schema_version: "1.1"
+name: e2e-demo-in-session
+description: >-
+  Full audit of the demo in the session itself (--in-session --no-worktree --keep, one iteration): register, inventory
+  and report are written, Lemma 3 is fixed with a guard written red first, Proposition 4 is left unchanged.
+tags: [e2e, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 200
+  timeout_seconds: 3600
+  allowed_tools: [Read, Glob, Grep, Write, Edit, Bash, Agent, Skill]
+  prompt: "/spec-audit:start selection.md --in-session --no-worktree --max-iter 1 --keep"
+graders:
+  - name: register-written
+    type: file_exists
+    path: "spec-audit/selection/register.md"
+  - name: inventory-written
+    type: file_exists
+    path: "spec-audit/selection/inventory.md"
+  - name: report-written
+    type: file_exists
+    path: "spec-audit/selection/report.md"
+  - name: lemma-3-fixed
+    type: regex
+    target: { source: file, path: selection.md }
+    pattern: 'min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n'
+  - name: proposition-4-unchanged
+    type: regex
+    target: { source: file, path: selection.md }
+    pattern: 'P_k\(L \+\+ M\) = P_k\(P_k\(L\) \+\+ P_k\(M\)\)'
+  - name: guard-red-first
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    pattern: 'red'
+    flags: i
+  - name: agent-table
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    pattern: 'audit-selection-(reviewer|adjudicator)'
+  - name: report-quality
+    type: llm
+    focus: { source: file, path: spec-audit/selection/report.md }
+    criteria: >-
+      The report has the sections Result, Cause graph, Modified statements, Errors, Open points, Corpus and Scope of
+      verification. It reports Lemma 3 as a confirmed and fixed error (with |P_k(L)| = min(k, |L|) or an added
+      hypothesis k ≤ |L|) and does not claim that the document is correct.

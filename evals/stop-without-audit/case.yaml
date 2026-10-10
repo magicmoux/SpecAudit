@@ -1,0 +1,22 @@
+schema_version: "1.1"
+name: stop-without-audit
+description: /spec-audit:stop in a session that runs no audit says so and changes nothing.
+tags: [stop, quick]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: "/spec-audit:stop selection.md"
+graders:
+  - name: says-no-audit
+    type: llm
+    criteria: The answer says that no audit was found or that none is running for selection.md, and that nothing was stopped or changed.
+  - name: no-worktree-removed
+    type: tool_used
+    tool: Bash
+    input_match: 'worktree remove|branch -D|taskkill|kill '
+    min: 0
+    max: 0

@@ -1,0 +1,29 @@
+schema_version: "1.1"
+name: adjudicator-refutes-false-positive
+description: A fresh spec-adjudicator refutes a false claim against the correct Proposition 4 instead of forcing a confirmation.
+tags: [agents, quick]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Agent]
+  prompt: |
+    Launch the agent spec-audit:spec-adjudicator with exactly this message, then reply with its YAML output unchanged:
+
+    Error reported on selection.md (current directory):
+    location: "§2, Proposition 4"
+    quote: "For every integer k ≥ 0 and all lists L and M, P_k(L ++ M) = P_k(P_k(L) ++ P_k(M))."
+    type: false statement
+    defect: "the equality fails when L and M share duplicate values"
+    Oracle table: none.
+    Scratch directory: ./scratch/adjudicator-F-1-9.
+graders:
+  - name: not-confirmed
+    type: regex
+    pattern: 'verdict:\s*CONFIRMED'
+    match: not_contains
+  - name: refuted
+    type: regex
+    pattern: 'verdict:\s*REFUTED'
