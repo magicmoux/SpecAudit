@@ -1,6 +1,6 @@
 ---
 name: spec-reviewer
-description: Independent reviewer of a theoretical, technical or mathematical specification, launched with no history by the spec-audit skill. Reads the whole document and returns the structured list of domain errors (logical, mathematical, algorithmic, theoretical) and, separately, of form defects, without modifying anything.
+description: Independent reviewer of a theoretical, technical or mathematical specification, launched with no history by the spec-audit plugin (`/spec-audit:start`). Reads the whole document and returns the structured list of domain errors (logical, mathematical, algorithmic, theoretical) and, separately, of form defects, without modifying anything.
 tools: Read, Grep, Glob, Bash
 model: opus
 ---

@@ -1,5 +1,4 @@
 ---
-name: spec-audit
 description: >-
   Iterative precision audit of a theoretical, technical or mathematical specification
   (manuscript, paper, proof, algorithm, protocol or format specification), run in a

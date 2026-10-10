@@ -20,6 +20,8 @@ Closes a gap in the protocol: results that use a confirmed error without having 
 
 ### Changed
 
+- The audit command is now `/spec-audit:start` (skill folder `skills/start/`), paired with `/spec-audit:stop`; it was `/spec-audit:spec-audit`. In a manual installation, the folders are copied as `spec-audit-start` and `spec-audit-stop`.
+
 - Phase 3: a dependency without an edge no longer escapes rechecking: B can be both a root for its own error and a suspect behind A.
 - 4.4 Propagation: rechecking the uses is required for every nature of fix (statement fix, scoping addition; a proof repair leaves them untouched), including uses without an edge.
 - Suspects of a cause left unfixed (undecided, critical fix refused or pending, fix reverted after a regression) stay BLOCKED; the outcome is then "Partial, needs decision", never "Success".

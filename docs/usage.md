@@ -5,10 +5,10 @@
 Open Claude Code in the git repository that contains the document, then invoke the skill:
 
 ```text
-/spec-audit:spec-audit <document> [options]
+/spec-audit:start <document> [options]
 ```
 
-With a manual installation (without the plugin system), the command is `/spec-audit`.
+With a manual installation (without the plugin system), the commands are `/spec-audit-start` and `/spec-audit-stop`.
 
 The skill also triggers without being named, as soon as you ask to proofread, check, audit, harden or make reliable a formal document:
 
@@ -35,19 +35,19 @@ State the document's **normative dependencies** (the files whose definitions it 
 
 ```text
 # Audit one document with default settings
-/spec-audit:spec-audit docs/specification.md
+/spec-audit:start docs/specification.md
 
 # Several files, existing test corpus, smaller budget
-/spec-audit:spec-audit theory/definitions.md theory/results.md --corpus tests/theory --max-iter 3
+/spec-audit:start theory/definitions.md theory/results.md --corpus tests/theory --max-iter 3
 
 # Start from another branch than the current one
-/spec-audit:spec-audit spec/protocol.md --base develop
+/spec-audit:start spec/protocol.md --base develop
 
 # Unattended session: critical fixes applied, worktree kept at the end
-/spec-audit:spec-audit spec/format.md --auto --keep
+/spec-audit:start spec/format.md --auto --keep
 
 # Resume an interrupted audit
-/spec-audit:spec-audit spec/format.md --resume
+/spec-audit:start spec/format.md --resume
 ```
 
 ## Workflow, from your point of view

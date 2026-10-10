@@ -1,6 +1,6 @@
 # How it works
 
-This document describes the protocol the skill follows. The normative reference remains [`skills/spec-audit/SKILL.md`](../skills/spec-audit/SKILL.md).
+This document describes the protocol the skill follows. The normative reference remains [`skills/start/SKILL.md`](../skills/start/SKILL.md).
 
 ## Errors and form defects
 
