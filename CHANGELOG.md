@@ -13,6 +13,10 @@ Closes a gap in the protocol: results that use a confirmed error without having 
 - Register: `Origin` field on error entries (`reviewer (R…, wave …)` or `suspect (uses F-…)`) and `Suspects` column (added / cleared / confirmed) in the iteration log.
 - Report: suspects counted apart from the errors; "Open points" lists the results conditional on an unresolved error (undecided, critical fix refused or pending, fix reverted), computed from the inventory, directly or through another result. An undecided error creates no suspects, since nothing in the text changes.
 - A user decision on an escalated error counts as the adjudicator's verdict: judged false, the error becomes CONFIRMED and its suspects are marked.
+- Internal revisions: each fixed error is committed in the worktree as revision r<N>, a verified state marked incomplete in its commit message and in the register (never in the document, which the reviewers read).
+- `/spec-audit:stop` (`skills/stop`, user-invocable only) and phase 8.9: from the audit's session only, stops every audit agent (`TaskStop`, by the name given at launch), reports the last internal revision, marked incomplete, and asks whether to suspend, keep that revision as the new base (merged with the 8.5 checks) or cancel.
+- Register header: session id (`${CLAUDE_SESSION_ID}`) and state (`running`, `stopping`, `suspended`, `closed`); table of internal revisions. The session is named `[AUDIT] <slug>` when the app allows it.
+- `--resume` takes over an audit from another session only after the user confirms it no longer runs there, saves the unverified changes after the last revision as a patch and restarts from that revision.
 
 ### Changed
 

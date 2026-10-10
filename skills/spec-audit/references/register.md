@@ -12,6 +12,7 @@
 - Worktree: <path>, branch audit/<slug>, base <hash>
 - Parameters: max-iter = N, auto = yes/no
 - Version convention: fix in place | new revision <name>
+- Session: <id>, state: running | stopping | suspended | closed
 
 ## Iteration log
 
@@ -19,6 +20,13 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 Suspects: added / cleared / confirmed. They are counted only in this column, so that they inflate neither the errors detected nor those resolved by their cause.
+
+## Internal revisions
+
+One commit per fixed error, plus the end-of-iteration commits; each one is marked incomplete until closing.
+
+| Rev. | Commit | Error fixed | Errors fixed so far | Consequences not yet reassessed |
+|---|---|---|---|---|
 
 ## Cause graph — iteration <k>
 

@@ -47,7 +47,7 @@ Only errors follow the full protocol: cause graph, counterexample, guards, botto
 - `--corpus <dir>`: the global guard corpus. By default, the project's existing verification corpus if there is one (follow its conventions), otherwise `spec-guards/` at the root.
 - `--max-iter N`: maximum number of iterations (default 5).
 - `--auto`: also apply critical fixes without pausing (see 4.3).
-- `--resume`: resume an interrupted audit from its register, in its existing worktree.
+- `--resume`: resume an interrupted or suspended audit from its register, in its existing worktree, from its last internal revision (4.3).
 - `--base <ref>`: starting branch or commit of the worktree (default: `HEAD` of the current repository).
 - `--no-worktree`: work in the current directory, without a worktree, when it is already isolated for the audit.
 - `--keep`: at closing, ask no question and keep the worktree; only the report is brought back (phase 8).
@@ -60,7 +60,7 @@ Only errors follow the full protocol: cause graph, counterexample, guards, botto
 | Reviewer | `spec-reviewer` agent, fresh for each wave | the document and its normative dependencies, nothing else | nothing, outside its scratch directory |
 | Adjudicator | `spec-adjudicator` agent, fresh for each error | one error and the document | nothing, outside its scratch directory |
 
-Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `spec-adjudicator`; installed as a plugin, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`. If they are not available, launch a fresh general-purpose agent, giving it the content of `spec-reviewer.md` or `spec-adjudicator.md` as instructions (in `~/.claude/agents/`, or in the plugin's `agents/` folder). Never use a "fork" agent: it would inherit the conversation, hence the history.
+Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `spec-adjudicator`; installed as a plugin, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`. If they are not available, launch a fresh general-purpose agent, giving it the content of `spec-reviewer.md` or `spec-adjudicator.md` as instructions (in `~/.claude/agents/`, or in the plugin's `agents/` folder). Never use a "fork" agent: it would inherit the conversation, hence the history. Give every agent a name at launch, `audit-<slug>-<role>-<id>` (for example `audit-selection-adjudicator-F-1-3`): the name is what lets the audit stop it (8.9).
 
 ## Phase 0 — Preparation (once)
 
@@ -77,7 +77,9 @@ Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `s
    - With `--no-worktree`, work in place, but record `git status`: other sessions may be working in parallel, and their changes are not yours.
    - Outside a git repository, ask whether to initialize one: without git, there is neither isolation nor commits.
    - In all cases, commit only your files and never push.
-4. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end.
+4. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end. Record in it this session, `${CLAUDE_SESSION_ID}`, and the state `running`: only the session that runs the audit may stop it (8.9), because only it knows the step in progress and the agents running.
+   - Name this session `[AUDIT] <slug>` if a tool lets you rename it (Claude desktop app); otherwise suggest once that the user run `/rename [AUDIT] <slug>`. The name tells the user which session to stop the audit from.
+   - With `--resume`: if the register's state is `running` or `stopping` and its session is not this one, the audit may still be running there: ask the user to confirm that it is not before taking over, then record this session. The last commit of the audit branch is always a verified state (an internal revision, 4.3); the uncommitted changes after it were never verified. Save those to the document and the corpus, untracked files included, as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch`, restore the document and the corpus to the last commit, and redo the step in progress recorded in the register.
 5. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every definition, lemma, proposition, theorem and algorithm, with its statement and the results it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).
 6. **Baseline.** Run the whole corpus. It must be green; a guard that is already red becomes an iteration-0 error, never a test to be touched up.
 7. **Mechanical lint.** Write once in the corpus a deterministic script that checks: continuity and uniqueness of numbering, existence of the target of each cross-reference, presence of each cited key in the bibliography and citation of each entry, balance of math delimiters, symbols used before their definition when detectable. It feeds the editorial track.
@@ -200,6 +202,7 @@ They can be combined if needed. In all cases:
 - **Minimal fix**: the weakest change that makes the statement true and keeps its uses valid. Never strengthen a statement, do not introduce a new result to plug a gap, never delete a result silently: a withdrawn result is marked as such, with the reason and the counterexample.
 - **Critical fixes**: changing the statement of a main result (theorem, result cited in the abstract) or withdrawing a result changes what the document claims. By default, first handle the non-critical roots, then present the pending critical fixes to the user together (statement before and after, counterexample, impact) and wait for their approval; their chains, suspects included, remain BLOCKED until then, and stay BLOCKED if the user refuses. With `--auto`, apply them and flag it in the report.
 - **Green**: run the error's guard, then the whole corpus. A green guard that turns red is a regression: revert the fix and set the error back to UNDECIDED; its consequences and suspects stay BLOCKED.
+- **Internal revision**: once the error is FIXED, commit in the worktree the document, its guards and the register as internal revision r<N> (numbered from 1 over the whole audit), with a message that marks it incomplete: `spec-audit(<slug>): r<N> — F-… fixed [incomplete: audit in progress]`. Record it in the register. Each revision is a verified state, every guard green, to which a stop or an interruption can return without losing the fixes already made. It is incomplete because the consequences of the error may not have been reassessed yet. The mark stays in the commit message and the register, never in the document: the reviewers read the document and must not learn that an audit is running.
 - **Traceability**: if the document has an errata, history or revision section, or if the project versions its documents, record the fix according to that convention.
 
 ### 4.4 Propagation
@@ -234,7 +237,7 @@ After the iteration's substantive fixes, which can move the text and the numbers
 
 ## Phase 6 — End of iteration
 
-Run the whole corpus and the lint: everything must be green. Commit locally in the worktree (message listing the identifiers of the errors and defects handled), only your files, without pushing. Update the register's log.
+Run the whole corpus and the lint: everything must be green. Commit locally in the worktree (message listing the identifiers of the errors and defects handled), only your files, without pushing; this commit is also an internal revision (4.3). Update the register's log.
 
 ## Phase 7 — Loop and stop
 
@@ -331,7 +334,7 @@ Rules:
 - Do not offer "Run another check" after a causal loop, a recurrence, an oscillation or a non-convergence: a new pass would go round in circles. After a "Run another check" that fixed no new error, recommend "Keep" rather than "Run another check".
 - Interpret a free answer; if it is ambiguous, ask again. Never merge or delete on an ambiguous answer.
 - If the question cannot be asked (non-interactive session), or with `--keep`, apply "Keep the worktree": it is the only option that changes nothing and loses nothing.
-- Record in the register the question, the recommended option and the answer.
+- Record in the register the question, the recommended option and the answer, and its new state: `closed` after "Accept" or "Abandon", `suspended` after "Keep the worktree", still `running` after "Run another check".
 
 ### 8.4 Bring the report back
 
@@ -364,4 +367,25 @@ Resume at phase 1 in the same worktree, with new agents and a new budget equal t
 
 ### 8.8 Interruption
 
-If the session is interrupted before closing (error, stop by the user), the worktree and the branch stay in place: `--resume` resumes the audit, or phase 8 can be replayed on its own.
+If the session is interrupted before closing (error, session closed), the worktree and the branch stay in place, and the last internal revision is the latest verified state: `--resume` resumes the audit from it (phase 0, step 4), or phase 8 can be replayed on its own.
+
+### 8.9 Stop on request
+
+The user can stop the audit at any time, from this session only: by pressing Esc then running `/spec-audit:stop`, or by asking in words. Esc alone interrupts your turn, not the background agents.
+
+1. **Stop the agents.** Launch nothing new. Stop every audit agent still running with `TaskStop`, using the name given at launch; if that tool is not available, ask the user to stop them (`/tasks`, or the tasks pane of the desktop app). Ignore any result that arrives afterwards. The agents write only to their scratch directories, so a late one cannot damage the document: stopping them saves cost and keeps the stop clean.
+2. **Take stock.** Set the register's state to `stopping`, and record the step in progress and the uncommitted changes since the last internal revision: they are unverified.
+3. **Report** in the session: the last internal revision (commit, errors fixed up to it), marked incomplete, with what it lacks (consequences not yet reassessed, errors not yet handled, detection not finished), the step in progress, and the path of the register.
+4. **Ask**, with AskUserQuestion: a single question with the header "Stop". It is the user, not the audit, who decides whether the last revision becomes the new base:
+
+| Option | Effect |
+|---|---|
+| **Suspend** | nothing is merged or deleted; state `suspended`; `--resume` continues from the last revision |
+| **Keep the last revision as the new base** | save the uncommitted changes to the document and the corpus as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch` and restore them to the last revision; write the report, marked "Incomplete audit — stopped at r<N>"; commit the register, the report and the patch; then merge as in 8.5, with a merge message marking the audit incomplete. A later audit starts from this base |
+| **Cancel** | write the report, marked "Incomplete audit — cancelled"; archive as for "Abandon" (8.4), then remove the worktree and the branch (8.6) |
+
+- Put "Suspend" first, with "(Recommended)": it changes nothing and loses nothing.
+- Offer "Keep the last revision" only if a revision exists, that is, once at least one error has been fixed.
+- If the merge does not go through (8.5), keep the worktree: the audit stays suspended.
+- Interpret a free answer; if it is ambiguous, ask again. Never merge or delete on an ambiguous answer. If the question cannot be asked, suspend.
+- Record the question and the answer in the register, and set its state to `suspended` or `closed`.

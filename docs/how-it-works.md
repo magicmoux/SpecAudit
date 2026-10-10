@@ -124,6 +124,8 @@ The guard is run against the original wording and must fail: that is the proof t
 
 The fix is **minimal**: the weakest change that makes the statement true and keeps its uses valid. It never strengthens a statement, does not introduce a new result to plug a gap, and never deletes a result silently. **Critical fixes** (statement of a main result, withdrawn result) wait for the user's approval, except with `--auto`. After the fix, the guard and then the whole corpus are run: a green guard that turns red is a regression, the fix is reverted and the error goes back to UNDECIDED.
 
+Each fixed error is then committed in the worktree as an **internal revision**, marked incomplete: a verified state, every guard green, to which a stop can return. It is incomplete because the consequences of the error may not have been reassessed yet. The mark stays in the commit message and the register, never in the document: the reviewers read the document and must not learn that an audit is running.
+
 ### Propagation and reassessment
 
 Everything that depends on the fixed statement is rechecked, including the uses without an edge: later results, proofs, examples, tables, abstract, introduction, conclusion, other documents, code. What each use must still get from the fixed statement depends on the nature of the fix:
@@ -161,6 +163,8 @@ The audit goes back to phase 1 with new agents, and stops at the first condition
 ## Phase 8 — Closing
 
 The outcome is classified (success, partial to continue, partial needing a decision, failure), the report is presented, then a multiple-choice question is asked, with the safest option first. The report is brought back to the session and to the original branch before any removal. Details: [usage](usage.md#closing).
+
+The audit can also be stopped at any time, from its own session only (its register records the session id): the agents are stopped, the last internal revision is reported, marked incomplete, and the user chooses to suspend the audit, keep that revision as the new base, or cancel. Details: [usage](usage.md#stopping-an-audit).
 
 ## What the audit guarantees, and what it does not
 
