@@ -2,6 +2,18 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.6.2] — 2026-10-10
+
+### Changed
+
+- Documentation brought in line with the published versions: README version badge, and the command rename moved from 0.6.0 to 0.6.1, the version that shipped it. No change in behavior.
+
+## [0.6.1] — 2026-10-10
+
+### Changed
+
+- The audit command is now `/spec-audit:start` (skill folder `skills/start/`), paired with `/spec-audit:stop`; it was `/spec-audit:spec-audit`. In a manual installation, the folders are copied as `spec-audit-start` and `spec-audit-stop`.
+
 ## [0.6.0] — 2026-10-10
 
 Closes a gap in the protocol: results that use a confirmed error without having been reported by a reviewer. Such a result is correct if the error is granted, so no reviewer flags it; until now it never entered the graph, and if the error stayed unfixed it was presented as correct.
@@ -19,8 +31,6 @@ Closes a gap in the protocol: results that use a confirmed error without having 
 - `--resume` takes over an audit from another session only after the user confirms it no longer runs there, saves the unverified changes after the last revision as a patch and restarts from that revision.
 
 ### Changed
-
-- The audit command is now `/spec-audit:start` (skill folder `skills/start/`), paired with `/spec-audit:stop`; it was `/spec-audit:spec-audit`. In a manual installation, the folders are copied as `spec-audit-start` and `spec-audit-stop`.
 
 - Phase 3: a dependency without an edge no longer escapes rechecking: B can be both a root for its own error and a suspect behind A.
 - 4.4 Propagation: rechecking the uses is required for every nature of fix (statement fix, scoping addition; a proof repair leaves them untouched), including uses without an edge.

@@ -3,7 +3,7 @@
 **A Claude Code plugin for iterative precision audits of theoretical, technical and mathematical specifications.**
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Version 0.6.0](https://img.shields.io/badge/version-0.6.0-informational.svg)
+![Version 0.6.2](https://img.shields.io/badge/version-0.6.2-informational.svg)
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A63D2.svg)
 
 SpecAudit audits formal documents — papers, proofs, algorithm, protocol or format specifications — for logical, mathematical and algorithmic errors. Fresh reviewer agents with no history detect the errors; an independent adjudicator agent confirms each one with an executed counterexample; confirmed errors are ordered into a cause graph and fixed bottom-up, each fix being preceded by a regression guard in a growing test corpus. The whole audit runs in a dedicated git worktree and ends with a report and a multiple-choice closing question.
