@@ -47,7 +47,8 @@ graders:
   - name: results-folder-recorded
     type: regex
     target: { source: file, path: spec-audit/selection/register.md }
-    pattern: 'Results folder: `?SpecAudit-\d{8}_\d{4}(-\d+)?/'
+    pattern: 'results folder:? `?SpecAudit-\d{8}_\d{4}(-\d+)?/'
+    flags: i
   - name: report-quality
     type: llm
     focus: { source: file, path: spec-audit/selection/report.md }

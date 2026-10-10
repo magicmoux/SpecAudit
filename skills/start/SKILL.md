@@ -389,7 +389,7 @@ Totals per priority: the sum of the estimated ranges (low sum – high sum, in p
 
 Just before the summary of issues, which stays the last section, give the branch and the worktree (path, branch `audit/<slug>`, base, commits), the audit outcome and the recommended closing option (phase 8), under `## Branch and closing`.
 
-Review by agents and bounded tests are neither peer review nor proof. Never write that a proof is "verified" without saying by what; only a mechanized proof can be called machine-verified.
+Review by agents and bounded tests are neither peer review nor proof. Never write that a proof is "verified" without saying by what; only a mechanized proof can be called machine-verified. For the same reason, never call the document or a part of it "correct": say what was checked and how ("no error found by two cold reviews; Lemma 3 guarded by a bounded check up to length 4"). The reader decides what the report is worth from what it says was done, not from its conclusion.
 
 ## Phase 8 — Closing
 
