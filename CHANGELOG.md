@@ -2,6 +2,16 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.7.1] — 2026-10-10
+
+### Changed
+
+- Domain profiles, first step: the rules specific to formal documents (errors, form defects, inventory units, reviewer angles, oracles, evidence levels, guards, fixes of mapped statements, lint) move from `SKILL.md` to `skills/start/profiles/formal.md`, which the protocol refers to by section and the audit session receives with it. No change in behavior.
+
+### Added
+
+- `docs/profiles.md`: design of the audit profiles (functional, UI, research, experimental), their choice (`--profile`, `spec-audit/config.json`, heuristic confirmed at phase 0) and resources on demand (frozen sources, executable oracles, normative references).
+
 ## [0.7.0] — 2026-10-10
 
 The audit now runs in a session of its own, and confirms errors on the project's own verification artifacts rather than on scripts it writes.

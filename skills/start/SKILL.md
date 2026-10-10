@@ -26,19 +26,15 @@ An author cannot see their own blind spots, and a reviewer who knows the history
 
 ## What counts as an error
 
-An **error** is a defect in the content specific to the document's domain (logical, mathematical, algorithmic, theoretical):
-
-- a false statement (a counterexample exists);
-- an invalid or incomplete proof;
-- insufficient scoping: missing hypothesis, context or domain of application not restricted, edge case not handled;
-- a definition that is inconsistent, ill-founded, or ambiguous enough to change a result;
-- an algorithm that does not meet its specification, termination not guaranteed, a wrong complexity;
-- two results that contradict each other, or an abstract, introduction or conclusion that claims more than the body proves;
-- a wrong formula or computed example, even from a typo, since the meaning changes.
+An **error** is a defect in the content specific to the document's domain; the profile's `Errors` section lists what that means for the document at hand.
 
 Only errors follow the full protocol: cause graph, counterexample, guards, bottom-up fixing.
 
-**Form defects** (typo outside formulas, numbering, cross-reference, bibliography entry) are not errors in the sense of this protocol. They follow the editorial track (phase 5), without counterexample or causal chain. Style preferences are discarded.
+**Form defects** (the profile's `Form defects` section) are not errors in the sense of this protocol. They follow the editorial track (phase 5), without counterexample or causal chain. Style preferences are discarded.
+
+## Profile
+
+What counts as an error, as evidence and as a guard depends on the kind of document; the rest of this protocol does not. A profile, in `profiles/`, holds the domain-specific part, in sections this protocol refers to by name: `Errors`, `Form defects`, `Inventory units`, `Reviewer angles`, `Oracles`, `Evidence`, `Guards`, `Fixes`, `Lint`. The only profile so far is `formal` (`profiles/formal.md`): theory, proofs, algorithms, formal specifications. Read it at phase 0 and apply it wherever this protocol names one of its sections. The design of the other profiles is in the plugin's `docs/profiles.md`.
 
 ## Parameters
 
@@ -95,7 +91,7 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
    - In all cases, commit only your files and never push.
 4. **Environment.** The audit uses the worktree, the file tools, Bash, the two agents and the project's own oracles, nothing else. Establish that; step 5 records it in the register (format in `references/register.md`):
    - **Session inventory.** List what your session exposes and that the audit ignores: plugins and skills (`claude plugin list --json`, or the list in your context), connectors (`claude mcp list`), hooks. Record them as *ignored*. Never invoke a skill or a connector during the audit, in any mode: they bring context the reviewers must not have, and they are not reproducible.
-   - **Oracles.** Find, in the worktree, every artifact that can decide statements of the document: a mechanized development (Lean: `lakefile.toml` or `lakefile.lean` and `lean-toolchain`; Coq, Isabelle, Agda likewise), a reference model or brute-force checker (`verification/`, `model`, scripts the document names), a test runner (`pytest`, `cargo test`, `mvn test`, a `run_*.py`), engines reachable from the runner (SQLite, DuckDB). For each one, record its kind (formal, model, runner), its path, the statements or sections it covers (from the document's own correspondence table when it has one, for instance a "Lean theorems / results" table, otherwise from its README), and its command. Run the command once in the worktree: an oracle whose command does not run is not an oracle. Order the table by strength: formal, then model, then runner. This table goes to every reviewer (phase 1) and every adjudicator (4.1).
+   - **Oracles.** Find, in the worktree, every artifact that can decide statements of the document, of the kinds the profile's `Oracles` section lists. For each one, record its kind, its path, the statements or sections it covers (as that section says how to find them), and its command. Run the command once in the worktree: an oracle whose command does not run is not an oracle. Order the table by strength, as the profile does. This table goes to every reviewer (phase 1) and every adjudicator (4.1).
    - **Worktree autonomy.** `git -C "<original repository>" status --ignored --porcelain` lists what git ignores. For each ignored path an oracle needs, by nature:
      - *third-party cache* (`.lake/packages`, `node_modules`, a venv, a vendored dependency): **share** it from the original directory by a junction or symbolic link (`mklink /J` on Windows, `ln -s` elsewhere); it is read, not rebuilt, and the original is untouched;
      - *input the project does not version* (PDF sources, data files, `.env`): **copy** it once into the worktree and record its origin and SHA-256 in the register, so that the audit stays replayable and the report says what it ran on;
@@ -107,7 +103,7 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
    - With `--resume`: if the register's state is `running` or `stopping` and its session is not this one, the audit may still be running there: ask the user to confirm that it is not before taking over, then record this session. The last commit of the audit branch is always a verified state (an internal revision, 4.3); the uncommitted changes after it were never verified. Save those to the document and the corpus, untracked files included, as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch`, restore the document and the corpus to the last commit, and redo the step in progress recorded in the register.
    - Also with `--resume`, before any other step of the audit, the orchestrator replaces every agent that the register's agent table shows `running` or `stopped` (Roles, "Replacing an agent"): none of them still works for this audit, and their scratch directories hold what they had done.
 6. **Audit session.** Unless `--in-session` is given, the audit runs in a session of its own, so that nothing of your session (plugins, skills, connectors, hooks, memory, conversation) reaches it, and so that what it may run is exactly the oracle table. From the worktree:
-   - Write in your scratch directory, regenerated at each launch and at each `--resume`: `protocol.md`, this skill followed by `references/register.md`, preceded by the line "You are the orchestrator of an audit prepared by its launcher: phase 0, steps 1 to 6, is done and recorded in the register; continue at step 7; launch no agent other than `spec-reviewer` and `spec-adjudicator`; never run phase 8, which the launcher does from your report"; and `agents.json`, the two agents of the plugin's `agents/` folder as the `--agents` format wants them (`description`, `prompt` = the body of the file, `tools`, `model`), under their names `spec-reviewer` and `spec-adjudicator`.
+   - Write in your scratch directory, regenerated at each launch and at each `--resume`: `protocol.md`, this skill followed by the profile (`profiles/formal.md`) and `references/register.md`, preceded by the line "You are the orchestrator of an audit prepared by its launcher: phase 0, steps 1 to 6, is done and recorded in the register; continue at step 7; launch no agent other than `spec-reviewer` and `spec-adjudicator`; never run phase 8, which the launcher does from your report"; and `agents.json`, the two agents of the plugin's `agents/` folder as the `--agents` format wants them (`description`, `prompt` = the body of the file, `tools`, `model`), under their names `spec-reviewer` and `spec-adjudicator`.
    - Build the Bash allow list from the oracle table: `Bash(git *)` and, per oracle, its runner only (`Bash(python *)`, `Bash(pytest *)`, `Bash(lake *)`, `Bash(mvn *)`). Nothing else: no network tool, no package installation, and `git push` denied.
    - Launch it in the background, from the worktree, and record its process id and `--session-id` in the register:
 
@@ -123,9 +119,9 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
      `--setting-sources ""` loads no settings file, hence no plugin, no hook and no connector of yours, and no default model either, which is why `--model` is always given (from the skill's `--model` and `--model-version`, otherwise the family of your session's model, latest version); `--strict-mcp-config` admits no MCP server; `--tools` names the built-in tools, `--disallowedTools Skill` removes the skills, and `dontAsk` denies anything that would prompt, so the allow list is the whole of what the session may run. The CLI's `--bare` mode is not used: it only accepts an API key and refuses the usual sign-in. The built-in agents (general-purpose, Explore, Plan) stay visible to that session; the protocol tells it to launch the two of `agents.json` only.
    - Wait for the process to end. It writes the report (`spec-audit/<slug>/report.md`) and leaves the register in the state it reached; you then run phase 8 from both. In that session, every question of this skill follows its non-interactive rule: a critical fix stays pending (unless `--auto`), an undecided error is escalated in the report, and closing is not run.
    - With `--in-session`, continue here: you are the orchestrator, and the oracle table binds you the same way.
-7. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every definition, lemma, proposition, theorem and algorithm, with its statement and the results it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).
+7. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every unit of the profile's `Inventory units` section, with its statement and the units it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).
 8. **Baseline.** Run the whole corpus, from the worktree alone, with the commands of the oracle table. It must be green; a guard that is already red becomes an iteration-0 error, never a test to be touched up.
-9. **Mechanical lint.** Write once in the corpus a deterministic script that checks: continuity and uniqueness of numbering, existence of the target of each cross-reference, presence of each cited key in the bibliography and citation of each entry, balance of math delimiters, symbols used before their definition when detectable. It feeds the editorial track.
+9. **Mechanical lint.** Write once in the corpus a deterministic script that runs the checks of the profile's `Lint` section. It feeds the editorial track.
 
 ## Phase 1 — Complete cold detection
 
@@ -136,7 +132,7 @@ Each reviewer is fresh and receives a fixed message that says nothing about the 
 ```
 Review this document in full, as a referee discovering it: <paths>.
 Normative dependencies (definitions it uses): <paths, or "none">.
-Angle: <full | logic and proofs | definitions, scoping and edge cases | algorithms and complexity>.
+Angle: <one of the profile's reviewer angles: full | logic and proofs | definitions, scoping and edge cases | algorithms and complexity for formal>.
 Scratch directory for your computations: <scratch/iter-k/reviewer-x>.
 Oracles of the project you may run for your tests: <oracle table of the register, or "none">.
 Return your list in the format given by your instructions.
@@ -202,13 +198,7 @@ A user decision on an escalated error counts as the adjudicator's verdict: judge
 
 An error of type "false statement" requires an **executed** counterexample; otherwise it is downgraded to incomplete proof or UNDECIDED.
 
-**Evidence.** The adjudicator confirms with the strongest oracle of the table that covers the statement, and says which:
-
-1. **formal**: the statement has a counterpart in a mechanized development of the project (the document's correspondence table says which theorem or definition). The counterexample is executed on that formal statement: by evaluation or decision (`#eval`, `decide`, an exhaustive enumeration on a bounded instance type), by a property-based search (Plausible or its equivalent), or as a theorem refuting the statement on a witness. A script that re-encodes the statement confirms nothing at this level: the encoding, not the text, would be judged.
-2. **model**: a reference model or checker of the project covers the statement; the counterexample runs on it.
-3. **ad hoc**: no oracle covers the statement; the adjudicator's own script, in exact arithmetic, as before.
-
-The level is recorded in the register (`Evidence`). A statement of level 1 confirmed at level 3 stays UNDECIDED, with "a formal counterexample" as what would settle it; a statement of level 2 confirmed at level 3 is CONFIRMED but flagged. The final report counts confirmations by level.
+**Evidence.** The adjudicator confirms with the strongest oracle of the table that covers the statement, and says which, at one of the levels of the profile's `Evidence` section, which also says when a confirmation at a weaker level than the statement allows stays UNDECIDED or is flagged. The level is recorded in the register (`Evidence`), and the final report counts confirmations by level.
 
 If the adjudicator names an **upstream cause**, the root was not one: if that cause is already an error in the graph, add the edge; otherwise open a new error for it, in phase 3. The root goes back to BLOCKED behind its cause, and the cycle check is redone.
 
@@ -238,10 +228,9 @@ Write the guard before the fix: written afterwards, it tends to test the fix rat
 
 Corpus rules:
 - it only grows: never delete or loosen a guard to make it pass; any change to an existing guard is justified in the register and flagged in the report;
-- exact arithmetic (integers, rationals, symbolic computation), never equality between floats; fixed seeds;
 - the model encoded in the guard follows the document's definitions, not the proposed fix;
 - follow the conventions of the existing corpus (headers, naming, test runner);
-- a guard is written for the oracle that confirmed the error, at its level: for a formal oracle, a theorem or a decided check in a module that the project's build compiles, so that replaying the corpus is the build (Lean example in `references/register.md`); for a model, a test that runs the model; otherwise a test of the runner. "Red first" then means that the theorem refuting the original statement on the witness compiles, and "green" that the fixed statement is re-proved, or passes its bounded check, in the same build. A decision procedure that extends the trusted base (`native_decide`) serves the search, never the recorded guard.
+- a guard is written for the oracle that confirmed the error, at its level, in the form the profile's `Guards` section gives (arithmetic, language of the guard, what "red first" and "green" mean for that oracle).
 
 ### 4.3 Fix
 
@@ -258,7 +247,7 @@ They can be combined if needed. In all cases:
 - **Green**: run the error's guard, then the whole corpus. A green guard that turns red is a regression: revert the fix and set the error back to UNDECIDED; its consequences and suspects stay BLOCKED.
 - **Internal revision**: once the error is FIXED, commit in the worktree the document, its guards and the register as internal revision r<N> (numbered from 1 over the whole audit), with a message that marks it incomplete: `spec-audit(<slug>): r<N> — F-… fixed [incomplete: audit in progress]`. Record it in the register. Each revision is a verified state, every guard green, to which a stop or an interruption can return without losing the fixes already made. It is incomplete because the consequences of the error may not have been reassessed yet. The mark stays in the commit message and the register, never in the document: the reviewers read the document and must not learn that an audit is running.
 - **Traceability**: if the document has an errata, history or revision section, or if the project versions its documents, record the fix according to that convention.
-- **Mapped statements**: when the fixed statement has a counterpart in a mechanized development (evidence level 1), the fix includes the change of the formal statement and of its proof, and the update of the correspondence table, in the same internal revision. Without them the error stays at "incomplete proof", never FIXED: the text would claim what the development no longer proves.
+- **Profile rules**: apply the profile's `Fixes` section (for `formal`, the fix of a mapped statement includes its formal counterpart, in the same internal revision).
 
 ### 4.4 Propagation
 

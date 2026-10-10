@@ -21,6 +21,7 @@ A confirmed false positive, a fix that strengthens a statement, a reviewer that 
 | `.claude-plugin/marketplace.json` | the repository is its own marketplace |
 | `skills/start/SKILL.md` | `/spec-audit:start`, orchestrator instructions, phases 0 to 8 |
 | `skills/start/references/register.md` | formats of the register, its entries and the guards, loaded on demand |
+| `skills/start/profiles/*.md` | domain profiles: errors, evidence, guards, oracles, lint (`formal` today; design in `docs/profiles.md`) |
 | `skills/stop/SKILL.md` | `/spec-audit:stop`, user-only entry point that stops the audit running in the session |
 | `agents/spec-reviewer.md` | reviewer instructions and output format |
 | `agents/spec-adjudicator.md` | adjudicator instructions and output format |
@@ -62,7 +63,7 @@ For a change to the protocol, also test on a real document of the target domain 
 
 - **Language**: the skill, the agents and the documentation are written in English.
 - **Instruction style**: explain why a rule exists rather than imposing it; a model that understands the reason generalizes better than a model that obeys.
-- **Consistency**: error types, statuses, severities and YAML formats are shared between `skills/start/SKILL.md`, `skills/stop/SKILL.md`, the two agents and `references/register.md`. Change them together, and update the documentation.
+- **Consistency**: error types, statuses, severities and YAML formats are shared between `skills/start/SKILL.md`, `skills/stop/SKILL.md`, the two agents, `references/register.md` and the profiles. Every profile has the same sections, which the protocol names; change them together, and update the documentation.
 - **Version**: semantic versioning in `.claude-plugin/plugin.json` (patch: unchanged behavior; minor: new compatible capability; major: incompatible protocol, formats or parameters), with an entry in `CHANGELOG.md`. After merging, `claude plugin tag .` creates the tag `spec-audit--v<version>`.
 
 ## Pull requests
