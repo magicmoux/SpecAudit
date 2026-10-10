@@ -40,6 +40,7 @@ BASE="$(git -C "$WORK" rev-list --max-parents=0 HEAD | cut -c1-7)"  # the demo r
 check "results README identifies the base commit" "grep -qF '$BASE' '${RES}README.md'"
 check "original source kept unfixed" "grep -qF '|P_k(L)| = k.' '${RES}source/selection.md'"
 check "report and patch in results" "[ -f '${RES}report.md' ] && [ -f '${RES}resources/corrections.patch' ]"
+check "executed counterexamples kept" "[ -n \"\$(find '${RES}resources/counterexamples' -name '*.py' 2>/dev/null)\" ]"
 check "no runner cache in results" "[ -z \"\$(find '$RES' -name __pycache__ -o -name .pytest_cache)\" ]"
 check "report does not claim correctness" "! grep -qiE 'the document is correct' '$DIR/report.md'"
 python -X utf8 -c "import json; d = json.load(open('result.json', encoding='utf-8')); print('cost USD', d.get('total_cost_usd'), '| turns', d.get('num_turns'), '| denials', len(d.get('permission_denials', [])))" 2>/dev/null

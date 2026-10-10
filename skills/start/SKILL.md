@@ -367,6 +367,9 @@ Guards added, lint rules added, command to replay everything.
 ## Scope of verification
 What was checked and how (agent review, bounded exhaustive test, mechanized proof), the confirmations by evidence level (formal, model, ad hoc), the oracles used and the session resources ignored, and what was not checked.
 
+## Branch and closing
+Worktree, branch, base, commits, outcome, recommended closing option.
+
 ## Summary of issues
 | Priority | ID | Issue | Location | Status | Mitigation or solution | Effort (person-days) | Basis |
 Totals per priority: the sum of the estimated ranges (low sum – high sum, in person-days), with the number of rows not estimated.
@@ -384,7 +387,7 @@ Totals per priority: the sum of the estimated ranges (low sum – high sum, in p
 
 **Conditional results.** Before writing "Open points", take each unresolved error: UNDECIDED or ESCALATED, CONFIRMED with a critical fix refused or pending, or with a fix reverted after a regression. From the inventory, collect every result that depends on it, directly or through another result, and list them grouped by direct use, each with what it uses. Suspects only cover the direct uses of a confirmed error; this closure also reaches the uses of an undecided error and the results that depend on a suspect. It changes nothing in the graph: the text has not changed, so there is nothing to reassess, only results that must not be presented as safe.
 
-End the report with the branch and the worktree (path, branch `audit/<slug>`, base, commits) and with the audit outcome and the recommended closing option (phase 8).
+Just before the summary of issues, which stays the last section, give the branch and the worktree (path, branch `audit/<slug>`, base, commits), the audit outcome and the recommended closing option (phase 8), under `## Branch and closing`.
 
 Review by agents and bounded tests are neither peer review nor proof. Never write that a proof is "verified" without saying by what; only a mechanized proof can be called machine-verified.
 
