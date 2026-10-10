@@ -13,7 +13,7 @@ description: >-
   Use whenever the user wants to proofread, check, audit, harden or make reliable a formal
   document, hunt for errors in theorems, lemmas, algorithms or proofs, or prepare a
   specification for submission or publication, even without saying "audit".
-argument-hint: "<document> [--corpus <dir>] [--max-iter N] [--auto] [--resume] [--base <ref>] [--no-worktree] [--keep]"
+argument-hint: "<document> [--corpus <dir>] [--max-iter N] [--auto] [--resume] [--base <ref>] [--no-worktree] [--in-session] [--keep]"
 ---
 
 # Precision audit of a specification
@@ -49,17 +49,21 @@ Only errors follow the full protocol: cause graph, counterexample, guards, botto
 - `--resume`: resume an interrupted or suspended audit from its register, in its existing worktree, from its last internal revision (4.3).
 - `--base <ref>`: starting branch or commit of the worktree (default: `HEAD` of the current repository).
 - `--no-worktree`: work in the current directory, without a worktree, when it is already isolated for the audit.
+- `--in-session`: run the orchestrator in the current session. By default the audit runs in a session of its own (phase 0, step 6), started in the worktree with the file tools, Bash, the two agents and the project's oracles, and none of the plugins, skills, connectors, hooks or memory of your session.
 - `--keep`: at closing, ask no question and keep the worktree; only the report is brought back (phase 8).
 
 ## Roles
 
 | Role | Who | Sees | Writes |
 |---|---|---|---|
-| Orchestrator | you | everything: register, corpus, git history | document, corpus, register |
+| Launcher | you | your session, the original repository, the register | worktree and register (phase 0, steps 1 to 6), stop (8.9), closing (phase 8) |
+| Orchestrator | the audit session (phase 0, step 6), or you with `--in-session` | everything in the worktree: register, corpus, oracles, git history | document, corpus, register |
 | Reviewer | `spec-reviewer` agent, fresh for each wave | the document and its normative dependencies, nothing else | nothing, outside its scratch directory |
 | Adjudicator | `spec-adjudicator` agent, fresh for each error | one error and the document | nothing, outside its scratch directory |
 
 Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `spec-adjudicator`; installed as a plugin, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`. If they are not available, launch a fresh general-purpose agent, giving it the content of `spec-reviewer.md` or `spec-adjudicator.md` as instructions (in `~/.claude/agents/`, or in the plugin's `agents/` folder). Never use a "fork" agent: it would inherit the conversation, hence the history. Give every agent a name at launch, `audit-<slug>-<role>-<id>` (for example `audit-selection-adjudicator-F-1-3`): the name is what lets the audit stop it (8.9).
+
+In the audit session, the agents are passed at launch (`--agents`, phase 0, step 6) from the plugin's `agents/` folder, under the same names.
 
 ## Phase 0 — Preparation (once)
 
@@ -72,16 +76,42 @@ Installed in `~/.claude/agents/`, these agents are called `spec-reviewer` and `s
    - Name the branch `audit/<slug>` and the directory `<parent of the repository root>/<repository name>-audit-<slug>`. If either already exists outside `--resume`, add a suffix `-2`, `-3`…
    - Create it: `git worktree add "<directory>" -b audit/<slug> <base>`, where `<base>` is `--base` or `HEAD`. With `--resume`, find it instead with `git worktree list`.
    - From now on, all commands run in the worktree (absolute paths, or `git -C "<directory>"`), and agents receive absolute paths in the worktree.
-   - Files not tracked by git (PDF sources, environments, compiled dependencies) are not there: read them in the original repository, read-only, and check that the corpus runner works in the worktree before starting.
+   - Files that git does not track (ignored caches, build outputs, PDF sources, environments) are not there: step 4 decides what the worktree takes from the original directory. Once the audit has started, nothing is read in the original directory any more.
    - With `--no-worktree`, work in place, but record `git status`: other sessions may be working in parallel, and their changes are not yours.
    - Outside a git repository, ask whether to initialize one: without git, there is neither isolation nor commits.
    - In all cases, commit only your files and never push.
-4. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end. Record in it this session, `${CLAUDE_SESSION_ID}`, and the state `running`: only the session that runs the audit may stop it (8.9), because only it knows the step in progress and the agents running.
+4. **Environment.** The audit uses the worktree, the file tools, Bash, the two agents and the project's own oracles, nothing else. Establish that; step 5 records it in the register (format in `references/register.md`):
+   - **Session inventory.** List what your session exposes and that the audit ignores: plugins and skills (`claude plugin list --json`, or the list in your context), connectors (`claude mcp list`), hooks. Record them as *ignored*. Never invoke a skill or a connector during the audit, in any mode: they bring context the reviewers must not have, and they are not reproducible.
+   - **Oracles.** Find, in the worktree, every artifact that can decide statements of the document: a mechanized development (Lean: `lakefile.toml` or `lakefile.lean` and `lean-toolchain`; Coq, Isabelle, Agda likewise), a reference model or brute-force checker (`verification/`, `model`, scripts the document names), a test runner (`pytest`, `cargo test`, `mvn test`, a `run_*.py`), engines reachable from the runner (SQLite, DuckDB). For each one, record its kind (formal, model, runner), its path, the statements or sections it covers (from the document's own correspondence table when it has one, for instance a "Lean theorems / results" table, otherwise from its README), and its command. Run the command once in the worktree: an oracle whose command does not run is not an oracle. Order the table by strength: formal, then model, then runner. This table goes to every reviewer (phase 1) and every adjudicator (4.1).
+   - **Worktree autonomy.** `git -C "<original repository>" status --ignored --porcelain` lists what git ignores. For each ignored path an oracle needs, by nature:
+     - *third-party cache* (`.lake/packages`, `node_modules`, a venv, a vendored dependency): **share** it from the original directory by a junction or symbolic link (`mklink /J` on Windows, `ln -s` elsewhere); it is read, not rebuilt, and the original is untouched;
+     - *input the project does not version* (PDF sources, data files, `.env`): **copy** it once into the worktree and record its origin and SHA-256 in the register, so that the audit stays replayable and the report says what it ran on;
+     - *build output of the project itself* (`.lake/build`, `target/`, `__pycache__`, `dist/`): **nothing**; the worktree rebuilds it from its own sources, which is what makes the baseline probative. A build output copied from the original directory could come from sources that differ from the commit audited.
+   - **Stop and ask.** If an oracle cannot run from the worktree alone (toolchain missing, cache absent and too large to share, runner not installed), stop and ask the user, with AskUserQuestion, what to install or share. Never replace an oracle by a script of your own, and never start an audit whose baseline is not green from the worktree alone.
+5. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end. Record in it this session, `${CLAUDE_SESSION_ID}`, and the state `running`: only the session that launched the audit may stop it (8.9), because only it knows the step in progress and the process or agents running.
+   - Record the mode (`audit session`, with its process id and session id once launched at step 6, or `in-session`), the session inventory, the oracle table and the autonomy actions of step 4.
    - Name this session `[AUDIT] <slug>` if a tool lets you rename it (Claude desktop app); otherwise suggest once that the user run `/rename [AUDIT] <slug>`. The name tells the user which session to stop the audit from.
    - With `--resume`: if the register's state is `running` or `stopping` and its session is not this one, the audit may still be running there: ask the user to confirm that it is not before taking over, then record this session. The last commit of the audit branch is always a verified state (an internal revision, 4.3); the uncommitted changes after it were never verified. Save those to the document and the corpus, untracked files included, as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch`, restore the document and the corpus to the last commit, and redo the step in progress recorded in the register.
-5. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every definition, lemma, proposition, theorem and algorithm, with its statement and the results it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).
-6. **Baseline.** Run the whole corpus. It must be green; a guard that is already red becomes an iteration-0 error, never a test to be touched up.
-7. **Mechanical lint.** Write once in the corpus a deterministic script that checks: continuity and uniqueness of numbering, existence of the target of each cross-reference, presence of each cited key in the bibliography and citation of each entry, balance of math delimiters, symbols used before their definition when detectable. It feeds the editorial track.
+6. **Audit session.** Unless `--in-session` is given, the audit runs in a session of its own, so that nothing of your session (plugins, skills, connectors, hooks, memory, conversation) reaches it, and so that what it may run is exactly the oracle table. From the worktree:
+   - Write in your scratch directory, regenerated at each launch and at each `--resume`: `protocol.md`, this skill followed by `references/register.md`, preceded by the line "You are the orchestrator of an audit prepared by its launcher: phase 0, steps 1 to 6, is done and recorded in the register; continue at step 7; launch no agent other than `spec-reviewer` and `spec-adjudicator`; never run phase 8, which the launcher does from your report"; and `agents.json`, the two agents of the plugin's `agents/` folder as the `--agents` format wants them (`description`, `prompt` = the body of the file, `tools`, `model`), under their names `spec-reviewer` and `spec-adjudicator`.
+   - Build the Bash allow list from the oracle table: `Bash(git *)` and, per oracle, its runner only (`Bash(python *)`, `Bash(pytest *)`, `Bash(lake *)`, `Bash(mvn *)`). Nothing else: no network tool, no package installation, and `git push` denied.
+   - Launch it in the background, from the worktree, and record its process id and `--session-id` in the register:
+
+     ```text
+     claude -p --session-id <uuid> --setting-sources "" --strict-mcp-config
+       --tools "Read,Grep,Glob,Edit,Write,Bash,Agent"
+       --disallowedTools Skill "Bash(git push *)"
+       --agents "<scratch>/agents.json" --append-system-prompt-file "<scratch>/protocol.md"
+       --permission-mode dontAsk --allowedTools Edit Write "Bash(git *)" <one rule per oracle>
+       "Audit <document> <options>. Register: spec-audit/<slug>/register.md."
+     ```
+
+     `--setting-sources ""` loads no settings file, hence no plugin, no hook and no connector of yours; `--strict-mcp-config` admits no MCP server; `--tools` names the built-in tools, `--disallowedTools Skill` removes the skills, and `dontAsk` denies anything that would prompt, so the allow list is the whole of what the session may run. The CLI's `--bare` mode is not used: it only accepts an API key and refuses the usual sign-in. The built-in agents (general-purpose, Explore, Plan) stay visible to that session; the protocol tells it to launch the two of `agents.json` only.
+   - Wait for the process to end. It writes the report (`spec-audit/<slug>/report.md`) and leaves the register in the state it reached; you then run phase 8 from both. In that session, every question of this skill follows its non-interactive rule: a critical fix stays pending (unless `--auto`), an undecided error is escalated in the report, and closing is not run.
+   - With `--in-session`, continue here: you are the orchestrator, and the oracle table binds you the same way.
+7. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every definition, lemma, proposition, theorem and algorithm, with its statement and the results it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).
+8. **Baseline.** Run the whole corpus, from the worktree alone, with the commands of the oracle table. It must be green; a guard that is already red becomes an iteration-0 error, never a test to be touched up.
+9. **Mechanical lint.** Write once in the corpus a deterministic script that checks: continuity and uniqueness of numbering, existence of the target of each cross-reference, presence of each cited key in the bibliography and citation of each entry, balance of math delimiters, symbols used before their definition when detectable. It feeds the editorial track.
 
 ## Phase 1 — Complete cold detection
 
@@ -94,10 +124,12 @@ Review this document in full, as a referee discovering it: <paths>.
 Normative dependencies (definitions it uses): <paths, or "none">.
 Angle: <full | logic and proofs | definitions, scoping and edge cases | algorithms and complexity>.
 Scratch directory for your computations: <scratch/iter-k/reviewer-x>.
+Oracles of the project you may run for your tests: <oracle table of the register, or "none">.
 Return your list in the format given by your instructions.
 ```
 
 - Never add the register, the corpus, previous errors, fixed areas or the reason for the audit. Drawing attention to a passage already biases the review.
+- The oracle table names the project's own verification artifacts (mechanized development, reference model, test runner) and their commands, which a referee would find in the repository; it says nothing about the audit. It is the only means of execution the reviewer gets beyond its own scripts.
 - **First wave**: one full reviewer, plus angle reviewers if the document is long or dense. Each one reads the whole document, because an inconsistency shows between two sections, not within one.
 - **Following waves**: one fresh full reviewer. If it brings new errors compared with the union of the previous waves (after deduplication, phase 2), launch one more wave. Detection is complete when a wave brings nothing new, and stops at the third wave at the latest; in that case, note "detection not saturated" in the register.
 - If the document is too long for one reading, split it by sections, but give each reviewer the definition and notation sections and the list of statements from the inventory (without history), and add a pass dedicated to cross-section consistency.
@@ -146,7 +178,7 @@ As long as its cause is not fixed, a consequence is **ignored**: status BLOCKED 
 
 ### 4.1 Confirmation
 
-The root goes to a fresh adjudicator, with the error alone (without the reviewer's identity or the other errors), the document paths and a scratch directory. Do not adjudicate yourself, especially an error that touches a passage you fixed: you would be judging your own work.
+The root goes to a fresh adjudicator, with the error alone (without the reviewer's identity or the other errors), the document paths, the oracle table of the register (phase 0, step 4) and a scratch directory. Do not adjudicate yourself, especially an error that touches a passage you fixed: you would be judging your own work.
 
 - **CONFIRMED** (with executed evidence) → mark its suspects (below), then 4.2.
 - **REFUTED** (with the reason) → remove its outgoing edges; its consequences with no other open cause become roots.
@@ -155,6 +187,14 @@ The root goes to a fresh adjudicator, with the error alone (without the reviewer
 A user decision on an escalated error counts as the adjudicator's verdict: judged false, the error becomes CONFIRMED and its suspects are marked at that point; judged correct, it becomes REFUTED.
 
 An error of type "false statement" requires an **executed** counterexample; otherwise it is downgraded to incomplete proof or UNDECIDED.
+
+**Evidence.** The adjudicator confirms with the strongest oracle of the table that covers the statement, and says which:
+
+1. **formal**: the statement has a counterpart in a mechanized development of the project (the document's correspondence table says which theorem or definition). The counterexample is executed on that formal statement: by evaluation or decision (`#eval`, `decide`, an exhaustive enumeration on a bounded instance type), by a property-based search (Plausible or its equivalent), or as a theorem refuting the statement on a witness. A script that re-encodes the statement confirms nothing at this level: the encoding, not the text, would be judged.
+2. **model**: a reference model or checker of the project covers the statement; the counterexample runs on it.
+3. **ad hoc**: no oracle covers the statement; the adjudicator's own script, in exact arithmetic, as before.
+
+The level is recorded in the register (`Evidence`). A statement of level 1 confirmed at level 3 stays UNDECIDED, with "a formal counterexample" as what would settle it; a statement of level 2 confirmed at level 3 is CONFIRMED but flagged. The final report counts confirmations by level.
 
 If the adjudicator names an **upstream cause**, the root was not one: if that cause is already an error in the graph, add the edge; otherwise open a new error for it, in phase 3. The root goes back to BLOCKED behind its cause, and the cycle check is redone.
 
@@ -186,7 +226,8 @@ Corpus rules:
 - it only grows: never delete or loosen a guard to make it pass; any change to an existing guard is justified in the register and flagged in the report;
 - exact arithmetic (integers, rationals, symbolic computation), never equality between floats; fixed seeds;
 - the model encoded in the guard follows the document's definitions, not the proposed fix;
-- follow the conventions of the existing corpus (headers, naming, test runner).
+- follow the conventions of the existing corpus (headers, naming, test runner);
+- a guard is written for the oracle that confirmed the error, at its level: for a formal oracle, a theorem or a decided check in a module that the project's build compiles, so that replaying the corpus is the build (Lean example in `references/register.md`); for a model, a test that runs the model; otherwise a test of the runner. "Red first" then means that the theorem refuting the original statement on the witness compiles, and "green" that the fixed statement is re-proved, or passes its bounded check, in the same build. A decision procedure that extends the trusted base (`native_decide`) serves the search, never the recorded guard.
 
 ### 4.3 Fix
 
@@ -203,6 +244,7 @@ They can be combined if needed. In all cases:
 - **Green**: run the error's guard, then the whole corpus. A green guard that turns red is a regression: revert the fix and set the error back to UNDECIDED; its consequences and suspects stay BLOCKED.
 - **Internal revision**: once the error is FIXED, commit in the worktree the document, its guards and the register as internal revision r<N> (numbered from 1 over the whole audit), with a message that marks it incomplete: `spec-audit(<slug>): r<N> — F-… fixed [incomplete: audit in progress]`. Record it in the register. Each revision is a verified state, every guard green, to which a stop or an interruption can return without losing the fixes already made. It is incomplete because the consequences of the error may not have been reassessed yet. The mark stays in the commit message and the register, never in the document: the reviewers read the document and must not learn that an audit is running.
 - **Traceability**: if the document has an errata, history or revision section, or if the project versions its documents, record the fix according to that convention.
+- **Mapped statements**: when the fixed statement has a counterpart in a mechanized development (evidence level 1), the fix includes the change of the formal statement and of its proof, and the update of the correspondence table, in the same internal revision. Without them the error stays at "incomplete proof", never FIXED: the text would claim what the development no longer proves.
 
 ### 4.4 Propagation
 
@@ -279,7 +321,7 @@ Results conditional on an unresolved error, directly or through another result: 
 Guards added, lint rules added, command to replay everything.
 
 ## Scope of verification
-What was checked and how (agent review, bounded exhaustive test, mechanized proof), and what was not.
+What was checked and how (agent review, bounded exhaustive test, mechanized proof), the confirmations by evidence level (formal, model, ad hoc), the oracles used and the session resources ignored, and what was not checked.
 ```
 
 **Conditional results.** Before writing "Open points", take each unresolved error: UNDECIDED or ESCALATED, CONFIRMED with a critical fix refused or pending, or with a fix reverted after a regression. From the inventory, collect every result that depends on it, directly or through another result, and list them grouped by direct use, each with what it uses. Suspects only cover the direct uses of a confirmed error; this closure also reaches the uses of an undecided error and the results that depend on a suspect. It changes nothing in the graph: the text has not changed, so there is nothing to reassess, only results that must not be presented as safe.
@@ -290,7 +332,7 @@ Review by agents and bounded tests are neither peer review nor proof. Never writ
 
 ## Phase 8 — Closing
 
-Closing is decided with the user, through a multiple-choice question, after they have been able to read the report.
+Closing is decided with the user, through a multiple-choice question, after they have been able to read the report. It is run by the launcher (your session) from the report and the register written by the audit session, or by you with `--in-session`.
 
 ### 8.1 Classify the outcome
 
@@ -366,11 +408,13 @@ Resume at phase 1 in the same worktree, with new agents and a new budget equal t
 
 ### 8.8 Interruption
 
-If the session is interrupted before closing (error, session closed), the worktree and the branch stay in place, and the last internal revision is the latest verified state: `--resume` resumes the audit from it (phase 0, step 4), or phase 8 can be replayed on its own.
+If the session is interrupted before closing (error, session closed), the worktree and the branch stay in place, and the last internal revision is the latest verified state: `--resume` resumes the audit from it (phase 0, step 5), or phase 8 can be replayed on its own.
 
 ### 8.9 Stop on request
 
 The user can stop the audit at any time, from this session only: by pressing Esc then running `/spec-audit:stop`, or by asking in words. Esc alone interrupts your turn, not the background agents.
+
+In the default mode, the audit runs in its own session (phase 0, step 6), launched by you: stop that process first (its id is in the register; `taskkill /PID <pid> /T` on Windows, `kill <pid>` elsewhere), which ends its agents with it; then continue at step 2, taking stock from the register and the worktree's git state. With `--in-session`, start at step 1:
 
 1. **Stop the agents.** Launch nothing new. Stop every audit agent still running with `TaskStop`, using the name given at launch; if that tool is not available, ask the user to stop them (`/tasks`, or the tasks pane of the desktop app). Ignore any result that arrives afterwards. The agents write only to their scratch directories, so a late one cannot damage the document: stopping them saves cost and keeps the stop clean.
 2. **Take stock.** Set the register's state to `stopping`, and record the step in progress and the uncommitted changes since the last internal revision: they are unverified.

@@ -15,12 +15,17 @@ You may also receive a **suspect**: a result that uses a passage judged false an
 
 - Read the given document, but neither the git history, nor the registers, corpora or earlier versions: your judgment must rest on the text alone.
 - Do not modify any file. Your scripts go in the scratch directory given.
+- Your message may give an **oracle table**: the project's own verification artifacts (a mechanized development with its correspondence table, a reference model or checker, a test runner), each with its command. They are the project's, not the audit's. Use them in the order given, and never re-encode a statement that one of them covers.
 
 ## Method
 
 1. **Understand the context.** Read the definitions, the notation and the cited results on which the incriminated passage depends, not just the passage.
 2. **Try to refute first.** Does the error misread a definition? Does it ignore a hypothesis stated elsewhere, or a convention of the document? Is its counterexample admissible under the document's definitions?
-3. **Then try to confirm.** Build a minimal admissible counterexample and run it: script in exact arithmetic with a fixed seed, brute force over a bounded domain, solver or proof assistant if the project has one. Give the code and its output.
+3. **Then try to confirm.** Build a minimal admissible counterexample and run it on the strongest oracle that covers the statement:
+   - *formal*: the statement has a counterpart in the project's mechanized development (its correspondence table says which): refute that formal statement on the witness, by evaluation or decision (`#eval`, `decide`, an enumeration on a bounded instance type), by a property-based search (Plausible or its equivalent), or as a theorem; a script of yours that re-encodes the statement does not reach this level;
+   - *model*: a reference model or checker of the project covers it: run the witness on it;
+   - *ad hoc*: nothing covers it: your own script, in exact arithmetic with a fixed seed, brute force over a bounded domain, or a solver.
+   Give the code, the command and its output, the level reached, and why not a stronger one.
 4. **Classify** the error:
    - *false statement*: a counterexample has been executed;
    - *incomplete proof*: the statement holds, but a step is not justified; name the step and the missing argument, and attempt a repair;
@@ -46,6 +51,8 @@ minimal_counterexample:
   obtained: "<…>"
   script: "<path in the scratch directory>"
   output: "<…>"
+  evidence: formal | model | ad hoc
+  oracle: "<name from the table, or 'none'>"
 variant_cases:
   - "<edge case>"
 near_case: "<instance where the original statement is true>"

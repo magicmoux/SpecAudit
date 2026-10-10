@@ -29,6 +29,7 @@ State the document's **normative dependencies** (the files whose definitions it 
 | `--resume` | no | resumes an interrupted or suspended audit from its register, in its existing worktree, from its last internal revision |
 | `--base <ref>` | `HEAD` | starting branch or commit of the worktree |
 | `--no-worktree` | no | works in the current directory, when it is already isolated for the audit |
+| `--in-session` | no | runs the orchestrator in your session; by default the audit runs in a session of its own, started in the worktree with the file tools, Bash, the two agents and the project's oracles, and nothing of your session |
 | `--keep` | no | at closing, asks no question and keeps the worktree; only the report is brought back |
 
 ## Examples
@@ -56,12 +57,31 @@ State the document's **normative dependencies** (the files whose definitions it 
    - if the document, its dependencies or the corpus have uncommitted changes: they will not exist in the worktree, so should it audit the committed version or should you commit first?
    - if the project's version convention is unclear: fix in place, or create a new revision?
    - if the folder is not a git repository: should one be initialized?
+   - if an oracle of the project cannot run from the worktree alone (toolchain missing, cache too large to share, runner not installed): what should be installed or shared?
 
    It then creates the worktree `<parent of the repository>/<repository>-audit-<slug>` on the branch `audit/<slug>`, where `<slug>` is the document name in lowercase. It names the session `[AUDIT] <slug>` when the app allows it (Claude desktop app), or suggests that you run `/rename [AUDIT] <slug>`: this is the session from which the audit can be stopped.
-2. **Iterations.** Detection, triage, cause graph, adjudication, guards, fixes and editorial track run without intervention. The register is updated after each step.
-3. **Critical fixes.** If a fix changes the statement of a main result or withdraws a result, the skill first handles everything else, then presents the pending critical fixes to you together (statement before and after, counterexample, impact) and waits for your approval. With `--auto`, it applies them and flags it.
-4. **Undecided errors.** When the adjudicator cannot settle an error, it is escalated to you without any change to the document, with what would make it possible to decide; its consequences remain blocked.
-5. **Closing.** The skill summarizes the audit, gives the path of the full report and asks you the closing question.
+
+   It then establishes the **environment**: what your session exposes and the audit ignores (plugins, skills, connectors, hooks), and the project's **oracles**, every artifact that can decide statements of the document (a mechanized development such as Lean, a reference model or checker, a test runner), each with the statements it covers and its command, run once in the worktree and recorded by strength in the register. Ignored files an oracle needs are shared by a link (third-party caches), copied with their SHA-256 recorded (unversioned inputs) or rebuilt (build outputs): the baseline must be green from the worktree alone.
+2. **Audit session.** Unless `--in-session` is given, the audit itself runs in a session of its own, launched by yours in the worktree (see [below](#the-audit-session)). Your session waits for it, then runs the closing from its report and the register.
+3. **Iterations.** Detection, triage, cause graph, adjudication, guards, fixes and editorial track run without intervention. The register is updated after each step.
+4. **Critical fixes.** If a fix changes the statement of a main result or withdraws a result, the skill first handles everything else, then presents the pending critical fixes to you together (statement before and after, counterexample, impact) and waits for your approval. With `--auto`, it applies them and flags it. In the default mode, the audit session cannot ask you: they stay pending, the report lists them, and the closing recommends keeping the worktree.
+5. **Undecided errors.** When the adjudicator cannot settle an error, it is escalated to you without any change to the document, with what would make it possible to decide; its consequences remain blocked. In the default mode, the escalation is in the report.
+6. **Closing.** The skill summarizes the audit, gives the path of the full report and asks you the closing question.
+
+## The audit session
+
+By default, your session only prepares the audit (project rules, worktree, environment, register) and closes it. The audit itself runs in a session of its own: a `claude -p` process launched from the worktree, with
+
+- no settings file, hence none of your plugins, hooks or connectors (`--setting-sources ""`, `--strict-mcp-config`), no skill (`--disallowedTools Skill`), and nothing of your conversation or memory;
+- the file tools, Bash and the Agent tool only, and the two agents of the plugin, passed with `--agents`;
+- a permission mode that denies anything not allowed in advance, and an allow list that is exactly `git` (push denied) and the command of each oracle recorded in the register;
+- the protocol as its system prompt, and the register's path in its request.
+
+Its process id and session id are recorded in the register. It cannot ask you anything: a critical fix stays pending unless `--auto`, an undecided error is escalated in the report, and it never runs the closing. When it ends, your session reads the report and the register, and asks you the closing question.
+
+`--in-session` runs the orchestrator in your session instead, as before 0.7.0; the oracle table binds it the same way, and it never invokes a skill or a connector during the audit.
+
+The default mode needs the `claude` CLI on your `PATH`.
 
 ## Output files
 
@@ -89,7 +109,7 @@ If you choose "Keep" or "Abandon", an archive is committed in the original branc
 | Errors | table: identifier, severity, type, causes, status, fix, guards, commit |
 | Open points | undecided errors and blocked chains, results conditional on an unresolved error, directly or through another result (with the error each one depends on and the chain through which it uses it), references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated |
 | Corpus | guards and lint rules added, command to replay everything |
-| Scope of verification | what was checked and how, and what was not |
+| Scope of verification | what was checked and how, the confirmations by evidence level (formal, model, ad hoc), the oracles used and the session resources ignored, and what was not checked |
 
 ### Error statuses
 
@@ -106,6 +126,18 @@ If you choose "Keep" or "Abandon", an archive is committed in the original branc
 | RECURRENCE | reappearance of an already fixed error: the audit stops |
 
 A **suspect** is a result that uses a confirmed error without having been reported itself. It is correct if the error is granted, so it stays BLOCKED until the error is fixed, then is reassessed against the fixed text. Its register entry has the origin `suspect (uses F-…)`; if its cause is never fixed, the report lists it as a result conditional on an unresolved error.
+
+### Evidence levels
+
+Each confirmed error records the oracle that confirmed it, the strongest of the register's table that covers the statement:
+
+| Level | Oracle | Counterexample |
+|---|---|---|
+| formal | the project's mechanized development (Lean, Coq, Isabelle, Agda), through the document's correspondence table | executed on the formal counterpart of the statement: `#eval`, `decide`, a property-based search, or a theorem refuting it on the witness |
+| model | a reference model or checker of the project | run on the model |
+| ad hoc | none covers the statement | the adjudicator's own script, in exact arithmetic |
+
+A statement that has a formal counterpart and is confirmed only at the ad hoc level stays UNDECIDED: the adjudicator's encoding, not the text, would be judged. Guards are written for the oracle that confirmed the error: a theorem or a decided check compiled by the project's build for a formal oracle, a test of the model or of the runner otherwise.
 
 ## Closing
 
@@ -131,14 +163,14 @@ The merge does not happen, and the worktree is kept, if the original branch has 
 
 ## Stopping an audit
 
-You can stop an audit at any time, from its own session only (`[AUDIT] <slug>` when it could be renamed):
+You can stop an audit at any time, from the session that launched it only (`[AUDIT] <slug>` when it could be renamed):
 
 1. press **Esc** to interrupt the current turn; the background agents keep running at this point;
 2. run `/spec-audit:stop`, or ask in words to stop the audit.
 
 A slash command typed while Claude is working is queued until the end of the turn, hence Esc first. From another session, `/spec-audit:stop <document>` changes nothing and names the session that runs the audit: only that one knows the step in progress and the agents running.
 
-The skill then stops every agent of the audit, reports its last internal revision (the errors fixed up to it, marked incomplete, and what it lacks), and asks:
+The skill then stops the audit session's process, which ends its agents (with `--in-session`, every agent of the audit), reports its last internal revision (the errors fixed up to it, marked incomplete, and what it lacks), and asks:
 
 | Option | Effect |
 |---|---|
@@ -174,4 +206,5 @@ The skill then stops every agent of the audit, reports its last internal revisio
 - **Bound the spending** with `--max-iter`: each iteration launches several Opus agents.
 - **Long documents**: the skill splits them by sections, giving each reviewer the definitions, the notation and the list of statements, and adds a cross-section consistency pass.
 - **Project rules**: what `CLAUDE.md` says (attribution, document versioning, commit policy) takes precedence over the skill; write down there the constraints specific to your documents.
+- **Mechanized development**: if the project has one (Lean, Coq, Isabelle, Agda), keep in the document a correspondence table from its results to the formal theorems. The audit then confirms errors on the formal statements, and refuses an ad hoc confirmation of a statement that has a formal counterpart.
 - **Bibliography**: a reference is only fixed against its source (local PDF, publisher's page, DBLP); otherwise it is marked "to be checked". Put the sources in the repository so that they can be consulted.
