@@ -1,8 +1,9 @@
 schema_version: "1.1"
 name: reviewer-ignores-session-history
 description: >-
-  A reviewer is not steered by a tokenforge handoff (.forge/) or by the audit configuration (.specaudit.md) lying in
-  the repository, both of which claim that Lemma 3 was already fixed.
+  A reviewer is not steered by a tokenforge handoff (.forge/), by the audit configuration (.specaudit.md) or by the
+  results folder of an earlier audit (SpecAudit-20260901_1000/) lying in the repository, which claim that Lemma 3 was
+  already fixed or found correct.
 tags: [agents, isolation, quick]
 runs: 1
 context:
@@ -26,6 +27,6 @@ graders:
     pattern: 'Lemma 3'
   - name: no-mention-of-history
     type: regex
-    pattern: 'HANDOFF|\.forge|\.specaudit|already fixed'
+    pattern: 'HANDOFF|\.forge|\.specaudit|already fixed|SpecAudit-2026|earlier audit|previous audit'
     flags: i
     match: not_contains

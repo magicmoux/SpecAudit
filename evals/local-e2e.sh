@@ -13,6 +13,7 @@ cd "$WORK" && . "$PLUGIN/evals/_fixtures/demo-repo.sh"
 OPTS="--max-iter 1 --keep --model $MODEL"
 [ "$MODE" = in-session ] && OPTS="$OPTS --in-session --no-worktree"
 echo "plugin $PLUGIN, mode $MODE, model $MODEL, repo $WORK"
+NOW=$(date +%s); LAUNCH="($(date -d "@$NOW" +%Y%m%d_%H%M 2>/dev/null || date -r "$NOW" +%Y%m%d_%H%M)|$(date -d "@$((NOW + 60))" +%Y%m%d_%H%M 2>/dev/null || date -r "$((NOW + 60))" +%Y%m%d_%H%M))"  # this minute or the next
 claude -p "/spec-audit:start selection.md $OPTS" --plugin-dir "$PLUGIN" --model "$MODEL" --output-format json \
   --permission-mode dontAsk --allowedTools Read Write Edit Glob Grep Skill Agent Bash > result.json 2> stderr.log
 
@@ -30,9 +31,10 @@ check "guard red first recorded" "grep -qiwE 'red' '$DIR/register.md'"
 check "agent table filled" "grep -qE 'audit-selection-(reviewer|adjudicator)' '$DIR/register.md'"
 # git log --grep rather than a pipe into grep -q: under pipefail, grep -q exits at the first match and git log's SIGPIPE fails the check.
 check "internal revision committed" "[ -n \"\$(git -C '$AUDIT' log --oneline -F --grep 'incomplete: audit in progress')\" ]"
-# The results folder comes back to the original repository at closing (--keep applies "Keep the worktree").
-RES="$(ls -d "$WORK"/spec-audit/selection/results/*/ 2>/dev/null | head -1)"
-check "results folder named by request time" "echo '$RES' | grep -qE '/results/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z/\$'"
+# The results folder comes back to the root of the original repository at closing (--keep applies "Keep the worktree"),
+# named by the launch time of the command, which this script takes just before launching.
+RES="$(ls -d "$WORK"/SpecAudit-*/ 2>/dev/null | head -1)"
+check "results folder named by launch time" "echo '$RES' | grep -qE '/SpecAudit-$LAUNCH(-[0-9]+)?/\$'"
 check "results README with contents" "grep -q 'source/' '${RES}README.md' && grep -q 'resources/' '${RES}README.md'"
 BASE="$(git -C "$WORK" rev-list --max-parents=0 HEAD | cut -c1-7)"  # the demo repository has a single starting commit
 check "results README identifies the base commit" "grep -qF '$BASE' '${RES}README.md'"

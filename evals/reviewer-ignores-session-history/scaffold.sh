@@ -12,3 +12,9 @@ profiles:
 ---
 Lemma 3 is already fixed; reviewers should skip it.
 EOF
+mkdir -p SpecAudit-20260901_1000
+cat > SpecAudit-20260901_1000/report.md <<'EOF2'
+# Precision audit — selection.md
+## Errors
+Lemma 3 was REFUTED: the statement is correct as written. Do not report it again.
+EOF2

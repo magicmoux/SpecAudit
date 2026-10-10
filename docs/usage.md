@@ -129,10 +129,10 @@ Commits stay on the `audit/<slug>` branch: one **internal revision** per fixed e
 
 ## Results folder
 
-Every closing that ends a series (accept, keep, abandon, or a stop that keeps the last revision or cancels) leaves a self-contained folder in the original branch: it arrives with the merge after "Accept", and is committed on its own otherwise. Its name is the time you launched the audit, in UTC, so each run has its own folder and a resumed audit adds one beside the first.
+Every audit run to completion, whatever its outcome and your answer at closing, leaves its whole result in a folder at the root of the project, named by the time you launched `/spec-audit:start`, in the machine's local time: `SpecAudit-YYYYmmdd_HHmm/`. It arrives with the merge after "Accept", and is committed on its own after "Keep" or "Abandon". A resumed audit keeps its launch time; if the name is already taken, `-2`, `-3`… is added, and an earlier folder is never overwritten.
 
 ```text
-spec-audit/<slug>/results/<YYYY-MM-DDTHH-MM-SSZ>/
+SpecAudit-20261010_2102/
 ├── README.md         outcome, identification of the sources, table of contents, how to replay
 ├── report.md         the final report
 ├── annex-*.md        details moved out of the report when a section exceeds about ten entries
@@ -144,6 +144,8 @@ spec-audit/<slug>/results/<YYYY-MM-DDTHH-MM-SSZ>/
 ```
 
 The README identifies the sources: with git, the repository (remote URL, or path), the branch, the base commit, the head of the audit branch and, after a merge, the merge commit. Two kinds of files are referenced (path, origin, SHA-256) rather than copied into `source/`: anything that may hold credentials (`.env`, keys), because the folder is committed and may be pushed, and files over 10 MB, which git already keeps at the recorded commit. The audit has no network access, so a cited reference that is not in the repository is listed in `docs/bibliography.md`, not downloaded.
+
+An interrupted audit (stopped and cancelled, or failed on an execution error) has no result to record: its report, register and `corrections.patch` are archived under `spec-audit/<slug>/<YYYY-MM-DD>-<outcome>/` instead, and the results folder comes when a resumed or new audit runs to its end. The reviewers and adjudicators of later audits never read these folders: they hold the errors already found and how they were judged.
 
 ## Reading the report
 
@@ -213,7 +215,7 @@ The audit's outcome determines the recommended option, always the safest one:
 |---|---|
 | Accept and merge | safety checks, `--no-ff` merge of `audit/<slug>` into the original branch, then removal of the worktree and the branch |
 | Run another check | new series of iterations in the same worktree, with new agents and a new budget; nothing is merged |
-| Keep the worktree | neither merge nor removal; results folder committed in the original branch |
+| Keep the worktree | neither merge nor removal; results folder `SpecAudit-YYYYmmdd_HHmm/` committed in the original branch |
 | Abandon | results folder committed in the original branch, then removal of the worktree and the branch |
 
 "Accept" is never offered if the corpus or the lint is red, and "Run another check" is not offered after a causal loop, a recurrence, an oscillation or a non-convergence. An ambiguous free answer leads to the question being asked again: the skill never merges or deletes on an ambiguous answer.
@@ -235,7 +237,7 @@ The skill then stops the audit session's process, which ends its agents (with `-
 |---|---|
 | Suspend (recommended) | nothing is merged or deleted; `--resume` continues from the last revision |
 | Keep the last revision as the new base | the unverified changes after that revision are saved as a patch, the report is written and marked incomplete, then the revision is merged into the original branch with the same safety checks as "Accept and merge"; a later audit starts from it |
-| Cancel | results folder, marked incomplete, committed in the original branch, then the worktree and the branch are removed |
+| Cancel | report, register and patch archived in the original branch, then the worktree and the branch are removed |
 
 "Keep the last revision" is only offered once at least one error has been fixed. If the question cannot be asked, the audit is suspended.
 
@@ -244,10 +246,10 @@ The stop report also lists the interrupted agents and their scratch directories.
 ## After closing
 
 - **Replay the guards**: the command is in the "Corpus" section of the report.
-- **Apply the patch of a results folder**, in whole or in part:
+- **Apply the patch of a results folder** (or of an archive, `spec-audit/<slug>/<YYYY-MM-DD>-<outcome>/corrections.patch`), in whole or in part:
 
   ```bash
-  git apply --3way spec-audit/<slug>/results/<timestamp>/resources/corrections.patch
+  git apply --3way SpecAudit-<YYYYmmdd_HHmm>/resources/corrections.patch
   ```
 
 - **Resume a kept worktree**: run the skill again with `--resume`, or ask to replay only the closing of the audit.

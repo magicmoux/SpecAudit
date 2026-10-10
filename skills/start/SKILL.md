@@ -134,7 +134,7 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
      - *input the project does not version* (PDF sources, data files, `.env`): **copy** it once into the worktree and record its origin and SHA-256 in the register, so that the audit stays replayable and the report says what it ran on;
      - *build output of the project itself* (`.lake/build`, `target/`, `__pycache__`, `dist/`): **nothing**; the worktree rebuilds it from its own sources, which is what makes the baseline probative. A build output copied from the original directory could come from sources that differ from the commit audited.
    - **Stop and ask.** If an oracle cannot run from the worktree alone (toolchain missing, cache absent and too large to share, runner not installed), stop and ask the user, with AskUserQuestion, what to install or share. Never replace an oracle by a script of your own, and never start an audit whose baseline is not green from the worktree alone.
-5. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end. Record in it the time of the request in UTC (`Requested`; with `--resume`, add the new one without replacing the first), which names the results folder at closing (8.4), this session, `${CLAUDE_SESSION_ID}`, and the state `running`: only the session that launched the audit may stop it (8.9), because only it knows the step in progress and the process or agents running.
+5. **Register.** Create `spec-audit/<slug>/register.md` (format in `references/register.md`), or reread it with `--resume`. It is the audit's memory: it must survive a context compaction, so update it after each step, not at the end. Record in it the launch time of the command in local time (`Launched`, `YYYYmmdd_HHmm`, with the machine's UTC offset; a `--resume` keeps it), which names the results folder at closing (8.4), this session, `${CLAUDE_SESSION_ID}`, and the state `running`: only the session that launched the audit may stop it (8.9), because only it knows the step in progress and the process or agents running.
    - Record the mode (`audit session`, with its process id and session id once launched at step 6, or `in-session`), the session inventory, the oracle table and the autonomy actions of step 4.
    - Name this session `[AUDIT] <slug>` if a tool lets you rename it (Claude desktop app); otherwise suggest once that the user run `/rename [AUDIT] <slug>`. The name tells the user which session to stop the audit from.
    - With `--resume`: if the register's state is `running` or `stopping` and its session is not this one, the audit may still be running there: ask the user to confirm that it is not before taking over, then record this session. The last commit of the audit branch is always a verified state (an internal revision, 4.3); the uncommitted changes after it were never verified. Save those to the document and the corpus, untracked files included, as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch`, restore the document and the corpus to the last commit, and redo the step in progress recorded in the register.
@@ -413,7 +413,7 @@ Use the multiple-choice question tool (AskUserQuestion), once no agent is runnin
 |---|---|
 | **Accept and merge** | merge of `audit/<slug>` into the original branch after the safety checks (8.5), then removal of the worktree and the branch |
 | **Run another check** | new series of iterations in the same worktree (8.7), without merging anything |
-| **Keep the worktree** | neither merge nor removal; results folder (8.4) committed in the original branch; decision postponed |
+| **Keep the worktree** | neither merge nor removal; results folder `SpecAudit-<YYYYmmdd_HHmm>/` (8.4) committed in the original branch; decision postponed |
 | **Abandon** | results folder (8.4) committed in the original branch, then removal of the worktree and the branch (8.6) |
 
 The tool always adds a free answer ("Other").
@@ -437,14 +437,16 @@ Rules:
 
 ### 8.4 Results folder
 
-Every closing that ends a series ("Accept", "Keep", "Abandon", and the stop's "Keep the last revision" and "Cancel", 8.9) leaves a results folder: one place where a reader who was not there finds what was audited, what was found, and everything needed to check it again, without the worktree, the session or the scratch directories, which do not outlive the audit. "Run another check" builds none: the series is not over, and its closing will.
+Every audit run to completion leaves its whole result in a folder of the project: one place where a reader who was not there finds what was audited, what was found, and everything needed to check it again, without the worktree, the session or the scratch directories, which do not outlive the audit.
 
-**Location**: `spec-audit/<slug>/results/<timestamp>/`, where `<timestamp>` is the time of the request recorded in the register at phase 0 (`Requested`), in UTC, as `YYYY-MM-DDTHH-MM-SSZ` (no colons, which Windows forbids in a file name). The request time, not the closing time, so that the folder names the run the user launched, and a `--resume` of a kept audit, being a new request, gets a folder of its own beside the earlier one.
+**When**: at the closing of an audit that ran to its end, whatever its outcome (8.1) and whatever the answer to the closing question ("Accept", "Keep", "Abandon"), except a failure on an execution error. Not after "Run another check", whose series is not over: its own closing builds the folder. Not after a stop (8.9) or an execution error either: an interrupted audit has no result to record, only its state, which the archive of 8.4.1 keeps.
+
+**Location**: `<project root>/SpecAudit-<YYYYmmdd_HHmm>/`, where the time is the launch of the audit command, `/spec-audit:start`, recorded in the register at phase 0 (`Launched`), in the local time of the machine. The launch, not the closing, so that the folder names the audit the user started; a `--resume` continues the same audit and keeps its launch time. If a folder of that name already exists (an audit kept, then resumed and closed again, or two audits launched in the same minute), add `-2`, `-3`…, never overwrite: an earlier result stays as it was recorded.
 
 **Build it in the worktree**, from the register, after the answer to the closing question and before any merge or removal:
 
 ```text
-spec-audit/<slug>/results/<timestamp>/
+SpecAudit-<YYYYmmdd_HHmm>/
 ├── README.md         table of contents and identification
 ├── report.md         the final report
 ├── annex-*.md        the report's annexes, if any
@@ -461,20 +463,24 @@ spec-audit/<slug>/results/<timestamp>/
 - **`resources/`**: what makes the results checkable: `corpus/`, a copy of the guard corpus and the lint as they stand at closing, with the command to replay them; `corrections.patch`, `git -C "<worktree>" diff <base> audit/<slug>`, which holds every fix and guard, so nothing is lost even after abandoning; `counterexamples/<F-…>/`, the script and output with which each confirmed error was executed, copied from the adjudicator's scratch directory, since that directory is not kept; and, if the oracle table names project artifacts, their commands (not copies: they belong to the project). Leave out runner caches and bytecode (`__pycache__/`, `.pytest_cache/`).
 - **`README.md`**, at the root:
   - title, outcome (8.1) and stop reason, marked "Incomplete audit" after a stop;
-  - the request timestamp, the closing date, the answer to the closing question, and the model of the audit session;
+  - the document(s) audited, the launch time with the machine's UTC offset, the closing date, the answer to the closing question, and the model of the audit session;
   - identification of the sources: with git, the repository (remote URL if one is configured, otherwise its path), the original branch, the base commit, the head of `audit/<slug>` at closing and, after "Accept", the merge commit; without git, the path and SHA-256 of each source;
   - a table of contents with a relative link to every file and folder of the results folder, each with one line saying what it holds, including the files referenced but not copied;
   - how to replay: the corpus command, and `git apply --3way resources/corrections.patch`.
 
-Commit the folder on `audit/<slug>`, by path, with the register's closing entry. Then bring it back:
+Record its path in the register's closing entry (`Results folder: SpecAudit-…/`), and commit the folder on `audit/<slug>`, by path, with the register. Then bring it back:
 
-- **In the session**: the summary from 8.2, completed with the closing performed (merge commit, worktree kept or removed) and the path of the results folder.
+- **In the session**: the summary from 8.2, completed with the closing performed (merge commit, worktree kept or removed) and the path of the results folder, or of the archive (8.4.1).
 - **In the original branch**:
   - *Accept*: the results folder arrives with the merge (8.5), with the fixed document and the corpus.
-  - *Keep* or *Abandon*: first commit in the worktree any work in progress, with a message marking it as unverified. Then copy the results folder into the original repository at the same path, and commit only it (`git add -- <folder>` then `git commit -m "<message>" -- <folder>`), so as not to carry along any change from another session. If the project rules forbid this commit, leave it uncommitted and say so.
+  - *Keep* or *Abandon*: first commit in the worktree any work in progress, with a message marking it as unverified. Then copy the results folder into the original repository, at its root, and commit only it (`git add -- <folder>` then `git commit -m "<message>" -- <folder>`), so as not to carry along any change from another session. If the project rules forbid this commit, leave it uncommitted and say so.
   - *Run another check*: nothing for now; the next series ends with this same closing.
 
 Never abandon a worktree before this return has succeeded.
+
+#### 8.4.1 Archive of an interrupted audit
+
+After a stop that cancels (8.9) or a failure on an execution error, there is no result to record, but nothing must be lost: copy into the original repository, under `spec-audit/<slug>/<YYYY-MM-DD>-<outcome>/`, the `report.md` (marked incomplete), the `register.md` and a `corrections.patch` produced by `git -C "<worktree>" diff <base> audit/<slug>`, which holds the fixes and the guards made so far. Commit only these files, as above. A later `--resume`, or a new audit, then produces the results folder when it runs to its end.
 
 ### 8.5 Merge ("Accept and merge")
 
@@ -487,7 +493,7 @@ Never abandon a worktree before this return has succeeded.
 
 ### 8.6 Abandon ("Abandon")
 
-After the return: `git worktree remove --force "<worktree>"`, then `git branch -D audit/<slug>`. The patch in the results folder (`resources/corrections.patch`) makes it possible to replay all or part of the fixes, or to examine them.
+After the return: `git worktree remove --force "<worktree>"`, then `git branch -D audit/<slug>`. The patch in the results folder (`resources/corrections.patch`), or in the archive after an execution error (8.4.1), makes it possible to replay all or part of the fixes, or to examine them.
 
 ### 8.7 New check ("Run another check")
 
@@ -511,8 +517,8 @@ In the default mode, the audit runs in its own session (phase 0, step 6), launch
 | Option | Effect |
 |---|---|
 | **Suspend** | nothing is merged or deleted; state `suspended`; `--resume` continues from the last revision |
-| **Keep the last revision as the new base** | save the uncommitted changes to the document and the corpus as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch` and restore them to the last revision; write the report, marked "Incomplete audit — stopped at r<N>"; build the results folder (8.4), with the in-flight patch in its `resources/`; commit the register and the results folder; then merge as in 8.5, with a merge message marking the audit incomplete. A later audit starts from this base |
-| **Cancel** | write the report, marked "Incomplete audit — cancelled"; build and bring back the results folder as for "Abandon" (8.4), then remove the worktree and the branch (8.6) |
+| **Keep the last revision as the new base** | save the uncommitted changes to the document and the corpus as `spec-audit/<slug>/in-flight-<YYYY-MM-DD>.patch` and restore them to the last revision; write the report, marked "Incomplete audit — stopped at r<N>"; commit the register, the report and the patch; then merge as in 8.5, with a merge message marking the audit incomplete. A later audit starts from this base |
+| **Cancel** | write the report, marked "Incomplete audit — cancelled"; archive it (8.4.1), then remove the worktree and the branch (8.6) |
 
 - Put "Suspend" first, with "(Recommended)": it changes nothing and loses nothing.
 - Offer "Keep the last revision" only if a revision exists, that is, once at least one error has been fixed.

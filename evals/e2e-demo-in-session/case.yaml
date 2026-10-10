@@ -42,12 +42,12 @@ graders:
     type: regex
     target: { source: file, path: spec-audit/selection/register.md }
     pattern: 'audit-selection-(reviewer|adjudicator)'
-  # The results folder is named by the request time, which a file_exists path cannot predict: check that its README
-  # was written under a well-formed timestamp; evals/local-e2e.sh checks the folder's contents on disk.
-  - name: results-folder-readme
-    type: tool_used
-    tool: Write
-    input_match: 'spec-audit/selection/results/\d{4}-\d\d-\d\dT\d\d-\d\d-\d\dZ/README\.md'
+  # The results folder is named by the launch time, which a file_exists path cannot predict: the register records its
+  # path at closing; evals/local-e2e.sh checks the folder's contents on disk.
+  - name: results-folder-recorded
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    pattern: 'Results folder: `?SpecAudit-\d{8}_\d{4}(-\d+)?/'
   - name: report-quality
     type: llm
     focus: { source: file, path: spec-audit/selection/report.md }
