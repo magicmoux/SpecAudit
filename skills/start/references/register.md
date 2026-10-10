@@ -91,7 +91,7 @@ Cycle: none | <errors of the cycle> → stop.
 - **Causes**: F-… (with the justification of the edge), or "root"
 - **Consequences**: F-…
 - **Probable cause**: implicit hypothesis, forgotten edge case, neighboring result copied over, overloaded notation…
-- **Counterexample(s)**: minimal instance, result expected according to the text, result obtained, path of the script
+- **Counterexample(s)**: minimal instance, result expected according to the text, result obtained, path of the script and its command (a counterexample is always executed, never evaluated by hand)
 - **Evidence**: formal (<oracle>) | model (<oracle>) | ad hoc
 - **Adjudicator's verdict**: summary, and reason for rejection if any
 - **Impact**: dependent results and passages (from the inventory)

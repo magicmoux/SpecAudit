@@ -24,7 +24,7 @@ check() { if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails
 check "register written" "[ -f '$DIR/register.md' ]"
 check "inventory written" "[ -f '$DIR/inventory.md' ]"
 check "report written" "[ -f '$DIR/report.md' ]"
-check "lemma 3 fixed" "grep -qE 'min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n' '$AUDIT/selection.md'"
+check "lemma 3 fixed" "grep -qE '^\*\*Lemma 3\.\*\*.*(min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n)' '$AUDIT/selection.md'"
 check "proposition 4 unchanged" "grep -qF 'P_k(L ++ M) = P_k(P_k(L) ++ P_k(M))' '$AUDIT/selection.md'"
 check "guard red first recorded" "grep -qiE 'red' '$DIR/register.md'"
 check "agent table filled" "grep -qE 'audit-selection-(reviewer|adjudicator)' '$DIR/register.md'"

@@ -40,7 +40,9 @@ The adjudicator confirms with the strongest oracle of the table that covers the 
 
 1. **formal**: the statement has a counterpart in a mechanized development of the project (the document's correspondence table says which theorem or definition). The counterexample is executed on that formal statement: by evaluation or decision (`#eval`, `decide`, an exhaustive enumeration on a bounded instance type), by a property-based search (Plausible or its equivalent), or as a theorem refuting the statement on a witness. A script that re-encodes the statement confirms nothing at this level: the encoding, not the text, would be judged.
 2. **model**: a reference model or checker of the project covers the statement; the counterexample runs on it.
-3. **ad hoc**: no oracle covers the statement; the adjudicator's own script, in exact arithmetic.
+3. **ad hoc**: no oracle covers the statement; the adjudicator's own script, in exact arithmetic, run with its output recorded.
+
+At every level the counterexample is executed, never evaluated by hand, however small: a hand evaluation repeats the reading that produced the report and can repeat its mistake, while a run is checked by the machine and replayable. A confirmation without a script and its output is treated as UNDECIDED.
 
 The level is recorded in the register (`Evidence`). A statement of level 1 confirmed at level 3 stays UNDECIDED, with "a formal counterexample" as what would settle it; a statement of level 2 confirmed at level 3 is CONFIRMED but flagged. The final report counts confirmations by level.
 

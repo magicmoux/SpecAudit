@@ -36,6 +36,8 @@ Only errors follow the full protocol: cause graph, counterexample, guards, botto
 
 What counts as an error, as evidence and as a guard depends on the kind of document; the rest of this protocol does not. A profile, in `profiles/`, holds the domain-specific part, in sections this protocol refers to by name: `Errors`, `Form defects`, `Inventory units`, `Reviewer angles`, `Oracles`, `Evidence`, `Guards`, `Fixes`, `Lint`. The only profile so far is `formal` (`profiles/formal.md`): theory, proofs, algorithms, formal specifications. Read it at phase 0 and apply it wherever this protocol names one of its sections. The design of the other profiles is in the plugin's `docs/profiles.md`.
 
+**Where the plugin's files are.** This skill's folder is `${CLAUDE_SKILL_DIR}`: the paths `profiles/…` and `references/…` in this protocol are relative to it, and the plugin's `agents/` and `docs/` folders are two levels up, in `${CLAUDE_SKILL_DIR}/../../`. Read them from there, never from the working directory or from a plugin root you infer: the skill folder is the one location the harness guarantees, and a guessed path that does not exist, or that the permission mode refuses, stops the audit at phase 0 before anything is recorded. The profile is `${CLAUDE_SKILL_DIR}/profiles/formal.md`, the register format `${CLAUDE_SKILL_DIR}/references/register.md`.
+
 ## Parameters
 
 - `<document>`: the audited file or files.
@@ -233,7 +235,7 @@ A user decision on an escalated error counts as the adjudicator's verdict: judge
 
 An error of type "false statement" requires an **executed** counterexample; otherwise it is downgraded to incomplete proof or UNDECIDED.
 
-**Evidence.** The adjudicator confirms with the strongest oracle of the table that covers the statement, and says which, at one of the levels of the profile's `Evidence` section, which also says when a confirmation at a weaker level than the statement allows stays UNDECIDED or is flagged. The level is recorded in the register (`Evidence`), and the final report counts confirmations by level.
+**Evidence.** The adjudicator confirms with the strongest oracle of the table that covers the statement, and says which, at one of the levels of the profile's `Evidence` section, which also says when a confirmation at a weaker level than the statement allows stays UNDECIDED or is flagged. The level is recorded in the register (`Evidence`), and the final report counts confirmations by level. Before accepting a CONFIRMED verdict, check that its `script` exists in the agent's scratch directory and that its recorded `output` shows the failure: the adjudicator's independence is worth something only if its counterexample was run, and a verdict whose counterexample was evaluated by hand is treated as UNDECIDED (relaunch a fresh adjudicator on the same scratch directory, once).
 
 If the adjudicator names an **upstream cause**, the root was not one: if that cause is already an error in the graph, add the edge; otherwise open a new error for it, in phase 3. The root goes back to BLOCKED behind its cause, and the cycle check is redone.
 

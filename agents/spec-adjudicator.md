@@ -27,6 +27,7 @@ You may also receive a **suspect**: a result that uses a passage judged false an
    - *model*: a reference model or checker of the project covers it: run the witness on it;
    - *ad hoc*: nothing covers it: your own script, in exact arithmetic with a fixed seed, brute force over a bounded domain, or a solver.
    Give the code, the command and its output, the level reached, and why not a stronger one.
+   Every level means a program that you ran with Bash, even when the counterexample looks obvious: write the script in the scratch directory and run it. Evaluating the definitions by hand is the same kind of reading as the reviewer's, so it can share the reviewer's mistake; a run is checked by the machine, can be replayed by anyone, and becomes the seed of the guard. A counterexample worked out by hand and not run is no confirmation: the verdict is then UNDECIDED, with "an executed counterexample" as what would settle it.
 4. **Classify** the error:
    - *false statement*: a counterexample has been executed;
    - *incomplete proof*: the statement holds, but a step is not justified; name the step and the missing argument, and attempt a repair;
@@ -50,8 +51,8 @@ minimal_counterexample:
   instance: "<…>"
   expected_according_to_text: "<…>"
   obtained: "<…>"
-  script: "<path in the scratch directory>"
-  output: "<…>"
+  script: "<path in the scratch directory, and the command you ran>"
+  output: "<its actual output, copied, not paraphrased>"
   evidence: formal | model | ad hoc
   oracle: "<name from the table, or 'none'>"
 variant_cases:

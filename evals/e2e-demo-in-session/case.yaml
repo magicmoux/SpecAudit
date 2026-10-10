@@ -25,7 +25,9 @@ graders:
   - name: lemma-3-fixed
     type: regex
     target: { source: file, path: selection.md }
-    pattern: 'min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n'
+    # Anchored on the statement of Lemma 3: Definition 2 already contains min(k, n), so an unanchored pattern passes
+    # on the untouched document.
+    pattern: '\*\*Lemma 3\.\*\*[^\n]*(min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n)'
   - name: proposition-4-unchanged
     type: regex
     target: { source: file, path: selection.md }
