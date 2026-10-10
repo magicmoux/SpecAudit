@@ -2,7 +2,11 @@
 """Check the attestation of each results folder listed in SPECAUDITS.md, and optionally record it in the index.
 
   python3 verify.py                 print the status of every folder of the index
-  python3 verify.py --update        also write it in the index's "Attested" column
+  python3 verify.py <target>...     only these folders; a target is a folder name (SpecAudit-20261010_2102), its path,
+                                    its stamp (20261010_2102), or an audited source as the index writes it
+                                    (selection.md, docs/spec/), which means the newest folder of that source
+  python3 verify.py --pending       only the folders not attested, one name per line (to choose a target)
+  python3 verify.py --update        also write the status in the index's "Attested" column
 
 Run it from the root of the project. A folder SpecAudit-<stamp>/ is attested by a signed git tag
 specaudit/SpecAudit-<stamp> on a commit that holds the folder. Its status is:
@@ -14,7 +18,8 @@ specaudit/SpecAudit-<stamp> on a commit that holds the folder. Its status is:
   unsigned tag                 the tag exists but carries no signature: it attests nothing
   no                           no tag
 
-Only "yes" is an attestation. The exit code is 0 when every folder is attested, 1 otherwise, 2 on a malformed index.
+Only "yes" is an attestation. The exit code is 0 when every folder checked is attested, 1 otherwise, 2 on a malformed
+index or a target that matches no folder (the known folders are then listed: a target is never approximated).
 """
 import argparse
 import re
@@ -57,8 +62,21 @@ def status(folder):
     return f"yes: {signer.group(1).strip() if signer else 'valid signature'}, {date}"
 
 
+def resolve(target, rows):
+    """Folder names for one target, newest first; rows is [(folder, audited source)] in index order (newest first)."""
+    name = target.rstrip("/\\").replace("\\", "/").split("/")[-1]
+    for folder, _ in rows:
+        if name in (folder, folder.removeprefix("SpecAudit-")):
+            return [folder]
+    source = target.strip().strip("`").replace("\\", "/").removeprefix("./")
+    return [folder for folder, audited in rows
+            if audited.strip("`").split(" (")[0].removeprefix("./") in (source, source.rstrip("/") + "/", source.rstrip("/"))]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("targets", nargs="*", help="folders to check (default: all)")
+    parser.add_argument("--pending", action="store_true", help="list the folders not attested, one per line")
     parser.add_argument("--update", action="store_true", help='write the status in the "Attested" column')
     args = parser.parse_args()
     if not INDEX.is_file():
@@ -75,11 +93,33 @@ def main():
         print('the index has no "Attested" column', file=sys.stderr)
         return 2
     col = columns.index("Attested")
+    source_col = columns.index("Audited source") if "Audited source" in columns else None
+    rows = []
+    for line in lines:
+        match = ROW.match(line)
+        if match:
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            rows.append((match.group(1), cells[source_col] if source_col is not None and len(cells) > source_col else ""))
+
+    wanted = None
+    if args.targets:
+        wanted = set()
+        for target in args.targets:
+            found = resolve(target, rows)
+            if not found:
+                print(f"no results folder matches {target!r}; the index lists:", file=sys.stderr)
+                for folder, audited in rows:
+                    print(f"  {folder}  {audited}", file=sys.stderr)
+                return 2
+            if len(found) > 1:
+                print(f"{target}: newest of {len(found)} folders for this source ({', '.join(found[1:])} are older)",
+                      file=sys.stderr)
+            wanted.add(found[0])
 
     all_attested, results = True, []
     for i, line in enumerate(lines):
         match = ROW.match(line)
-        if not match:
+        if not match or (wanted is not None and match.group(1) not in wanted):
             continue
         folder = match.group(1)
         state = status(folder)
@@ -92,7 +132,11 @@ def main():
                 lines[i] = "|" + "|".join(cells) + "|"
 
     for folder, state in results:
-        print(f"{folder}  {state}")
+        if args.pending:
+            if not state.startswith("yes"):
+                print(folder)
+        else:
+            print(f"{folder}  {state}")
     if args.update:
         INDEX.write_text("\n".join(lines), encoding="utf-8")
     return 0 if all_attested else 1

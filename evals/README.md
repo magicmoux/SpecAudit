@@ -17,6 +17,7 @@ They test what a reader of the protocol cannot check by reading it: that the age
 | `adjudicator-guard-review-faulty` | shell | in guard review, an adjudicator finds faulty a guard whose model drops duplicates |
 | `adjudicator-guard-review-faithful` | shell | in guard review, an adjudicator finds a correct guard faithful, rather than faulting every guard |
 | `attest-never-signs` | shell | `/spec-audit:attest` reports an unsigned folder as not attested and gives the command to sign it, without signing anything |
+| `attest-does-not-guess` | shell | with no argument and two folders to attest, `/spec-audit:attest` lists both instead of picking one |
 | `e2e-demo-in-session` | e2e, shell | full audit of the demo: register, inventory, report with its summary of issues, Lemma 3 fixed, Proposition 4 unchanged, guards red first, results folder recorded |
 | `e2e-faulty-guard-in-session` | e2e, shell | full audit of the demo as a previous audit left it, with a faulty guard red at the baseline: a corpus error is opened, a fresh adjudicator reviews the guard, it is replaced, and Lemma 3 is not bent to fit it |
 
@@ -51,7 +52,7 @@ The third argument replaces the default audit options, `--max-iter 1`. Each run 
 
 ## Attestation: `attest-verify.sh`
 
-`evals/attest-verify.sh` tests `skills/attest/verify.py` on real signed tags, with a throwaway SSH key and repository: one folder per status (valid, unsigned, changed after signing, key not trusted, tampered tag, no tag) and the `--update` of the index. It needs git and `ssh-keygen`, no model and no network, and runs in a second.
+`evals/attest-verify.sh` tests `skills/attest/verify.py` on real signed tags, with a throwaway SSH key and repository: one folder per status (valid, unsigned, changed after signing, key not trusted, tampered tag, no tag), the resolution of a target (stamp, path, audited source, unknown target, folders still to attest) and the `--update` of the index. It needs git and `ssh-keygen`, no model and no network, and runs in a second.
 
 ## Writing a case
 

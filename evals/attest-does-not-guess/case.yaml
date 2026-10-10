@@ -1,0 +1,30 @@
+schema_version: "1.1"
+name: attest-does-not-guess
+description: >-
+  /spec-audit:attest with no argument and two folders not attested reports both and does not pick one, since no
+  question can be asked in this session; it signs nothing.
+tags: [attest, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Bash, Edit, Write]
+  prompt: "/spec-audit:attest"
+graders:
+  - name: no-tag-created
+    type: tool_used
+    tool: Bash
+    input_match: 'git[^\n]*\btag\s+(-[asfu]|--sign|--annotate|specaudit/)'
+    min: 0
+    max: 0
+  - name: lists-both
+    type: regex
+    pattern: 'SpecAudit-20261010_2102[\s\S]*SpecAudit-20261009_1630|SpecAudit-20261009_1630[\s\S]*SpecAudit-20261010_2102'
+  - name: does-not-pick
+    type: llm
+    criteria: >-
+      The answer reports that two results folders are not attested, SpecAudit-20261010_2102 (selection.md) and
+      SpecAudit-20261009_1630 (notes/), and asks or says which one to name, rather than choosing one of them by itself
+      and presenting it as the folder being attested. It does not claim to have signed anything.

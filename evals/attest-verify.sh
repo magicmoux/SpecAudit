@@ -42,6 +42,15 @@ expect SpecAudit-20261010_0500 "invalid signature$"
 expect SpecAudit-20261010_0600 "no$"
 if [ "$rc" -eq 1 ]; then echo "PASS exit code 1 (not every folder attested)"; else echo "FAIL exit code $rc, expected 1"; fails=$((fails + 1)); fi
 
+# Targets: a stamp, a path, an audited source (the newest folder of that source), an unknown target (an error, never
+# an approximation), and the folders still to attest.
+check_out() { if [ "$2" = "$3" ]; then echo "PASS $1"; else echo "FAIL $1: got '$3', expected '$2'"; fails=$((fails + 1)); fi; }
+check_out "target by stamp" "SpecAudit-20261010_0100  yes" "$(python3 "$VERIFY" 20261010_0100 | cut -c1-28)"
+check_out "target by path" "SpecAudit-20261010_0300  changed since attestation" "$(python3 "$VERIFY" ./SpecAudit-20261010_0300/)"
+check_out "target by source, newest" "SpecAudit-20261010_0600  no" "$(python3 "$VERIFY" a.md 2>/dev/null)"
+python3 "$VERIFY" SpecAudit-20991231_0000 >/dev/null 2>&1; check_out "unknown target is an error" "2" "$?"
+check_out "pending folders" "SpecAudit-20261010_0600 SpecAudit-20261010_0500 SpecAudit-20261010_0400 SpecAudit-20261010_0300 SpecAudit-20261010_0200" "$(python3 "$VERIFY" --pending | tr '\n' ' ' | sed 's/ $//')"
+
 python3 "$VERIFY" --update >/dev/null
 if grep -qE '^\| \[SpecAudit-20261010_0100\].*\| yes: signer@example.invalid, [0-9-]+ \|$' SPECAUDITS.md \
    && grep -qE '^\| \[SpecAudit-20261010_0600\].*\| no \| no \|$' SPECAUDITS.md; then
