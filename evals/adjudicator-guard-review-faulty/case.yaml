@@ -1,0 +1,33 @@
+schema_version: "1.1"
+name: adjudicator-guard-review-faulty
+description: A fresh spec-adjudicator in guard review finds that a guard whose model drops duplicates, against Definition 1, is faulty.
+tags: [agents, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Bash, Write, Agent]
+  prompt: |
+    Launch the agent spec-audit:spec-adjudicator with exactly this message, then reply with its YAML output unchanged:
+
+    Guard review on selection.md (current directory).
+    Guard: spec-guards/test_F_1_1.py, runner: pytest -q spec-guards/test_F_1_1.py
+    Passage it is about: "§2, Lemma 3: For every integer k ≥ 0 and every list L, |P_k(L)| = min(k, |L|)."
+    Definitions it encodes: Definition 1 and Definition 2 of selection.md.
+    Scratch directory: ./scratch/adjudicator-G-1-1.
+graders:
+  - name: verdict
+    type: regex
+    pattern: 'guard_verdict:\s*FAULTY'
+  - name: names-duplicates
+    type: regex
+    pattern: 'duplicat|set\('
+    flags: i
+  - name: right-diagnosis
+    type: llm
+    criteria: >-
+      The verdict says the guard is faulty because its model of P_k removes duplicates (it uses a set), whereas
+      Definition 1 sorts the list with duplicates included, and it backs this with a run showing the guard fails on
+      a list with repeated values (for example L = (0, 0), k = 2).

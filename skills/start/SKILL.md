@@ -157,7 +157,7 @@ Ask the user a question (AskUserQuestion) only when no audit agent is running: f
    - Wait for the process to end. It writes the report (`spec-audit/<slug>/report.md`) and leaves the register in the state it reached; you then run phase 8 from both. In that session, every question of this skill follows its non-interactive rule: a critical fix stays pending (unless `--auto`), an undecided error is escalated in the report, and closing is not run.
    - With `--in-session`, continue here: you are the orchestrator, and the oracle table binds you the same way.
 7. **Inventory.** Build `spec-audit/<slug>/inventory.md`: every unit of the profile's `Inventory units` section, with its statement and the units it uses. This dependency graph is used to establish causal links (phase 3), to propagate fixes (4.4) and to look for errors of the same class (4.2).
-8. **Baseline.** Run the whole corpus, from the worktree alone, with the commands of the oracle table. It must be green; a guard that is already red becomes an iteration-0 error, never a test to be touched up.
+8. **Baseline.** Run the whole corpus, from the worktree alone, with the commands of the oracle table. It must be green; a guard that is already red becomes an iteration-0 error, never a test to be touched up: either the document regressed, or the guard is wrong, and a corpus error (4.2) decides which.
 9. **Mechanical lint.** Write once in the corpus a deterministic script that runs the checks of the profile's `Lint` section. It feeds the editorial track.
 
 ## Phase 1 — Complete cold detection
@@ -265,10 +265,22 @@ Write the guard before the fix: written afterwards, it tends to test the fix rat
 3. **Red first**: run the guard against the original wording; the assertion on the original statement must fail, proof that the guard detects the error, and the text guard must fail on the original document. Record the result in the register.
 
 Corpus rules:
-- it only grows: never delete or loosen a guard to make it pass; any change to an existing guard is justified in the register and flagged in the report;
+- it only grows: never delete or loosen a guard to make it pass; a guard is changed only through a corpus error (below), justified in the register and flagged in the report;
 - the model encoded in the guard follows the document's definitions, not the proposed fix;
 - follow the conventions of the existing corpus (headers, naming, test runner);
 - a guard is written for the oracle that confirmed the error, at its level, in the form the profile's `Guards` section gives (arithmetic, language of the guard, what "red first" and "green" mean for that oracle).
+
+**Corpus errors.** A guard can be wrong as well as the document: too strict (it rejects a valid fix), badly encoded (it models a definition differently from the text, so it can confirm a false error or miss a real one), or empty (it passes whatever the text says). Nobody else reads the guards: the reviewers never see the corpus, by design, and you write both the guards and the fixes. Changing a guard on your own judgment would be judging your own work, so a suspect guard follows the same path as a suspect statement:
+
+1. **Report.** A guard is suspect when it stays red on a fix you consider valid, stays green on the original wording (red first failed), is flagged `NO TEXT CHECK` by a replay, or was red at the baseline (phase 0, step 8). Open a corpus error `G-<iteration>-<n>` in the register (format in `references/register.md`), and do not touch the guard yet. The fix or the error it guards stays where it was: not FIXED, its chain BLOCKED.
+2. **Adjudicate.** Launch a fresh adjudicator in guard review: give it the guard file, the passage of the document it is about, and the definitions it encodes, but not the fix you propose nor why you suspect the guard, so that it judges the guard against the text rather than ratifies a decision. Its verdict is FAITHFUL, FAULTY or UNDECIDED.
+3. **Settle.**
+   - *FAULTY*: write a new guard in place of the old one, which must pass red first on the original wording like any guard; the old one stays in the git history. If the new guard covers fewer cases than the old one, say which, and why the old one was wrong on them: a corpus error must never shrink the coverage silently. Then resume the fix or the error it held up.
+   - *FAITHFUL*: the guard is right, so the fix is wrong, or the text is still false: apply the regression rule (4.3, Green), or reassess the error.
+   - *UNDECIDED*: escalate to the user once no agent is running; the chain stays BLOCKED.
+4. **Project tests**, those of the oracle table, belong to the project: never change them. A project test found FAULTY is reported to the author as an open point, with the adjudicator's reason, and the audit goes on without it as an oracle for the statements concerned.
+
+A corpus error is recorded and reported like an error: in the report's "Open points" while it is open, in the summary of issues (P2 while open, Done once settled), and its old and new guards are both in the results folder (8.4).
 
 ### 4.3 Fix
 
@@ -355,7 +367,7 @@ For each result touched: before → after, nature (statement fix, scoping, proof
 | ID | Severity | Type | Causes | Status | Fix | Guards | Commit |
 
 ## Open points
-Undecided errors and the chains they block, references to check, recurrences, oscillations, modified guards, pending critical fixes, detection not saturated.
+Undecided errors and the chains they block, references to check, recurrences, oscillations, corpus errors (open, or settled by a guard that covers fewer cases), faulty project tests, pending critical fixes, detection not saturated.
 Results conditional on an unresolved error, directly or through another result: for each, the error it depends on and the chain through which it uses it.
 Each open point with its mitigation: what would settle it (the adjudicator's `to_settle`), the fix or hypothesis proposed (statement before → after), and the check that would confirm it (oracle, guard to add, expert to consult).
 
@@ -380,7 +392,7 @@ Totals per priority: the sum of the estimated ranges (low sum – high sum, in p
 
 - **Priority**:
   - **P1**: what leaves a claim of the document false or unsupported now: a confirmed error whose critical fix is pending or refused, a fix reverted, a causal loop, a recurrence, a result of the abstract or of the conclusion conditional on an unresolved error.
-  - **P2**: undecided errors and the chains they block, unrepaired incomplete proofs, the other conditional results, detection not saturated.
+  - **P2**: undecided errors and the chains they block, unrepaired incomplete proofs, the other conditional results, open corpus errors and faulty project tests, detection not saturated.
   - **P3**: imprecisions, references to check, form defects left open.
   - **Done**: errors and defects fixed by the audit, guarded; listed so that the summary is complete, with "—" as effort, since the remaining work is the review of the modified statements, counted once on its own row.
 - **Mitigation or solution**: the fix applied, or the one proposed in "Open points" and "Imprecisions", in one line.

@@ -11,6 +11,8 @@ The quoted passage may have changed since the report, because another error on w
 
 You may also receive a **suspect**: a result that uses a passage judged false and then fixed. Say whether this result holds against the current text; REFUTED then means that it holds.
 
+You may also receive a **guard review**: a test file, the passage of the document it is about, and the definitions it encodes. Judge whether the guard encodes the text faithfully: its model of the definitions matches the document's, its assertions follow from the passage, and it would fail if the passage were false in the way it claims to detect. Read only the guard you are given, not the rest of the corpus. Run it, and run variants of it in your scratch directory (an altered definition, an altered passage) to see what it really detects. Return the guard-review block of the output format.
+
 ## Rules
 
 - Read the given document, but neither the git history, nor the registers, corpora or earlier versions, nor the results of earlier audits (`SpecAudit-*/` folders at the root, `spec-audit/`), nor `.forge/` or any folder of session history, transcripts, session notes or handoffs (`.claude/` included), nor the audit configuration (`.specaudit.md`, `.specaudit/`) beyond the files your message gives as normative dependencies: your judgment must rest on the text alone.
@@ -39,7 +41,18 @@ You may also receive a **suspect**: a result that uses a passage judged false an
 
 ## Output format
 
-Return only this YAML block; if you received several suspects of the same cause, return a YAML list of such blocks, one per suspect:
+For a guard review, return only this block:
+
+```yaml
+guard_verdict: FAITHFUL | FAULTY | UNDECIDED
+reason: "<why, in a few sentences>"
+defect: "<if FAULTY: too strict | badly encoded | empty, and the exact assertion or definition at fault>"
+evidence: "<the runs that show it: script path in the scratch directory, command, output>"
+cases_lost_if_replaced: "<if FAULTY: the cases the guard covered correctly that a narrower replacement must keep>"
+to_settle: "<if UNDECIDED: what would make it possible to decide>"
+```
+
+Otherwise, return only this YAML block; if you received several suspects of the same cause, return a YAML list of such blocks, one per suspect:
 
 ```yaml
 verdict: CONFIRMED | REFUTED | UNDECIDED

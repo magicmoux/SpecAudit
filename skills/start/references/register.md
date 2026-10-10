@@ -105,6 +105,20 @@ A suspect entry starts with its origin, its location (the result, and what it us
 
 Identifiers are never reassigned. A refuted error stays in the register: it is what makes it possible to discard the same false positive in the next pass.
 
+## Corpus error entry
+
+```markdown
+### G-<iteration>-<n> — <guard file> — <short title>
+
+- **Guard**: path; error it guards (F-…), or project test (oracle table)
+- **Suspicion**: red on a fix considered valid | green on the original | NO TEXT CHECK | red at baseline; what was observed (command, output)
+- **Status**: OPEN | FAULTY | FAITHFUL | UNDECIDED | ESCALATED
+- **Adjudicator**: agent name; verdict and reason; defect (too strict | badly encoded | empty)
+- **Settlement**: new guard (path, red-first result on the original, green result) | regression rule applied to F-… | escalated; for a project test, reported to the author
+- **Coverage**: cases lost by the replacement, and why the old guard was wrong on them, or "none"
+- **Commit**
+```
+
 ## Form defect entry
 
 ```markdown

@@ -175,6 +175,10 @@ The summary of issues is the list to plan from:
 
 Effort is a range in person-days of the author or a domain expert (`0.5–1`), with what it rests on (kind of work, number of dependent results in the inventory) and a confidence. It reads "not estimated" when nothing supports a figure, typically for an undecided statement whose truth is unknown: that is research, not a task, and the audit knows neither your team nor its pace. Treat the ranges as an order of magnitude to plan with, not as a quote.
 
+### Corpus errors
+
+A guard can be wrong too: too strict (it rejects a valid fix), badly encoded (it models a definition differently from the text), or empty (it passes whatever the text says). Since the orchestrator writes both the guards and the fixes, it never changes a guard on its own judgment. A suspect guard (red on a fix it considers valid, green on the original, flagged by the replay, or red at the baseline) opens a corpus error `G-<iteration>-<n>`, and a fresh adjudicator judges the guard against the text, without seeing the proposed fix: FAITHFUL (the fix is wrong, and the regression rule applies), FAULTY (a new guard replaces it, red first on the original like any guard, and any case it no longer covers is listed), or UNDECIDED (your decision). Your project's own tests are never changed: one found faulty is reported to you as an open point. Corpus errors appear in the report's open points and in the summary of issues.
+
 ### Error statuses
 
 | Status | Meaning |
