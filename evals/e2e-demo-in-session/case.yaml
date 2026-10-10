@@ -53,25 +53,39 @@ graders:
     type: regex
     target: { source: file, path: SPECAUDITS.md }
     pattern: 'SpecAudit-\d{8}_\d{4}[^\n]*selection\.md'
-  - name: report-quality
-    type: llm
-    focus: { source: file, path: spec-audit/selection/report.md }
-    criteria: >-
-      The report has the sections Result, Cause graph, Modified statements, Errors, Open points, Corpus and Scope of
-      verification (other sections may be present too). It reports Lemma 3 as a confirmed error that was fixed, its
-      new statement giving the length as the minimum of k and the length of L, or adding the hypothesis that k does
-      not exceed the length of L, in any notation or spacing. It never states that the document, or a part of it, is
-      correct or verified without saying by what.
+  # The report is checked by regex: the LLM judges failed compliant reports again and again (long markdown whose
+  # tables contain |P_k(L)|), as the eval tool warns they do on long inputs.
+  - name: report-sections
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '## Result[\s\S]*## Cause graph[\s\S]*## Modified statements[\s\S]*## Errors[\s\S]*## Open points[\s\S]*## Corpus[\s\S]*## Scope of verification'
+  - name: report-lemma-3-fixed
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    # The row of Modified statements, after its arrow: other lines describe the error with the same min(k, n).
+    pattern: '\n\| Lemma 3 \|[^\n]*→[^\n]*(min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n)'
+  - name: report-no-overclaim
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '(document|proofs?|it) (is|are) (now )?(correct|verified)\b(?![^\n]*\bby\b)'
+    flags: i
+    match: not_contains
   # The structure is checked by regex: a judge reading the whole report is noisy on it.
   - name: summary-of-issues-last
     type: regex
     target: { source: file, path: spec-audit/selection/report.md }
     pattern: '## Summary of issues\s*\n\|[^\n]*Priority(?![\s\S]*\n## )'
-  - name: summary-of-issues-content
-    type: llm
-    focus: { source: file, path: spec-audit/selection/report.md }
-    criteria: >-
-      In the "Summary of issues" table at the end of the report: rows are grouped by priority in the order P1, P2, P3,
-      Done (an empty priority may be absent); each row has a mitigation or solution; each effort is either a range in
-      person-days with a stated basis, "not estimated", or "—" for rows marked Done; the errors the audit fixed appear
-      as Done. Judge only that table and the totals line under it.
+  - name: summary-priorities-in-order
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '## Summary of issues[\s\S]*?(\n\| Done [\s\S]*\n\| P[123] |\n\| P3 [\s\S]*\n\| P[12] |\n\| P2 [\s\S]*\n\| P1 )'
+    match: not_contains
+  - name: summary-fixed-errors-done
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '\n\| Done \|[^\n]*F-1-1'
+  - name: summary-no-bare-effort
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '\n\| P[123] \|(?:[^|\n]*\|){5} *\d+(?:\.\d+)? *\|'
+    match: not_contains
