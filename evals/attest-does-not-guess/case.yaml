@@ -13,6 +13,10 @@ execution:
   allowed_tools: [Read, Glob, Grep, Bash, Edit, Write]
   prompt: "/spec-audit:attest"
 graders:
+  - name: runs-verify
+    type: tool_used
+    tool: Bash
+    input_match: 'verify\.py'
   - name: no-tag-created
     type: tool_used
     tool: Bash

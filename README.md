@@ -126,20 +126,29 @@ SpecAudit/
 │   ├── start/
 │   │   ├── SKILL.md           /spec-audit:start, orchestrator: phases 0 to 8
 │   │   ├── references/
-│   │   │   └── register.md    formats of the register, its entries and the guards
+│   │   │   ├── register.md    formats of the register, its entries, the guards, the index
+│   │   │   └── replay.py      replays a results folder's corpus on the original or the fixed document
 │   │   └── profiles/
 │   │       └── formal.md      rules specific to formal documents
-│   └── stop/
-│       └── SKILL.md           /spec-audit:stop, stops the audit running in the session
+│   ├── stop/
+│   │   └── SKILL.md           /spec-audit:stop, stops the audit running in the session
+│   └── attest/
+│       ├── SKILL.md           /spec-audit:attest, checks the signed tags of results folders
+│       └── verify.py          the check itself, and the update of the index
 ├── agents/
 │   ├── spec-reviewer.md       fresh reviewer, no history
 │   └── spec-adjudicator.md    adjudicator: refute first, then confirm by execution
 ├── docs/                      installation, usage, how it works
 ├── examples/                  demo specification
+├── evals/                     eval suite and end-to-end scripts (see evals/README.md)
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 └── LICENSE
 ```
+
+## Acknowledgments
+
+A warm thank-you to [chteau](https://github.com/chteau), author of [tokenforge](https://github.com/chteau/tokenforge), for the idea that runs quietly under every long audit here: context is a budget, not a bin. Reducing what a session carries, and spending tokens on checking rather than on remembering, is what lets SpecAudit keep its reviewers cold and its audits long without drowning them in their own history.
 
 ## License
 
