@@ -2,6 +2,31 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-10-10
+
+The audit now runs in a session of its own, and confirms errors on the project's own verification artifacts rather than on scripts it writes.
+
+### Added
+
+- Audit session: by default the orchestrator is a `claude -p` process launched by your session in the worktree, with no settings file (hence none of your plugins, hooks or connectors), no skill, no memory or conversation of yours, the two agents passed with `--agents`, and a Bash allow list that is exactly git (push denied) and the project's oracles. Your session prepares the worktree (phase 0, steps 1 to 6), waits, then runs the closing from the report and the register. `--in-session` keeps the former behavior.
+- `--model <family|id>` and `--model-version <v>`: model of the audit session, passed to the `claude -p` process, which its agents inherit (default: the family of the launcher's model, `latest` version). The Opus requirement is gone.
+- Environment, in phase 0: inventory of the session's resources the audit ignores, and **oracle table** of the project's verification artifacts (mechanized development, reference model or checker, test runner), each with its coverage and its command, run once in the worktree and ordered by strength. The table goes to every reviewer and every adjudicator; the register records it.
+- Worktree autonomy: an ignored path an oracle needs is shared by a junction or symbolic link (third-party cache), copied with its SHA-256 recorded (unversioned input) or rebuilt (build output of the project); the baseline must be green from the worktree alone, otherwise the skill asks what to install or share. Once the audit has started, nothing is read in the original directory.
+- Evidence levels on confirmations: formal (counterexample executed on the formal counterpart of the statement, through the document's correspondence table: `#eval`, `decide`, property-based search, or a refuting theorem), model, ad hoc. A statement with a formal counterpart confirmed only ad hoc stays UNDECIDED; the report counts confirmations by level. `Evidence` field in the register, `evidence` and `oracle` fields in the adjudicator's verdict, `oracle` field in the reviewer's errors.
+- Safe interruption without pausing agents, which Claude Code cannot do:
+  - "Questions only when idle": the orchestrator asks the user a question (escalated error, critical fixes, closing) only once no audit agent is running, since a question blocks it but not the background agents; the stop on request is the exception.
+  - Replaceable agents: reviewers and adjudicators keep a `progress.md` (sections read or method step, candidate errors or verdict in progress, scripts and outputs) in their scratch directory, and reuse it if they find one, while redoing their judgment on the current text; a reviewer never takes over another agent's judgment.
+  - Agent table in the register (name, role, error or wave, scratch directory, state `running` / `done` / `stopped` / `replaced by <name>`). A stopped or lost agent is never resumed with `SendMessage` (refused after a stop by the user, denied by tokenforge's lean mode): it is replaced by a fresh agent with the same message and scratch directory. `--resume` replaces every `running` or `stopped` agent before any other step; the stop report lists the interrupted agents and their scratch directories.
+- Session history (tokenforge's `.forge/`, transcripts, handoffs): reviewers and adjudicators never read it. When git tracks such a folder, or with `--no-worktree`, phase 0 warns and asks before creating the worktree: untrack it and add it to `.gitignore` (recommended), or keep it ignored by the agents only; with `--no-worktree`, use a worktree (recommended) or continue. An untracked folder raises no question, since the worktree holds tracked files only.
+- Guards in the oracle's language: for a formal oracle, a theorem or a decided check in a module the project's build compiles (Lean example in `references/register.md`); `native_decide` serves the search, never the recorded guard. The fix of a statement with a formal counterpart includes the formal statement, its proof and the correspondence table, in the same internal revision.
+
+### Changed
+
+- Agents declare `model: inherit` instead of `model: opus`: the model is a parameter of the command, not of the plugin.
+- Roles: a Launcher (your session) joins the Orchestrator (the audit session, or you with `--in-session`). Phase 0 is renumbered: 4 Environment, 5 Register, 6 Audit session, 7 Inventory, 8 Baseline, 9 Lint.
+- Stop (8.9) and `/spec-audit:stop`: in the default mode, the audit session's process is stopped first, which ends its agents; the rest of the stop is unchanged. A cleared conversation no longer means a stopped audit while that process is alive.
+- The reviewers and the adjudicators may run the project's oracles named in their message, and must prefer them to their own scripts.
+
 ## [0.6.2] — 2026-10-10
 
 ### Changed

@@ -3,7 +3,7 @@
 **A Claude Code plugin for iterative precision audits of theoretical, technical and mathematical specifications.**
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Version 0.6.2](https://img.shields.io/badge/version-0.6.2-informational.svg)
+![Version 0.7.0](https://img.shields.io/badge/version-0.7.0-informational.svg)
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A63D2.svg)
 
 SpecAudit audits formal documents — papers, proofs, algorithm, protocol or format specifications — for logical, mathematical and algorithmic errors. Fresh reviewer agents with no history detect the errors; an independent adjudicator agent confirms each one with an executed counterexample; confirmed errors are ordered into a cause graph and fixed bottom-up, each fix being preceded by a regression guard in a growing test corpus. The whole audit runs in a dedicated git worktree and ends with a report and a multiple-choice closing question.
@@ -21,15 +21,16 @@ Three principles guide everything else:
 ## Features
 
 - **Cold detection**: fresh `spec-reviewer` agents, with no history and no register, review the whole document in waves until a wave brings nothing new.
-- **Confirmation by execution**: a fresh `spec-adjudicator` agent first tries to refute each error, then to confirm it with a minimal executed counterexample.
+- **Confirmation by execution**: a fresh `spec-adjudicator` agent first tries to refute each error, then to confirm it with a minimal executed counterexample, on the strongest oracle of the project that covers the statement: mechanized development (Lean, Coq…), reference model, or its own script as a last resort; every confirmation carries its evidence level.
 - **Cause graph**: errors are sorted into causal chains and fixed bottom-up; a consequence stays blocked until its cause is fixed, and a causal loop stops the audit.
-- **Regression guards**: a witness guard written and seen red before the fix, variants on edge cases, a near-case against over-correction, a bounded check, class guards for sibling statements.
+- **Regression guards**: a witness guard written and seen red before the fix, variants on edge cases, a near-case against over-correction, a bounded check, class guards for sibling statements; each one written for the oracle that confirmed the error, a Lean theorem included.
 - **Minimal, traced fixes**: statement fix, scoping addition or proof repair; never a strengthening, never a silent deletion; critical fixes wait for your approval.
 - **Separate editorial track**: typos, numbering, cross-references and bibliography, with a mechanical lint that grows with each class of defect fixed.
 - **Git isolation**: everything happens in an `audit/<slug>` worktree, with local commits, without touching your working directory and without ever pushing.
+- **A session of its own**: by default the audit runs in a dedicated `claude -p` session started in the worktree, with none of your plugins, skills, connectors, hooks or memory, allowed to run exactly git and the project's oracles; `--in-session` keeps it in your session.
 - **Explicit stop conditions**: convergence, budget, recurrence, oscillation, non-convergence, causal loop or exhaustion.
 - **You decide the closing**: full report, then a multiple-choice question (accept and merge, run another check, keep, abandon), the safest option being recommended.
-- **Stop at any time**: `/spec-audit:stop`, from the audit's session, stops its agents and reports its last internal revision, a verified but incomplete state committed after each fixed error; you then suspend the audit, keep that revision as the new base, or cancel.
+- **Stop at any time**: `/spec-audit:stop`, from the session that launched the audit, stops it with its agents and reports its last internal revision, a verified but incomplete state committed after each fixed error; you then suspend the audit, keep that revision as the new base, or cancel.
 
 ## Installation
 
@@ -72,6 +73,9 @@ To watch a complete audit at no risk, run it on the demo specification in [examp
 | `--resume` | resume an interrupted audit in its worktree |
 | `--base <ref>` | starting branch or commit of the worktree (default: `HEAD`) |
 | `--no-worktree` | work in place, without a worktree |
+| `--in-session` | run the orchestrator in your session instead of a session of its own |
+| `--model <family\|id>` | model of the audit session and of its agents (default: your session's family) |
+| `--model-version <v>` | version of that family (default: `latest`) |
 | `--keep` | ask no question at closing and keep the worktree |
 
 Details and examples: [docs/usage.md](docs/usage.md).
@@ -92,8 +96,9 @@ Whatever the outcome, the report comes back to the session and to the original b
 
 - Claude Code with plugin support;
 - git (the document must be in a repository, otherwise the skill offers to initialize one);
-- access to the Opus model, declared by both agents;
-- an interpreter to run counterexamples and guards: Python 3 by default, or the project's test runner.
+- a model for the agents: they inherit the audit session's, your session's by default, or the one given with `--model` and `--model-version`;
+- the `claude` CLI on your `PATH`, for the default mode (the audit runs in a session of its own); `--in-session` does without it;
+- an interpreter to run counterexamples and guards: Python 3 by default, or the project's own oracles (mechanized development, reference model, test runner).
 
 An audit launches several agents per iteration: it consumes a lot of tokens. `--max-iter` bounds the spending.
 
