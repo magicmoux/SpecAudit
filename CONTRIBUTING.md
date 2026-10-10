@@ -27,6 +27,8 @@ A confirmed false positive, a fix that strengthens a statement, a reviewer that 
 | `agents/spec-adjudicator.md` | adjudicator instructions and output format |
 | `docs/` | user documentation |
 | `examples/` | demo specification with known errors |
+| `evals/` | eval suite (`claude plugin eval`) and `local-e2e.sh` for the audit session; see `evals/README.md` |
+| `skills/start/references/replay.py` | replay of a results folder's corpus on the original or the fixed document, copied into each folder |
 
 ## Developing locally
 
@@ -50,7 +52,9 @@ The command checks the manifests and the frontmatter of the skill and the agents
 
 ## Testing a change
 
-There are no automated tests of a skill's behavior: test on the [demo specification](examples/), before and after your change, and compare the registers and the reports. Check at least:
+Run the eval suite before and after your change ([`evals/README.md`](evals/README.md)): the `quick` cases for any change, the whole suite and `evals/local-e2e.sh audit-session` for a change to the protocol or the agents. A change that fixes a behavior adds a case that would have failed before it.
+
+The suite does not cover everything; on the [demo specification](examples/), also compare the registers and the reports before and after, and check at least:
 
 - that the reviewers receive no register, no corpus and no previous errors, and that no agent is launched as a "fork";
 - that each guard is seen red before the fix;
