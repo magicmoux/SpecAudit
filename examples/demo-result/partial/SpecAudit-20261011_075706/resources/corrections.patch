@@ -1,0 +1,655 @@
+diff --git a/bubble-sort.md b/bubble-sort.md
+index d831ec7..ccd53b2 100644
+--- a/bubble-sort.md
++++ b/bubble-sort.md
+@@ -13,19 +13,19 @@
+ 
+ ## 2. Results
+ 
+-**Lemma 3.** For every list L and every i with 1 ≤ i < |L|, after the i-th pass of Algorithm 2, the i smallest elements of L occupy positions 1 to i, in increasing order.
++**Lemma 3.** For every list L and every i with 1 ≤ i < |L|, after the i-th pass of Algorithm 2, the i largest elements of L occupy positions n − i + 1 to n, in increasing order, where n = |L|.
+ 
+-*Proof.* By induction on i. During a pass, whenever x_j > x_{j+1} the smaller element moves one position to the left, so the smallest element not yet in place moves left until it meets a smaller one, that is, until it reaches position i. ∎
++*Proof.* By induction on i. During a pass from position 1 to position n, the element at position j after the comparison of x_j and x_{j+1} is the larger of the two, so the largest element met so far is carried to the right until it meets an element at least as large, or reaches position n. Hence a pass leaves a largest element of the list at position n, which is the case i = 1. For the step, the i-th pass does not move the elements at positions n − i + 2 to n, already the i − 1 largest in increasing order, past one another or past a smaller element (each of them is at least as large as everything before it, so no swap involves it as the smaller element of a pair); on the first n − i + 1 positions it acts as a pass, which leaves a largest remaining element at position n − i + 1. ∎
+ 
+ **Proposition 4.** A pass, and hence any sequence of passes such as Algorithm 2, is stable: two equal elements of L keep their relative order.
+ 
+ *Proof.* A pass swaps two neighbours only when x_j > x_{j+1}, strictly, so two equal neighbours are never swapped. An element only moves by swapping with a neighbour, hence two equal elements never cross. ∎
+ 
+-**Corollary 5.** In Algorithm 2, the i-th pass can start at position i instead of position 1, without changing the output.
++**Corollary 5.** In Algorithm 2, the i-th pass can stop at position n − i + 1 instead of position n, without changing the output.
+ 
+-*Proof.* By Lemma 3, before the i-th pass positions 1 to i − 1 already hold their final elements, and none of them is greater than an element after it: the comparisons at these positions swap nothing. ∎
++*Proof.* For i = 1 there is nothing to prove. For i ≥ 2, by Lemma 3, before the i-th pass positions n − i + 2 to n hold the i − 1 largest elements of L, in increasing order, so none of them is smaller than an element before it: the comparisons at j = n − i + 1, …, n − 1 swap nothing, whatever the pass has done to positions 1 to n − i + 1. ∎
+ 
+-**Example 6.** For L = (3, 1, 2), the first pass compares 3 and 1 and swaps them, which gives (1, 3, 2).
++**Example 6.** For L = (3, 1, 2), the first pass compares 3 and 1 and swaps them, which gives (1, 3, 2); it then compares 3 and 2 and swaps them, so the pass returns (1, 2, 3).
+ 
+ ## 3. A faster variant
+ 
+@@ -34,7 +34,7 @@
+ 1. for i from 1 to n − 1: make a pass from position i to position n
+ 2. return L
+ 
+-*Correctness.* By Corollary 8, Algorithm 7 returns the same list as Algorithm 2, hence L sorted. The i-th pass makes n − i comparisons, so Algorithm 7 makes n(n − 1)/2 comparisns in all, instead of (n − 1)² for Algorithm 2.
++*Correctness.* By Corollary 8, Algorithm 7 returns the same list as Algorithm 2, hence L sorted. The i-th pass makes n − i comparisons, so Algorithm 7 makes n(n − 1)/2 comparisons in all, instead of (n − 1)² for Algorithm 2.
+ 
+ ## 4. Conclusion
+ 
+diff --git a/spec-audit/bubble-sort/inventory.md b/spec-audit/bubble-sort/inventory.md
+new file mode 100644
+index 0000000..d202d35
+--- /dev/null
++++ b/spec-audit/bubble-sort/inventory.md
+@@ -0,0 +1,13 @@
++# Inventory — bubble-sort.md
++
++| Unit | Statement | Uses |
++|---|---|---|
++| Definition 1 | list, pass from a to b (compares x_j,x_{j+1}, j=a..b-1, swaps if x_j > x_{j+1}) | — |
++| Algorithm 2 | for i=1..n-1: pass 1..n | Def 1 |
++| Lemma 3 | after i-th pass of Alg 2, i smallest at positions 1..i, increasing | Def 1, Alg 2 |
++| Proposition 4 | a pass / any sequence of passes is stable | Def 1 |
++| Corollary 5 | i-th pass can start at i without changing output | Lemma 3, Alg 2 |
++| Example 6 | L=(3,1,2): first pass gives (1,3,2) | Def 1 |
++| Algorithm 7 | for i=1..n-1: pass i..n | Def 1 |
++| Alg 7 correctness | cites "Corollary 8"; i-th pass n-i comparisons; total n(n-1)/2 vs (n-1)^2 | Cor 5 (as cited), Alg 2, Alg 7 |
++| Abstract / Conclusion | both algorithms sort any list, stably; about half the comparisons | Lemma 3, Prop 4, Alg 7 correctness |
+diff --git a/spec-audit/bubble-sort/register.md b/spec-audit/bubble-sort/register.md
+new file mode 100644
+index 0000000..0fa685f
+--- /dev/null
++++ b/spec-audit/bubble-sort/register.md
+@@ -0,0 +1,159 @@
++# Audit register — bubble-sort.md
++
++- Document(s): bubble-sort.md
++- Normative dependencies: none
++- Corpus: spec-guards/, runner: `pytest -q -p no:cacheprovider spec-guards`
++- Launched by: SpecAudit demo <demo@example.invalid> (git, cloud session)
++- Launched: 20261011_075706, local time, UTC+0000
++- Original repository: <repo>, remote none, branch master, head c58def9 (SPECAUDITS.md entry committed after)
++- Worktree: <repo>-audit-bubble-sort, branch audit/bubble-sort, base c58def9
++- Scratch root: <repo>-audit-bubble-sort-scratch/ (audit session); every agent's scratch directory is under it
++- Preflight: passed (Read/Glob, git status, pytest --version, python3 probe, with_docs.py, both agent types at low effort; corpus-script form not probed: no lint yet), attempt 1 of 3
++- Refusals: 1 (orchestrator, Bash `git log --format=%h\ %s`, denied in don't-ask mode; retried as `git log --oneline`, ok)
++- Parameters: max-iter = 1, auto = no, keep = yes, model = sonnet, version = latest (passed: `--model sonnet`)
++- Version convention: fix in place (no CLAUDE.md or convention; document is a single committed file)
++- Configuration: none; profile formal
++- Results folder: SpecAudit-20261011_075706 (reserved, empty, in original repository)
++- Session: unknown, state: stopped at phase 7 (budget, max-iter 1); report written, closing left to the launcher
++- Mode: audit session (pid TBD, session TBD)
++
++## Environment
++
++Resources of the launcher's session, ignored by the audit: not enumerated (audit session loads no settings, plugins, connectors or hooks).
++
++Session history in the project: none. Untracked empty files result.json, stderr.log in original directory are not in the worktree.
++
++Oracles of the worktree, by strength (every command verified in the worktree at phase 0):
++
++| Oracle | Kind | Path | Covers | Correspondence | Command |
++|---|---|---|---|---|---|
++| guards | runner | spec-guards/ | the corpus (initially empty; lint added at step 9) | — | `pytest -q -p no:cacheprovider spec-guards` |
++
++No formal or model oracle exists. Evidence will be ad hoc (python3 scripts in exact arithmetic).
++
++Worktree autonomy: nothing to share or copy.
++
++## Agents
++
++| Name | Id | Role | Error or wave | Effort | Scratch | State |
++|---|---|---|---|---|---|---|
++| audit-bubble-sort-reviewer-preflight | adbb45576854a182f | reviewer | preflight | low | scratch/preflight/reviewer | done |
++| audit-bubble-sort-adjudicator-preflight | a1a580818850bd53d | adjudicator | preflight | low | scratch/preflight/adjudicator | done |
++| audit-bubble-sort-reviewer-i1-w1-a | ac5fcf9853a8959b3 | reviewer | iteration 1, wave 1, full | usual | scratch/iter-1/reviewer-a | done |
++| audit-bubble-sort-reviewer-i1-w2-a | aa4f5d393edce05d9 | reviewer | iteration 1, wave 2, full | usual | scratch/iter-1/reviewer-b | done |
++| audit-bubble-sort-adjudicator-F-1-1 | a56bb9a342595f66a | adjudicator | F-1-1 | usual (critical) | scratch/iter-1/adjudicator-F-1-1 | done |
++| audit-bubble-sort-adjudicator-F-1-2 | a730b2dc6fbdff649 | adjudicator | F-1-2 (4.5 reassessment) | low | scratch/iter-1/adjudicator-F-1-2 | done |
++| audit-bubble-sort-adjudicator-F-1-3 | a6beb157ff65559e0 | adjudicator | F-1-3 (4.5 reassessment) | low | scratch/iter-1/adjudicator-F-1-3 | done |
++| audit-bubble-sort-adjudicator-F-1-5 | a5dad022b3e941f3b | adjudicator | F-1-5 | medium | scratch/iter-1/adjudicator-F-1-5 | done |
++| audit-bubble-sort-reviewer-i1-w3-a | a0a82d24f6483748c | reviewer | iteration 1, wave 3, full (after fixes r1–r3) | usual | scratch/iter-1/reviewer-c | done |
++
++(scratch = the Scratch root above.) Detection: wave 2 brought no new error (its R5, stability of integers, is classed as an ambiguity form defect D-1-3; its R4 is the same as wave 1's R3 consequence on abstract/conclusion): saturated after 2 waves.
++
++## Chain digest
++
++| ID | Statement before → after | Nature | Guards | Open suspects | Revision |
++|---|---|---|---|---|---|
++| F-1-1 | Lemma 3: i smallest at positions 1..i → i largest at positions n−i+1..n (proof rewritten) | statement fix + proof repair | test_F_1_1.py, test_F_1_1_text.py | — (Corollary 5 was confirmed false on its own, F-1-2) | r1 |
++| F-1-2 | Corollary 5: pass i can start at i → pass i can stop at n−i+1 (proof rewritten) | statement fix | test_F_1_2.py, test_F_1_2_text.py | Algorithm 7 (F-1-3, confirmed false, fix pending) | r2 |
++| F-1-5 | Example 6: first pass gives (1,3,2) → pass continues, returns (1,2,3) | statement fix | test_F_1_5.py, test_F_1_5_text.py | — | r3 |
++
++## Iteration log
++
++| Iter. | Detection waves | Saturated | Errors detected | Roots | Confirmed | Refuted | Resolved by their cause | Undecided | Blocked | Suspects | Form defects | Guards added | Corpus | Commit |
++|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
++| 1 | 3 | wave 3 brought nothing new (F-1-5 was found by the orchestrator after waves 1–2) | 5 | 2 (F-1-1, F-1-5) | 5 | 0 | 0 | 0 | 1 (F-1-4) | 1 added / 0 cleared / 1 confirmed (F-1-3) | 3 (1 fixed) | 7 files | 25 passed, 1 failed (lint D-1-1, red since baseline) | 1dbdbfa + report |
++
++## Internal revisions
++
++| Rev. | Commit | Error fixed | Errors fixed so far | Consequences not yet reassessed |
++|---|---|---|---|---|
++| r1 | (this commit) | F-1-1 | 1 | F-1-2, F-1-3 (suspects), F-1-4 |
++| r2 | (this commit) | F-1-2 | 2 | F-1-3, F-1-4 |
++| r3 | (this commit) | F-1-5 (+ D-1-2 typo) | 3 | F-1-3, F-1-4 (blocked on pending critical fix) |
++
++## Cause graph — iteration 1
++
++- F-1-1 → F-1-2: Corollary 5's proof applies Lemma 3, false as stated; the counterexample (2,3,1) is the same.
++- F-1-2 → F-1-3: Algorithm 7's correctness rests on Corollary 5 (cited as "Corollary 8"); the run of Algorithm 7 on (2,3,1) is Corollary 5's counterexample.
++- F-1-3 → F-1-4: abstract and conclusion state that Algorithm 7 sorts any list; their claim comes from F-1-3.
++
++Initial root: F-1-1. Processing order: F-1-1, F-1-2, F-1-3, F-1-4.
++Cycle: none.
++
++## Errors
++
++### F-1-1 — Lemma 3 states the wrong end of the list
++
++- **Fingerprint**: [false statement] Lemma 3 — says the i smallest are at positions 1..i after i passes; the i largest are at the end — L = (2,3,1), i = 1
++- **Origin**: reviewer (wave 1 R1, wave 2 R1)
++- **Status**: FIXED
++- **Type**: false statement; **Severity**: critical (adjudicator); not a "main result" (not a theorem, not named in abstract/conclusion), so not a critical fix to submit
++- **Location**: §2 Lemma 3: "the i smallest elements of L occupy positions 1 to i, in increasing order"
++- **Description**: a left-to-right pass carries the larger element right; small elements move left one place per pass. The proof step "moves left until it reaches position i" is invalid, and the induction is a sketch.
++- **Causes**: root. **Consequences**: F-1-2 (via the proof of Corollary 5), then F-1-3, F-1-4
++- **Probable cause**: direction of bubble sort inverted (dual statement)
++- **Counterexample**: L = (2,3,1), i = 1; expected 1 at position 1, obtained (2,1,3). Script scratch/iter-1/adjudicator-F-1-1/t.py (`python3 …/t.py`), output "[2, 1, 3] / violations i=1: 86 / …"; re-run by the orchestrator, same output.
++- **Evidence**: ad hoc
++- **Adjudicator's verdict**: CONFIRMED; upstream cause none; Proposition 4 independent of Lemma 3
++- **Impact**: Corollary 5, Algorithm 7 and its correctness, abstract and conclusion
++- **Guards**: spec-guards/test_F_1_1.py (witness refutes original; fixed holds on witness, variants, near-case (1,3,2), exhaustive n ≤ 5 with repeated values, n = 6 permutations), spec-guards/test_F_1_1_text.py. Red first: text guard failed on the original document (1 failed, 5 passed); green after the fix (whole corpus: 8 passed, 1 failed = lint cross-reference, see D-1-1, red since the baseline).
++- **Fix**: statement fix + proof repair: "i smallest … positions 1 to i" → "i largest … positions n − i + 1 to n, in increasing order, where n = |L|", proof rewritten as an induction with base case and step; commit r1
++- **Links**: F-1-2 (same inverted direction)
++
++### F-1-2 — Corollary 5 is false (pass i cannot start at i)
++
++- **Fingerprint**: [false statement] Corollary 5 — the i-th pass can start at i without changing the output; positions 1..i−1 are not final — L = (2,3,1)
++- **Origin**: reviewer (wave 1 R2, wave 2 R2)
++- **Status**: FIXED
++- **Type**: false statement; **Severity**: critical (adjudicator); not a main result (not in abstract/conclusion), so not a critical fix to submit
++- **Location**: §2 Corollary 5: "the i-th pass can start at position i instead of position 1, without changing the output"
++- **Causes**: F-1-1 (proof applied the false Lemma 3). **Consequences**: F-1-3
++- **Probable cause**: inverted direction inherited from F-1-1; with the fixed Lemma 3 the statement is still false (the adjudicator, told nothing of the history, confirmed it against the fixed text)
++- **Counterexample**: L = (2,3,1); Algorithm 2 gives (1,2,3), passes starting at i give (2,1,3); 98 permutations of sizes 2–5 differ. Script scratch/iter-1/adjudicator-F-1-2/t.py; output re-run by the orchestrator: "98 [...] / [1, 2, 3] [2, 1, 3]".
++- **Evidence**: ad hoc
++- **Adjudicator's verdict**: CONFIRMED (audit-bubble-sort-adjudicator-F-1-2, effort low, no escalation needed: executed evidence at the level allowed); upstream cause none
++- **Impact**: Algorithm 7 and its correctness paragraph, abstract and conclusion
++- **Guards**: spec-guards/test_F_1_2.py (witness, variants, near-case (3,1,2), exhaustive n ≤ 5 with repeated values, n = 6 permutations), test_F_1_2_text.py. Red first: text guard failed on the original (1 failed, 5 passed); green after the fix (corpus: 14 passed, 1 failed = lint cross-reference D-1-1, red since the baseline).
++- **Fix**: statement fix: "can start at position i instead of position 1" → "can stop at position n − i + 1 instead of position n"; proof rewritten from Lemma 3 (positions n−i+2..n); commit r2
++- **Links**: F-1-1
++
++### F-1-3 — Algorithm 7 does not sort
++
++- **Fingerprint**: [algorithm or complexity] Algorithm 7 / Correctness — passes from i to n do not sort — L = (3,2,1) returns (2,1,3)
++- **Origin**: reviewer (wave 1 R3, wave 2 R2)
++- **Status**: CONFIRMED — critical fix PENDING (Algorithm 7 is named in the abstract and the conclusion; no `--auto`, and no question channel in the audit session): to be presented to the user
++- **Type**: false statement / algorithm; **Severity**: critical
++- **Location**: §3 Algorithm 7 "make a pass from position i to position n" and Correctness "By Corollary 8, Algorithm 7 returns the same list as Algorithm 2, hence L sorted"
++- **Causes**: F-1-2 (cited, as "Corollary 8" = dangling; Corollary 5 only shortens the END of a pass). **Consequences**: F-1-4
++- **Counterexample**: L = (3,2,1): Algorithm 7 returns (2,1,3), not (1,2,3); also (2,3,1). Script scratch/iter-1/adjudicator-F-1-3/t.py; output re-run by the orchestrator: "([2, 1, 3], 3)". Algorithm 7 sorts only for n ≤ 2.
++- **Evidence**: ad hoc
++- **Adjudicator's verdict**: CONFIRMED (audit-bubble-sort-adjudicator-F-1-3, effort low; the evidence is executed, no escalation)
++- **Guards**: spec-guards/test_F_1_3.py (witness, variants, near-case n = 2, exhaustive check of the PROPOSED fix, comparison count). No text guard yet: no fixed text. Green (the encoded original statement fails on the witness).
++- **Proposed fix** (not applied): statement fix, "pass from position i to position n" → "pass from position 1 to position n − i + 1", correctness by Corollary 5 (count n(n−1)/2 unchanged); abstract ("passes start further and further into the list") and conclusion ("starts each pass where the part of the list already sorted ends") reworded to "shrinking end". Comparison and stability claims remain true for that variant.
++- **Links**: F-1-2
++
++### F-1-4 — Abstract and conclusion claim Algorithm 7 sorts any list, stably, with half the comparisons
++
++- **Fingerprint**: [inconsistency] abstract and §4 — claim more than the body proves (Algorithm 7 as written does not sort) — L = (3,2,1)
++- **Origin**: reviewer (wave 1 R3, wave 2 R4)
++- **Status**: BLOCKED (by F-1-3): the critical fix stays pending with F-1-3; not adjudicated separately (its text is the same claim, and it would change with F-1-3's fix)
++
++### F-1-5 — Example 6 gives the wrong result of the first pass
++
++- **Fingerprint**: [wrong computed example] Example 6 — gives (1,3,2) as the result of the whole first pass; the pass goes on and returns (1,2,3) — L = (3,1,2)
++- **Origin**: orchestrator's own reading while checking the baseline text (missed by both reviewers of waves 1 and 2); submitted to a fresh adjudicator like any other finding
++- **Status**: FIXED
++- **Type**: false statement (computed example); **Severity**: minor
++- **Location**: §2 Example 6: "the first pass compares 3 and 1 and swaps them, which gives (1, 3, 2)"
++- **Causes**: root. **Consequences**: none (no other result uses the example)
++- **Counterexample**: L = (3,1,2), one pass from 1 to 3 → (1,2,3). Script scratch/iter-1/adjudicator-F-1-5/t.py; output re-run: "after comparison at j= 1 [1, 3, 2] / after comparison at j= 2 [1, 2, 3]".
++- **Evidence**: ad hoc
++- **Adjudicator's verdict**: CONFIRMED (audit-bubble-sort-adjudicator-F-1-5, effort medium: minor, ad hoc level)
++- **Guards**: spec-guards/test_F_1_5.py, test_F_1_5_text.py. Red first: text guard failed on the original wording (1 failed, 4 passed); green after the fix.
++- **Fix**: statement fix: added "; it then compares 3 and 2 and swaps them, so the pass returns (1, 2, 3)"; commit r3
++
++## Form defects
++
++- D-1-1 — cross-reference — §3 Correctness — "Corollary 8" → the corollary the correctness argument actually uses (to settle after F-1-2/F-1-3, since the argument is rewritten) — lint rule test_cross_references_resolve (red now)
++- D-1-2 — typo — §3 Correctness — "comparisns" → "comparisons" — FIXED (r3) — lint rule test_known_misspellings_absent
++- D-1-3 — ambiguity — Proposition 4 — stability is meaningless on lists of integers (equal integers are indistinguishable) — clarify without changing meaning (e.g. elements tracked by identity) — judged style-level, not an error: no counterexample can exist
+diff --git a/spec-audit/bubble-sort/report.md b/spec-audit/bubble-sort/report.md
+new file mode 100644
+index 0000000..cfbb9c4
+--- /dev/null
++++ b/spec-audit/bubble-sort/report.md
+@@ -0,0 +1,82 @@
++# Precision audit — bubble-sort.md
++
++## Result
++
++Stop reason: **budget** (`--max-iter 1` reached). One iteration, three detection waves (the third found nothing new). Not a convergence: the iteration changed statements, so a second clean detection would be required, and it was not run.
++
++- Errors detected: 5 (F-1-1 … F-1-5). Confirmed: 5. Refuted: 0. Resolved by their cause: 0. Undecided: 0.
++- Fixed: 3 (F-1-1, F-1-2, F-1-5). Confirmed with a critical fix pending: F-1-3. Blocked behind F-1-3 (critical fix, pending): F-1-4.
++- Suspects: added 1 (Algorithm 7, F-1-3, through F-1-2), cleared 0, confirmed 1.
++- Form defects: 3 found, 1 fixed (D-1-2), 2 open (D-1-1 waits for F-1-3, D-1-3 ambiguity).
++- Commits (internal revisions, all marked incomplete): r1 `77e7262`, r2 `e705087`, r3 `1dbdbfa`.
++
++## Cause graph
++
++Iteration 1, no cycle. Root: F-1-1; F-1-5 is an independent root.
++- F-1-1 → F-1-2: the proof of Corollary 5 applies Lemma 3, false as stated; same counterexample (2,3,1).
++- F-1-2 → F-1-3: the correctness of Algorithm 7 rests on Corollary 5 (cited as "Corollary 8").
++- F-1-3 → F-1-4: the abstract and the conclusion state that Algorithm 7 sorts any list.
++
++## Modified statements
++
++| Result | Before → after | Nature | Counterexample | Guards |
++|---|---|---|---|---|
++| Lemma 3 | the i smallest elements at positions 1..i → the i largest at positions n−i+1..n, in increasing order; proof rewritten as an induction | statement fix + proof repair | (2,3,1), i = 1: pass gives (2,1,3) | test_F_1_1.py, test_F_1_1_text.py |
++| Corollary 5 | pass i can start at position i → pass i can stop at position n−i+1; proof rewritten | statement fix | (2,3,1): starting at i returns (2,1,3); 98 permutations of sizes 2–5 differ | test_F_1_2.py, test_F_1_2_text.py |
++| Example 6 | first pass gives (1,3,2) → the pass goes on and returns (1,2,3) | statement fix | (3,1,2) | test_F_1_5.py, test_F_1_5_text.py |
++| Typo (§3) | "comparisns" → "comparisons" | form | — | lint rule |
++
++Not modified (critical, pending, see Open points): Algorithm 7, its Correctness paragraph, the abstract and the conclusion.
++
++## Errors
++
++| ID | Severity | Type | Causes | Status | Fix | Guards | Commit |
++|---|---|---|---|---|---|---|---|
++| F-1-1 | critical | false statement | root | FIXED | Lemma 3 dualised, proof rewritten | test_F_1_1(.py, _text.py) | 77e7262 |
++| F-1-2 | critical | false statement | F-1-1 | FIXED | Corollary 5: pass stops at n−i+1 | test_F_1_2(.py, _text.py) | e705087 |
++| F-1-3 | critical | algorithm | F-1-2 | CONFIRMED, critical fix pending | proposed: Algorithm 7 passes from 1 to n−i+1 | test_F_1_3.py (no text guard yet) | — |
++| F-1-4 | critical | inconsistency (abstract, conclusion) | F-1-3 | BLOCKED by F-1-3, pending | proposed with F-1-3 | none yet | — |
++| F-1-5 | minor | wrong computed example | root | FIXED | Example 6 completed | test_F_1_5(.py, _text.py) | 1dbdbfa |
++
++## Open points
++
++1. **Pending critical fix F-1-3 / F-1-4.** Algorithm 7 as written ("pass from position i to position n") does not sort: (3,2,1) returns (2,1,3), (2,3,1) returns (2,1,3); it sorts only for n ≤ 2. Executed (ad hoc) by an adjudicator and re-run by the orchestrator. Algorithm 7 is named by the abstract and the conclusion, so its fix changes what the document claims, and the audit session could neither ask nor use `--auto`.
++   - Proposed: Algorithm 7 → "make a pass from position 1 to position n − i + 1"; Correctness → "By Corollary 5, Algorithm 7 returns the same list as Algorithm 2"; count n(n−1)/2 unchanged; title "growing start" → "shrinking end"; abstract "passes start further and further into the list" → "passes end sooner and sooner"; conclusion "starts each pass where the part of the list already sorted ends" → "ends each pass where the part of the list already sorted begins".
++   - Confirming check: spec-guards/test_F_1_3.py already checks the proposed variant exhaustively (n ≤ 5 with repeated values, n = 6 permutations); a text guard is to be added once the text is approved.
++2. **Results conditional on F-1-3 / F-1-4:** the abstract ("both algorithms sort any list, stably"), §3 Correctness (the sorting claim and its reference to the nonexistent "Corollary 8" (D-1-1)), §4 Conclusion ("sorts any list, stably, with about half the comparisons"). They use Corollary 5 (fixed, now saying something else than they need) and Algorithm 7. Stability of Algorithm 7 follows from Proposition 4 only if Algorithm 7 is replaced by a sorting variant.
++3. **D-1-1** cross-reference "Corollary 8": left in place on purpose, it belongs to the Correctness paragraph rewritten by the pending fix; the lint rule `test_cross_references_resolve` is red until then (it was red at the baseline).
++4. **Detection and convergence.** Waves 1 and 2 both missed F-1-5 (Example 6), found by the orchestrator and settled by an adjudicator; wave 3 (after the fixes) found nothing new. The iteration changed statements, so a second clean detection after the pending fix is required for convergence.
++
++## Imprecisions
++
++- **D-1-3** Proposition 4: "two equal elements of L keep their relative order" — on lists of integers, equal elements are indistinguishable, so stability has no content as stated. Misreading invited: that the claim is vacuous or meaningless. Clarification proposed, not applied (it could shift what the proposition claims): say that elements are tracked by their position of origin (or that the argument holds for records ordered by an integer key).
++
++## Corpus
++
++Directory `spec-guards/`. Guards added: test_F_1_1.py, test_F_1_1_text.py, test_F_1_2.py, test_F_1_2_text.py, test_F_1_3.py, test_F_1_5.py, test_F_1_5_text.py. Lint (`test_lint.py`): numbering, cross-references, misspellings (D-1-2), delimiters. Replay: `pytest -q -p no:cacheprovider spec-guards` — last run: 25 passed, 1 failed (`test_cross_references_resolve`, D-1-1, red since the baseline and expected until F-1-3 is fixed).
++
++## Scope of verification
++
++Checked: three cold full reviews (agents, no history), each reported error judged by a fresh adjudicator with an executed counterexample, exhaustive checks on small domains (n ≤ 5 with repeated values, n = 6 permutations) for Lemma 3, Corollary 5 and the proposed Algorithm 7 variant. Confirmations by evidence level: formal 0, model 0, ad hoc 5 (F-1-1, F-1-2, F-1-3, F-1-5 and the reassessments), no oracle existed. Efforts: reviewers and the adjudicator of F-1-1 at the usual effort; reassessments of F-1-2 and F-1-3 at low; F-1-5 at medium; preflight probes at low; no escalation. Refused commands: 1 (`git log --format=%h\ %s`, retried as `git log --oneline` with success; no verdict depended on it). Session resources ignored: none loaded.
++Not checked: Proposition 4 beyond the reviewers' reading (no counterexample sought beyond the bounded tests); the proof text of the rewritten Lemma 3 and Corollary 5 is checked by bounded tests and by no reviewer other than wave 3, not by a mechanized proof; no bibliography exists. Review by agents and bounded tests is neither peer review nor proof.
++
++## Branch and closing
++
++Worktree `<repo>-audit-bubble-sort`, branch `audit/bubble-sort`, base `c58def9`, commits `77e7262`, `e705087`, `1dbdbfa` and the final report commit. Outcome: **Partial, needs decision** (a critical fix is pending). Closing: `--keep` was given, so "Keep the worktree"; nothing is merged. Recommended next step: approve or amend the F-1-3 / F-1-4 fix, then run another audit pass.
++
++## Summary of issues
++
++| Priority | ID | Issue | Location | Status | Mitigation or solution | Effort (person-days) | Basis |
++|---|---|---|---|---|---|---|---|
++| P1 | F-1-3 | Algorithm 7 does not sort ((3,2,1) → (2,1,3)) | §3 Algorithm 7, Correctness | CONFIRMED, fix pending | passes from 1 to n−i+1, correctness by Corollary 5 | 0.1–0.3 | rewording an algorithm and its correctness line; 2 dependent places; confidence high |
++| P1 | F-1-4 | Abstract and conclusion claim Algorithm 7 sorts any list, stably | Abstract, §4 | BLOCKED by F-1-3 | reword to "shrinking end" | 0.05–0.2 | two sentences; confidence high |
++| P2 | — | Convergence not established: second clean detection needed after the pending fix | whole document | open | rerun the audit once F-1-3 is decided | 0.2–0.5 | one more iteration; confidence medium |
++| P3 | D-1-1 | Reference to nonexistent "Corollary 8" | §3 Correctness | open (with F-1-3) | becomes "Corollary 5" in the rewritten line | 0.05–0.1 | one reference; confidence high |
++| P3 | D-1-3 | Stability of integers is vacuous as stated | Proposition 4 | open | track elements by position of origin | 0.1–0.3 | rewording a statement; confidence medium |
++| P3 | — | Author's review of the modified statements | Lemma 3, Corollary 5, Example 6 | to do | read the three rewritten proofs | 0.2–0.5 | three short proofs; confidence medium |
++| Done | F-1-1 | Lemma 3 stated the wrong end of the list | §2 | FIXED, guarded | dual statement, proof rewritten | — | — |
++| Done | F-1-2 | Corollary 5 false | §2 | FIXED, guarded | pass stops at n−i+1 | — | — |
++| Done | F-1-5 | Example 6 wrong pass result | §2 | FIXED, guarded | pass completed, (1,2,3) | — | — |
++| Done | D-1-2 | Typo "comparisns" | §3 | FIXED, lint rule | "comparisons" | — | — |
++
++Totals per priority: P1 0.15–0.5, P2 0.2–0.5, P3 0.35–0.9 person-days; 0 rows not estimated.
+diff --git a/spec-guards/test_F_1_1.py b/spec-guards/test_F_1_1.py
+new file mode 100644
+index 0000000..a0f2982
+--- /dev/null
++++ b/spec-guards/test_F_1_1.py
+@@ -0,0 +1,60 @@
++# Guard F-1-1 — [false statement] Lemma 3 — states the i SMALLEST are in place after i passes — L = (2, 3, 1), i = 1
++# Original statement: "after the i-th pass of Algorithm 2, the i smallest elements of L occupy positions 1 to i, in increasing order."
++# Fixed statement:    "... the i largest elements of L occupy positions n-i+1 to n, in increasing order." (statement fix)
++# Model: Definition 1 (pass) and Algorithm 2 of the document, encoded without reference to the fix.
++from itertools import permutations, product
++
++
++def pass_(L, a, b=None):
++    L = list(L)
++    b = len(L) if b is None else b
++    for j in range(a, b):  # 1-based j = a .. b-1 compares x_j, x_{j+1}
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    return L
++
++
++def after_passes(L, i):
++    for _ in range(i):
++        L = pass_(L, 1)
++    return L
++
++
++def original_statement(L, i):
++    n = len(L)
++    return after_passes(L, i)[:i] == sorted(L)[:i]
++
++
++def fixed_statement(L, i):
++    n = len(L)
++    return after_passes(L, i)[n - i:] == sorted(L)[n - i:]
++
++
++WITNESS = ((2, 3, 1), 1)
++VARIANTS = [((2, 3, 4, 1), 1), ((3, 1, 2), 2), ((2, 2, 1), 1)]
++NEAR_CASE = ((1, 3, 2), 1)  # minimum already first: the original statement is true
++
++
++def test_F_1_1_original_refuted_by_witness():
++    assert not original_statement(*WITNESS)
++
++
++def test_F_1_1_fixed_holds_on_witness_and_variants():
++    for L, i in [WITNESS, *VARIANTS, NEAR_CASE]:
++        assert fixed_statement(L, i), (L, i)
++
++
++def test_F_1_1_near_case_where_original_is_true():
++    assert original_statement(*NEAR_CASE) and fixed_statement(*NEAR_CASE)
++
++
++def test_F_1_1_fixed_exhaustive_on_bounded_domain():
++    for n in range(2, 7):
++        for L in product(range(1, 4), repeat=n) if n <= 5 else permutations(range(1, n + 1)):
++            for i in range(1, n):
++                assert fixed_statement(L, i), (L, i)
++
++
++def test_F_1_1_original_fails_on_some_permutation_of_each_size():
++    for n in range(3, 6):
++        assert any(not original_statement(L, 1) for L in permutations(range(1, n + 1)))
+diff --git a/spec-guards/test_F_1_1_text.py b/spec-guards/test_F_1_1_text.py
+new file mode 100644
+index 0000000..00cb9da
+--- /dev/null
++++ b/spec-guards/test_F_1_1_text.py
+@@ -0,0 +1,13 @@
++# Text guard F-1-1 — Lemma 3 states the i largest elements, at the end of the list, not the i smallest at the start
++import json, os
++from pathlib import Path
++
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++
++def test_F_1_1_text():
++    text = doc("bubble-sort.md")
++    assert "the i smallest elements of L occupy positions 1 to i" not in text
++    assert "the i largest elements of L occupy positions n − i + 1 to n" in text
+diff --git a/spec-guards/test_F_1_2.py b/spec-guards/test_F_1_2.py
+new file mode 100644
+index 0000000..0c161d7
+--- /dev/null
++++ b/spec-guards/test_F_1_2.py
+@@ -0,0 +1,65 @@
++# Guard F-1-2 — [false statement] Corollary 5 — pass i can start at position i — L = (2, 3, 1)
++# Original statement: "the i-th pass can start at position i instead of position 1, without changing the output."
++# Fixed statement:    "the i-th pass can stop at position n − i + 1 instead of position n, without changing the output." (statement fix)
++# Model: Definition 1 (pass) and Algorithm 2 of the document, encoded without reference to the fix.
++from itertools import permutations, product
++
++
++def pass_(L, a, b):
++    L = list(L)
++    for j in range(a, b):  # 1-based j = a .. b-1 compares x_j, x_{j+1}
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    return L
++
++
++def algorithm_2(L):
++    n = len(L)
++    for _ in range(1, n):
++        L = pass_(L, 1, n)
++    return L
++
++
++def with_variable_passes(L, bounds):
++    n = len(L)
++    for i in range(1, n):
++        a, b = bounds(i, n)
++        L = pass_(L, a, b)
++    return L
++
++
++def original_statement(L):
++    return with_variable_passes(L, lambda i, n: (i, n)) == algorithm_2(L)
++
++
++def fixed_statement(L):
++    return with_variable_passes(L, lambda i, n: (1, n - i + 1)) == algorithm_2(L)
++
++
++WITNESS = (2, 3, 1)
++VARIANTS = [(2, 1, 0), (1, 2, 0, 3), (2, 2, 1)]
++NEAR_CASE = (3, 1, 2)  # both variants agree
++
++
++def test_F_1_2_original_refuted_by_witness():
++    assert not original_statement(WITNESS)
++
++
++def test_F_1_2_fixed_holds_on_witness_and_variants():
++    for L in [WITNESS, *VARIANTS, NEAR_CASE]:
++        assert fixed_statement(L), L
++
++
++def test_F_1_2_near_case_where_original_is_true():
++    assert original_statement(NEAR_CASE) and fixed_statement(NEAR_CASE)
++
++
++def test_F_1_2_fixed_exhaustive_on_bounded_domain():
++    for n in range(2, 7):
++        for L in product(range(1, 4), repeat=n) if n <= 5 else permutations(range(1, n + 1)):
++            assert fixed_statement(L), L
++
++
++def test_F_1_2_original_fails_on_some_permutation_of_each_size():
++    for n in range(3, 6):
++        assert any(not original_statement(L) for L in permutations(range(1, n + 1)))
+diff --git a/spec-guards/test_F_1_2_text.py b/spec-guards/test_F_1_2_text.py
+new file mode 100644
+index 0000000..0b70084
+--- /dev/null
++++ b/spec-guards/test_F_1_2_text.py
+@@ -0,0 +1,13 @@
++# Text guard F-1-2 — Corollary 5 lets the i-th pass stop at n − i + 1, not start at i
++import json, os
++from pathlib import Path
++
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++
++def test_F_1_2_text():
++    text = doc("bubble-sort.md")
++    assert "the i-th pass can start at position i instead of position 1" not in text
++    assert "the i-th pass can stop at position n − i + 1 instead of position n" in text
+diff --git a/spec-guards/test_F_1_3.py b/spec-guards/test_F_1_3.py
+new file mode 100644
+index 0000000..5af19e8
+--- /dev/null
++++ b/spec-guards/test_F_1_3.py
+@@ -0,0 +1,59 @@
++# Guard F-1-3 — [algorithm] Algorithm 7 — passes from position i to n do not sort — L = (3, 2, 1) returns (2, 1, 3)
++# Original statement: "Algorithm 7 (pass i from position i to n) returns L in increasing order."
++# Proposed fix (critical fix, PENDING the user's approval, not applied to the document):
++#   pass i from position 1 to n − i + 1 (Corollary 5).
++# This file therefore has no text guard yet: there is no fixed text to assert.
++# Model: Definition 1 (pass) of the document, encoded without reference to the fix.
++from itertools import permutations, product
++
++
++def pass_(L, a, b):
++    L = list(L)
++    for j in range(a, b):
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    return L
++
++
++def run(L, bounds):
++    n = len(L)
++    for i in range(1, n):
++        L = pass_(L, *bounds(i, n))
++    return L
++
++
++def original_statement(L):  # Algorithm 7 as written
++    return run(L, lambda i, n: (i, n)) == sorted(L)
++
++
++def proposed_statement(L):  # shrinking end, Corollary 5
++    return run(L, lambda i, n: (1, n - i + 1)) == sorted(L)
++
++
++WITNESS = (3, 2, 1)
++VARIANTS = [(2, 3, 1), (2, 3, 4, 1), (2, 2, 1)]
++NEAR_CASE = (2, 1)  # n = 2: a single full pass, Algorithm 7 sorts
++
++
++def test_F_1_3_original_refuted_by_witness():
++    assert run(WITNESS, lambda i, n: (i, n)) == [2, 1, 3]
++    assert not original_statement(WITNESS)
++
++
++def test_F_1_3_original_refuted_on_variants():
++    assert all(not original_statement(L) for L in VARIANTS)
++
++
++def test_F_1_3_near_case_where_original_is_true():
++    assert original_statement(NEAR_CASE) and proposed_statement(NEAR_CASE)
++
++
++def test_F_1_3_proposed_fix_exhaustive_on_bounded_domain():
++    for n in range(2, 7):
++        for L in product(range(1, 4), repeat=n) if n <= 5 else permutations(range(1, n + 1)):
++            assert proposed_statement(L), L
++
++
++def test_F_1_3_comparison_count_of_proposed_fix():
++    for n in range(2, 9):
++        assert sum(n - i for i in range(1, n)) == n * (n - 1) // 2
+diff --git a/spec-guards/test_F_1_5.py b/spec-guards/test_F_1_5.py
+new file mode 100644
+index 0000000..e215edc
+--- /dev/null
++++ b/spec-guards/test_F_1_5.py
+@@ -0,0 +1,44 @@
++# Guard F-1-5 — [wrong computed example] Example 6 — gives (1, 3, 2) as the result of the first pass — L = (3, 1, 2)
++# Original statement: "the first pass compares 3 and 1 and swaps them, which gives (1, 3, 2)."
++# Fixed statement:    the pass goes on, compares 3 and 2, swaps them, and returns (1, 2, 3). (statement fix)
++# Model: Definition 1 (pass from position 1 to n) of the document, encoded without reference to the fix.
++from itertools import permutations
++
++
++def pass_(L, a, b):
++    L = list(L)
++    for j in range(a, b):
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    return L
++
++
++def original_statement(L):
++    return pass_(L, 1, len(L)) == [1, 3, 2]
++
++
++def fixed_statement(L):
++    return pass_(L, 1, len(L)) == [1, 2, 3]
++
++
++WITNESS = (3, 1, 2)
++VARIANTS = [(1, 2, 3), (2, 3, 1)]
++
++
++def test_F_1_5_original_refuted_by_witness():
++    assert not original_statement(WITNESS)
++
++
++def test_F_1_5_fixed_holds_on_witness():
++    assert fixed_statement(WITNESS)
++
++
++def test_F_1_5_variants_and_near_case():
++    assert pass_((2, 3, 1), 1, 3) == [2, 1, 3]
++    assert pass_((1, 2, 3), 1, 3) == [1, 2, 3]
++    assert pass_(WITNESS, 1, 2) == [1, 3, 2]  # near-case: the original is true for a pass stopped at position 2
++
++
++def test_F_1_5_exhaustive_n3_last_element_is_max():
++    for L in permutations(range(1, 4)):
++        assert pass_(L, 1, 3)[-1] == 3
+diff --git a/spec-guards/test_F_1_5_text.py b/spec-guards/test_F_1_5_text.py
+new file mode 100644
+index 0000000..4febe8d
+--- /dev/null
++++ b/spec-guards/test_F_1_5_text.py
+@@ -0,0 +1,13 @@
++# Text guard F-1-5 — Example 6 gives the true result of the whole first pass
++import json, os
++from pathlib import Path
++
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++
++def test_F_1_5_text():
++    text = doc("bubble-sort.md")
++    assert "which gives (1, 3, 2).\n" not in text
++    assert "so the pass returns (1, 2, 3)" in text
+diff --git a/spec-guards/test_lint.py b/spec-guards/test_lint.py
+new file mode 100644
+index 0000000..94edfeb
+--- /dev/null
++++ b/spec-guards/test_lint.py
+@@ -0,0 +1,30 @@
++# Mechanical lint of bubble-sort.md: numbering, cross-references, math delimiters.
++import json, os, re
++from pathlib import Path
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++TEXT = doc("bubble-sort.md")
++KINDS = ("Definition", "Algorithm", "Lemma", "Proposition", "Corollary", "Example", "Theorem")
++
++def declared():
++    return [int(m) for m in re.findall(r"^\*\*(?:%s) (\d+)" % "|".join(KINDS), TEXT, re.M)]
++
++def test_numbering_continuous_and_unique():
++    nums = declared()
++    assert nums == list(range(1, len(nums) + 1)), nums
++
++def test_cross_references_resolve():
++    nums = set(declared())
++    refs = re.findall(r"\b(?:%s) (\d+)" % "|".join(KINDS), TEXT)
++    missing = sorted({int(r) for r in refs} - nums)
++    assert not missing, missing
++
++def test_known_misspellings_absent():  # D-1-2
++    assert "comparisns" not in TEXT
++
++
++def test_math_delimiters_balanced():
++    for a, b in ("()", "[]", "{}"):
++        assert TEXT.count(a) == TEXT.count(b), (a, b)

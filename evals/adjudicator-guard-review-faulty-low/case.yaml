@@ -1,0 +1,38 @@
+schema_version: "1.1"
+name: adjudicator-guard-review-faulty-low
+description: At low effort, as the per-step routing launches a guard review. A fresh spec-adjudicator in guard review finds that a guard whose model drops duplicates, against Definition 1, is faulty.
+tags: [agents, measure, shell]
+runs: 1  # a measurement: re-run with --runs 3 when re-measuring the effort of guard reviews
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Bash, Write, Agent]
+  prompt: |
+    Launch the agent spec-audit:spec-adjudicator with effort low and exactly this message, then reply with its YAML output unchanged:
+
+    Guard review on selection.md (current directory).
+    Guard: spec-guards/test_F_1_1.py, runner: pytest -q spec-guards/test_F_1_1.py
+    Passage it is about: "§2, Lemma 3: For every integer k ≥ 0 and every list L, |P_k(L)| = min(k, |L|)."
+    Definitions it encodes: Definition 1 and Definition 2 of selection.md.
+    Scratch directory: ./scratch/adjudicator-G-1-1.
+graders:
+  - name: verdict
+    type: regex
+    pattern: 'guard_verdict:\s*FAULTY'
+  - name: names-duplicates
+    type: regex
+    pattern: 'duplicat|set\('
+    flags: i
+  # Regex rather than an LLM judge, which failed correct verdicts two times out of three.
+  - name: diagnosis-against-definition-1
+    type: regex
+    pattern: '(set\(L\)|set\()[\s\S]*(Definition 1|duplicat)|(Definition 1|duplicat)[\s\S]*set\('
+    flags: i
+  - name: cites-the-script-it-ran
+    type: regex
+    pattern: 'evidence:[^\n]*\.py[^\n]*|evidence:[\s\S]{0,400}\.py'
+  - name: witness-with-repeated-values
+    type: regex
+    pattern: '\((\d), ?\1\)|\[(\d), ?\2\]'

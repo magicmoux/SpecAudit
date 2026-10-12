@@ -1,0 +1,512 @@
+diff --git a/bubble-sort.md b/bubble-sort.md
+index d831ec7..2eb1024 100644
+--- a/bubble-sort.md
++++ b/bubble-sort.md
+@@ -1,10 +1,10 @@
+ # Bubble sort and a faster variant
+ 
+-**Abstract.** We study the passes of bubble sort, derive a variant whose passes start further and further into the list, and show that both algorithms sort any list, stably.
++**Abstract.** We study the passes of bubble sort, derive a variant whose passes end earlier and earlier in the list, and show that both algorithms sort any list, stably.
+ 
+ ## 1. Definitions
+ 
+-**Definition 1.** A *list* is a finite sequence L = (x_1, …, x_n) of integers, n = |L| being its length. A *pass* from position a to position b (1 ≤ a ≤ b ≤ n) compares x_j and x_{j+1} for j = a, a + 1, …, b − 1, in this order, and swaps them when x_j > x_{j+1}.
++**Definition 1.** A *list* is a finite sequence L = (x_1, …, x_n) of integers, n = |L| being its length. A *pass* from position a to position b (1 ≤ a ≤ b ≤ n) compares x_j and x_{j+1} for j = a, a + 1, …, b − 1, in this order, and swaps them when x_j > x_{j+1}. Below, "increasing" is meant in the weak sense (equal elements allowed), and the *elements* of a list are its entries, followed by position as they are swapped, so that two equal entries remain two distinct elements.
+ 
+ **Algorithm 2 (bubble sort).** Input: a list L of length n. Output: L in increasing order.
+ 
+@@ -13,29 +13,29 @@
+ 
+ ## 2. Results
+ 
+-**Lemma 3.** For every list L and every i with 1 ≤ i < |L|, after the i-th pass of Algorithm 2, the i smallest elements of L occupy positions 1 to i, in increasing order.
++**Lemma 3.** For every list L and every i with 1 ≤ i < |L|, after the i-th pass of Algorithm 2, the i largest elements of L occupy positions n − i + 1 to n, in increasing order, where n = |L|.
+ 
+-*Proof.* By induction on i. During a pass, whenever x_j > x_{j+1} the smaller element moves one position to the left, so the smallest element not yet in place moves left until it meets a smaller one, that is, until it reaches position i. ∎
++*Proof.* In a pass from position 1 to position n, after the comparison of positions j and j + 1, position j + 1 holds a largest element among those that stood at positions 1 to j + 1 when the pass began: this is clear for j = 1, and the comparison of positions j and j + 1 leaves the larger of the two at position j + 1. In particular a pass puts a largest element of the list at position n, which proves the case i = 1. Let i ≥ 2 and assume the statement for i − 1, so that positions n − i + 2 to n hold the i − 1 largest elements in increasing order before the i-th pass. When the comparison of positions n − i + 1 and n − i + 2 is made, position n − i + 1 holds a largest element of positions 1 to n − i + 1, that is, the i-th largest element of L, which is not greater than the element at position n − i + 2: nothing is swapped, and nor in the later comparisons, which are between elements already in increasing order. So after the i-th pass positions n − i + 1 to n hold the i largest elements in increasing order. For i = n − 1 (n ≥ 2), position 1 then holds the remaining element, which is not greater than the others, so Algorithm 2 sorts L; if n ≤ 1 there is no pass and L is already sorted. ∎
+ 
+ **Proposition 4.** A pass, and hence any sequence of passes such as Algorithm 2, is stable: two equal elements of L keep their relative order.
+ 
+ *Proof.* A pass swaps two neighbours only when x_j > x_{j+1}, strictly, so two equal neighbours are never swapped. An element only moves by swapping with a neighbour, hence two equal elements never cross. ∎
+ 
+-**Corollary 5.** In Algorithm 2, the i-th pass can start at position i instead of position 1, without changing the output.
++**Corollary 5.** In Algorithm 2, the i-th pass can end at position n − i + 1 instead of position n, without changing the output.
+ 
+-*Proof.* By Lemma 3, before the i-th pass positions 1 to i − 1 already hold their final elements, and none of them is greater than an element after it: the comparisons at these positions swap nothing. ∎
++*Proof.* The two passes differ only by the comparisons of positions j and j + 1 for j = n − i + 1, …, n − 1 (none if i = 1). By Lemma 3, before the i-th pass positions n − i + 2 to n hold their final elements, in increasing order, and the proof of Lemma 3 shows that the comparison at j = n − i + 1 swaps nothing; the following ones are between elements already in increasing order and swap nothing either. Each pass therefore gives the same list, and so does the whole algorithm. ∎
+ 
+-**Example 6.** For L = (3, 1, 2), the first pass compares 3 and 1 and swaps them, which gives (1, 3, 2).
++**Example 6.** For L = (3, 1, 2), the first pass compares 3 and 1 and swaps them, which gives (1, 3, 2), then compares 3 and 2 and swaps them, which gives (1, 2, 3).
+ 
+ ## 3. A faster variant
+ 
+-**Algorithm 7 (bubble sort with a growing start).** Input: a list L of length n. Output: L in increasing order.
++**Algorithm 7 (bubble sort with a shrinking end).** Input: a list L of length n. Output: L in increasing order.
+ 
+-1. for i from 1 to n − 1: make a pass from position i to position n
++1. for i from 1 to n − 1: make a pass from position 1 to position n − i + 1
+ 2. return L
+ 
+-*Correctness.* By Corollary 8, Algorithm 7 returns the same list as Algorithm 2, hence L sorted. The i-th pass makes n − i comparisons, so Algorithm 7 makes n(n − 1)/2 comparisns in all, instead of (n − 1)² for Algorithm 2.
++*Correctness.* By Corollary 5, Algorithm 7 returns the same list as Algorithm 2, hence L sorted. The i-th pass makes n − i comparisons, so Algorithm 7 makes n(n − 1)/2 comparisons in all, instead of (n − 1)² for Algorithm 2.
+ 
+ ## 4. Conclusion
+ 
+-Algorithm 7, which starts each pass where the part of the list already sorted ends, sorts any list, stably, with about half the comparisons.
++Algorithm 7, which ends each pass where the part of the list already sorted begins, sorts any list, stably, with about half the comparisons.
+diff --git a/spec-guards/test_F_1_1.py b/spec-guards/test_F_1_1.py
+new file mode 100644
+index 0000000..a0cd72d
+--- /dev/null
++++ b/spec-guards/test_F_1_1.py
+@@ -0,0 +1,74 @@
++# Guard F-1-1 — [false statement] Lemma 3 — a left-to-right pass carries the largest elements to the end, not the smallest to the front — L = (2,3,1)
++# Original statement: after the i-th pass of Algorithm 2, the i smallest elements occupy positions 1..i, in increasing order.
++# Fixed statement:    after the i-th pass of Algorithm 2, the i largest elements occupy positions n-i+1..n, in increasing order.
++# Model: Definition 1 and Algorithm 2 of the document (pass from a to b swaps x_j, x_{j+1} when x_j > x_{j+1}), encoded without reference to the fix.
++# Consequences covered: F-1-3 (Corollary 5: starting pass i at position i), F-1-4 (Algorithm 7), same witness.
++import itertools
++
++
++def pass_(L, a, b):
++    """Definition 1, 1-indexed a <= b."""
++    L = list(L)
++    for j in range(a, b):
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    return L
++
++
++def after_passes(L, i):
++    n = len(L)
++    for _ in range(i):
++        L = pass_(L, 1, n)
++    return L
++
++
++def original_statement(L, i):
++    M = after_passes(L, i)
++    return M[:i] == sorted(L)[:i]
++
++
++def fixed_statement(L, i):
++    n = len(L)
++    M = after_passes(L, i)
++    return M[n - i:] == sorted(L)[n - i:]
++
++
++def algorithm_7(L):
++    n = len(L)
++    for i in range(1, n):
++        L = pass_(L, i, n)
++    return L
++
++
++WITNESS = ((2, 3, 1), 1)
++VARIANTS = [((1, 2, 0, 3), 1), ((2, 2, 1), 1), ((5, 4, 3, 2, 1), 2)]
++NEAR_CASE = ((3, 1, 2), 1)  # smallest element happens to end in front: original true as well
++
++
++def test_F_1_1_original_refuted_by_witness():
++    assert not original_statement(*WITNESS)
++
++
++def test_F_1_1_original_refuted_on_variants():
++    assert not all(original_statement(*c) for c in VARIANTS)
++
++
++def test_F_1_1_fixed_holds_on_witness_and_variants():
++    for c in [WITNESS, *VARIANTS]:
++        assert fixed_statement(*c), c
++
++
++def test_F_1_1_near_case_where_original_is_true():
++    assert original_statement(*NEAR_CASE) and fixed_statement(*NEAR_CASE)
++
++
++def test_F_1_1_fixed_exhaustive_on_bounded_domain():
++    for n in range(2, 6):
++        for L in itertools.product(range(4), repeat=n):
++            for i in range(1, n):
++                assert fixed_statement(L, i), (L, i)
++
++
++def test_F_1_3_consequence_algorithm_7_fails_on_cause_witness():
++    # the original Corollary 5 would make Algorithm 7 equal to Algorithm 2 on the witness
++    assert algorithm_7((2, 3, 1)) != sorted((2, 3, 1))
+diff --git a/spec-guards/test_F_1_1_text.py b/spec-guards/test_F_1_1_text.py
+new file mode 100644
+index 0000000..bc0c5b1
+--- /dev/null
++++ b/spec-guards/test_F_1_1_text.py
+@@ -0,0 +1,14 @@
++# Text guard F-1-1 — Lemma 3 states the i largest elements at the end, not the i smallest at the front
++import json, os
++from pathlib import Path
++
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++
++def test_F_1_1_text():
++    text = doc("bubble-sort.md")
++    assert "the i smallest elements of L occupy positions 1 to i" not in text
++    assert "the i largest elements of L occupy positions n − i + 1 to n, in increasing order" in text
++    assert "the smallest element not yet in place moves left" not in text
+diff --git a/spec-guards/test_F_1_3.py b/spec-guards/test_F_1_3.py
+new file mode 100644
+index 0000000..b239ab7
+--- /dev/null
++++ b/spec-guards/test_F_1_3.py
+@@ -0,0 +1,67 @@
++# Guard F-1-3 — [false statement] Corollary 5 — positions 1..i-1 are not final after i-1 passes, so pass i cannot start at i — L = (3,2,1)
++# Original statement: in Algorithm 2 the i-th pass can start at position i instead of 1 without changing the output.
++# Fixed statement:    in Algorithm 2 the i-th pass can end at position n-i+1 instead of n, each pass giving the same list.
++# Model: Definition 1 and Algorithm 2 of the document, encoded without reference to the fix.
++# Consequences covered: F-1-4 (Algorithm 7 must use the fixed passes), same witness.
++import itertools
++
++
++def pass_(L, a, b):
++    L = list(L)
++    for j in range(a, b):
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    return L
++
++
++def algorithm_2(L):
++    n = len(L)
++    for i in range(1, n):
++        L = pass_(L, 1, n)
++    return L
++
++
++def start_at_i(L):
++    n = len(L)
++    for i in range(1, n):
++        L = pass_(L, i, n)
++    return L
++
++
++def end_at_n_minus_i_plus_1(L):
++    n = len(L)
++    for i in range(1, n):
++        L = pass_(L, 1, n - i + 1)
++    return L
++
++
++def original_statement(L):
++    return start_at_i(L) == algorithm_2(L)
++
++
++def fixed_statement(L):
++    return end_at_n_minus_i_plus_1(L) == algorithm_2(L)
++
++
++WITNESS = (3, 2, 1)
++VARIANTS = [(2, 3, 1), (1, 2, 0, 3), (4, 3, 2, 1)]
++NEAR_CASE = (3, 1, 2)  # the original statement is true here as well
++
++
++def test_F_1_3_original_refuted_by_witness():
++    assert not original_statement(WITNESS)
++
++
++def test_F_1_3_fixed_holds_on_witness_and_variants():
++    for c in [WITNESS, *VARIANTS]:
++        assert fixed_statement(c), c
++
++
++def test_F_1_3_near_case_where_original_is_true():
++    assert original_statement(NEAR_CASE) and fixed_statement(NEAR_CASE)
++
++
++def test_F_1_3_fixed_exhaustive_on_bounded_domain():
++    for n in range(0, 7):
++        for L in itertools.product(range(4), repeat=n):
++            assert fixed_statement(L), L
+diff --git a/spec-guards/test_F_1_3_text.py b/spec-guards/test_F_1_3_text.py
+new file mode 100644
+index 0000000..4c3d57c
+--- /dev/null
++++ b/spec-guards/test_F_1_3_text.py
+@@ -0,0 +1,14 @@
++# Text guard F-1-3 — Corollary 5 lets the i-th pass end at n − i + 1, not start at i
++import json, os
++from pathlib import Path
++
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++
++def test_F_1_3_text():
++    text = doc("bubble-sort.md")
++    assert "the i-th pass can start at position i instead of position 1" not in text
++    assert "positions 1 to i − 1 already hold their final elements" not in text
++    assert "the i-th pass can end at position n − i + 1 instead of position n" in text
+diff --git a/spec-guards/test_F_1_4.py b/spec-guards/test_F_1_4.py
+new file mode 100644
+index 0000000..8f06d8b
+--- /dev/null
++++ b/spec-guards/test_F_1_4.py
+@@ -0,0 +1,83 @@
++# Guard F-1-4 — [false statement] Algorithm 7 and its Correctness paragraph — starting pass i at i skips needed comparisons — L = (2,3,1)
++# Original statement: Algorithm 7 (pass i from position i to n) returns the same list as Algorithm 2, hence L sorted.
++# Fixed statement:    Algorithm 7 (pass i from position 1 to n - i + 1) returns the same list as Algorithm 2, hence L sorted, with n(n-1)/2 comparisons against (n-1)^2.
++# Model: Definition 1 and Algorithms 2 and 7 of the document, encoded without reference to the fix.
++# Consequences covered: F-1-5 (abstract and conclusion).
++import itertools
++
++
++def pass_(L, a, b, count):
++    L = list(L)
++    for j in range(a, b):
++        count[0] += 1
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    return L
++
++
++def algorithm_2(L):
++    L, n, c = list(L), len(L), [0]
++    for i in range(1, n):
++        L = pass_(L, 1, n, c)
++    return L, c[0]
++
++
++def algorithm_7_original(L):
++    L, n, c = list(L), len(L), [0]
++    for i in range(1, n):
++        L = pass_(L, i, n, c)
++    return L, c[0]
++
++
++def algorithm_7_fixed(L):
++    L, n, c = list(L), len(L), [0]
++    for i in range(1, n):
++        L = pass_(L, 1, n - i + 1, c)
++    return L, c[0]
++
++
++def original_statement(L):
++    return algorithm_7_original(L)[0] == algorithm_2(L)[0] == sorted(L)
++
++
++def fixed_statement(L):
++    n = len(L)
++    out, cmps = algorithm_7_fixed(L)
++    return out == algorithm_2(L)[0] == sorted(L) and cmps == n * (n - 1) // 2 and algorithm_2(L)[1] == max(n - 1, 0) ** 2
++
++
++WITNESS = (2, 3, 1)
++VARIANTS = [(3, 2, 1), (1, 2, 0, 3), (2, 2, 1), (5, 4, 3, 2, 1)]
++NEAR_CASE = (3, 1, 2)  # one full pass already sorts it: the original is right here too
++
++
++def test_F_1_4_original_refuted_by_witness():
++    assert not original_statement(WITNESS)
++
++
++def test_F_1_4_fixed_holds_on_witness_and_variants():
++    for c in [WITNESS, *VARIANTS]:
++        assert fixed_statement(c), c
++
++
++def test_F_1_4_near_case_where_original_is_true():
++    assert original_statement(NEAR_CASE) and fixed_statement(NEAR_CASE)
++
++
++def test_F_1_4_fixed_exhaustive_on_bounded_domain():
++    for n in range(0, 7):
++        for L in itertools.product(range(4), repeat=n):
++            assert fixed_statement(L), L
++
++
++def test_F_1_4_stability_of_fixed_algorithm_7():
++    # Proposition 4 on tagged elements: equal keys keep their order
++    for n in range(0, 6):
++        for keys in itertools.product(range(3), repeat=n):
++            tagged = [(k, t) for t, k in enumerate(keys)]
++            L = list(tagged)
++            for i in range(1, n):
++                for j in range(1, n - i + 1):
++                    if L[j - 1][0] > L[j][0]:
++                        L[j - 1], L[j] = L[j], L[j - 1]
++            assert L == sorted(tagged), keys
+diff --git a/spec-guards/test_F_1_4_text.py b/spec-guards/test_F_1_4_text.py
+new file mode 100644
+index 0000000..cd083c0
+--- /dev/null
++++ b/spec-guards/test_F_1_4_text.py
+@@ -0,0 +1,15 @@
++# Text guard F-1-4 — Algorithm 7 makes pass i from position 1 to n − i + 1 and cites Corollary 5
++import json, os
++from pathlib import Path
++
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++
++def test_F_1_4_text():
++    text = doc("bubble-sort.md")
++    assert "make a pass from position i to position n" not in text
++    assert "By Corollary 8" not in text
++    assert "make a pass from position 1 to position n − i + 1" in text
++    assert "By Corollary 5, Algorithm 7 returns the same list as Algorithm 2" in text
+diff --git a/spec-guards/test_F_1_5_text.py b/spec-guards/test_F_1_5_text.py
+new file mode 100644
+index 0000000..3826f39
+--- /dev/null
++++ b/spec-guards/test_F_1_5_text.py
+@@ -0,0 +1,15 @@
++# Text guard F-1-5 — the Abstract and the Conclusion say that the passes of Algorithm 7 end earlier, not that they start later
++import json, os
++from pathlib import Path
++
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++
++def test_F_1_5_text():
++    text = doc("bubble-sort.md")
++    assert "passes start further and further into the list" not in text
++    assert "starts each pass where the part of the list already sorted ends" not in text
++    assert "passes end earlier and earlier in the list" in text
++    assert "ends each pass where the part of the list already sorted begins" in text
+diff --git a/spec-guards/test_F_2_1.py b/spec-guards/test_F_2_1.py
+new file mode 100644
+index 0000000..7a6a9c8
+--- /dev/null
++++ b/spec-guards/test_F_2_1.py
+@@ -0,0 +1,43 @@
++# Guard F-2-1 — [incomplete proof] sortedness of Algorithm 2 — the last step of Lemma 3 (i = n-1, then position 1) is never written — no counterexample, the claim is true
++# Intermediate claim of the faulty step: after the n-1 passes of Algorithm 2 (n >= 2), positions 2..n hold the n-1 largest elements in increasing order
++# and position 1 holds the remaining element, no greater than position 2; hence the list is sorted. For n <= 1 there is no pass and the list is sorted.
++# Model: Definition 1 and Algorithm 2 of the document.
++import itertools
++
++
++def pass_(L, a, b):
++    L = list(L)
++    for j in range(a, b):
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    return L
++
++
++def algorithm_2(L):
++    L, n = list(L), len(L)
++    for i in range(1, n):
++        L = pass_(L, 1, n)
++    return L
++
++
++def intermediate_claim(L):
++    n = len(L)
++    M = algorithm_2(L)
++    if n <= 1:
++        return M == list(L)
++    return M[1:] == sorted(L)[1:] and M[0] <= M[1] and M[0] == sorted(L)[0] and M == sorted(L)
++
++
++def test_F_2_1_witness_and_variants():
++    for c in [(2, 3, 1), (3, 2, 1), (2, 2, 1), (1, 1), (5,), ()]:
++        assert intermediate_claim(c), c
++
++
++def test_F_2_1_near_case_one_pass_suffices():
++    assert intermediate_claim((3, 1, 2))
++
++
++def test_F_2_1_bounded_exhaustive():
++    for n in range(0, 8):
++        for L in itertools.product(range(4), repeat=n):
++            assert intermediate_claim(L), L
+diff --git a/spec-guards/test_F_2_1_text.py b/spec-guards/test_F_2_1_text.py
+new file mode 100644
+index 0000000..6e30786
+--- /dev/null
++++ b/spec-guards/test_F_2_1_text.py
+@@ -0,0 +1,13 @@
++# Text guard F-2-1 — the proof of Lemma 3 ends by showing that Algorithm 2 sorts (i = n − 1, then position 1)
++import json, os
++from pathlib import Path
++
++
++def doc(path):
++    return Path(json.loads(os.environ.get("SPEC_DOCS", "{}")).get(path, path)).read_text(encoding="utf-8")
++
++
++def test_F_2_1_text():
++    text = doc("bubble-sort.md")
++    assert "For i = n − 1 (n ≥ 2), position 1 then holds the remaining element" in text
++    assert "so Algorithm 2 sorts L" in text
+diff --git a/spec-guards/test_lint.py b/spec-guards/test_lint.py
+new file mode 100644
+index 0000000..f75e904
+--- /dev/null
++++ b/spec-guards/test_lint.py
+@@ -0,0 +1,58 @@
++# Mechanical lint of bubble-sort.md: numbering, cross-references, delimiters.
++import json, os, re
++from pathlib import Path
++
++DOC = "bubble-sort.md"
++
++
++def doc():
++    p = json.loads(os.environ.get("SPEC_DOCS", "{}")).get(DOC, DOC)
++    return Path(p).read_text(encoding="utf-8")
++
++
++LABEL = re.compile(r"\*\*(Definition|Algorithm|Lemma|Proposition|Corollary|Example|Theorem) (\d+)")
++REF = re.compile(r"\b(Definition|Algorithm|Lemma|Proposition|Corollary|Example|Theorem) (\d+)")
++
++
++def test_numbering_continuous_and_unique():
++    nums = [int(m.group(2)) for m in LABEL.finditer(doc())]
++    assert nums == list(range(1, len(nums) + 1)), nums
++
++
++def test_cross_references_have_targets():
++    text = doc()
++    labels = {(m.group(1), m.group(2)) for m in LABEL.finditer(text)}
++    refs = {(m.group(1), m.group(2)) for m in REF.finditer(text)}
++    assert not (refs - labels), sorted(refs - labels)
++
++
++KNOWN_MISSPELLINGS = ["comparisns", "algoritm", "permuation", "recieve", "occurence"]
++
++
++def test_known_misspellings_absent():
++    text = doc().lower()
++    assert [w for w in KNOWN_MISSPELLINGS if w in text] == []
++
++
++def test_example_6_shows_the_whole_pass():
++    # a pass on (3, 1, 2) ends with (1, 2, 3); the example must say so
++    L = [3, 1, 2]
++    for j in range(1, 3):
++        if L[j - 1] > L[j]:
++            L[j - 1], L[j] = L[j], L[j - 1]
++    assert L == [1, 2, 3]
++    assert "which gives (1, 2, 3)" in doc()
++
++
++def test_conventions_stated_in_definition_1():
++    # weak order and tracked entries: a precondition of the stability and ties statements
++    text = doc()
++    assert "in the weak sense (equal elements allowed)" in text
++    assert "two equal entries remain two distinct elements" in text
++
++
++def test_delimiters_balanced():
++    text = doc()
++    for o, c in ["()", "[]", "{}"]:
++        assert text.count(o) == text.count(c), (o, c)
++    assert text.count("**") % 2 == 0

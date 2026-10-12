@@ -1,0 +1,35 @@
+schema_version: "1.1"
+name: adjudicator-probe-lifts-counterexample
+description: In probe mode, a fresh spec-adjudicator finds that Proposition 3 applies Lemma 2 without guaranteeing 0 ≤ x, with an executed counterexample under Proposition 3's hypotheses, and lifts it to Theorem 4.
+tags: [agents, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Bash, Agent]
+  prompt: |
+    Launch the agent spec-audit:spec-adjudicator with exactly this message, then reply with its YAML output unchanged:
+
+    Probe of a use edge in squares.md (current directory).
+    User: Proposition 3, §2: "For all integers x and y with x ≤ y, sq(x) ≤ sq(y)."
+    Used: Lemma 2, §2: "For all integers x and y with 0 ≤ x ≤ y, sq(x) ≤ sq(y)."
+    Hypothesis of N relied on: 0 ≤ x (edge E-1).
+    Results above the user, in order, each applying the previous one: Theorem 4, §2: "For every integer m and every integer d ≥ 0, sq(m) ≤ sq(m + d)."
+    Oracle table: none.
+    Scratch directory: ./scratch/probe-E-1.
+    Return the probe block of your output format.
+graders:
+  - name: red
+    type: regex
+    pattern: 'probe_verdict:\s*RED'
+  - name: lifted-to-theorem-4
+    type: regex
+    pattern: 'result:\s*"?Theorem 4[\s\S]*?falsified:\s*yes'
+  - name: executed-under-hypotheses
+    type: llm
+    criteria: >-
+      The probe gives an executed counterexample with x negative and x ≤ y (for example x = -3, y = 1), so that it
+      satisfies Proposition 3's hypothesis x ≤ y while violating 0 ≤ x, with the script that was run and its actual
+      output showing sq(x) > sq(y); and it carries it to Theorem 4 (for example m = -3, d = 4) with its own run.

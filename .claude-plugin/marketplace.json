@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "spec-audit",
+  "owner": { "name": "Max Brönnimann" },
+  "metadata": {
+    "description": "Marketplace for SpecAudit, a Claude Code plugin. Catch the errors in your specs before your readers do. SpecAudit reviews them like a skeptic, and confirms an error only with evidence you can rerun. Formal documents today, extensible to every kind of spec tomorrow."
+  },
+  "plugins": [
+    {
+      "name": "spec-audit",
+      "source": "./",
+      "description": "Catch the errors in your specs before your readers do. SpecAudit reviews them like a skeptic, and confirms an error only with evidence you can rerun. Formal documents today, extensible to every kind of spec tomorrow.",
+      "category": "productivity"
+    }
+  ]
+}

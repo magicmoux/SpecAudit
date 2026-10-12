@@ -1,0 +1,32 @@
+schema_version: "1.1"
+name: agents-pass-preflight
+description: >-
+  A spec-adjudicator given the preflight probe writes and runs its script in the scratch directory it is given, and
+  answers in the three lines the orchestrator checks, instead of reviewing or judging anything.
+tags: [agents, preflight, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Bash, Write, Agent]
+  prompt: |
+    Launch the agent spec-audit:spec-adjudicator with effort low and exactly this message, then reply with its answer unchanged:
+
+    Preflight. Scratch directory: ./scratch/preflight/adjudicator. Write probe.py there printing PREFLIGHT-OK, run it with python3 and its absolute path, and reply only with: preflight: ok or failed; output: <what it printed>; refused: <the exact refusal, if any>.
+graders:
+  - name: probe-written-where-asked
+    type: file_exists
+    path: scratch/preflight/adjudicator/probe.py
+  - name: reports-ok
+    type: regex
+    pattern: 'preflight:\s*ok'
+    flags: i
+  - name: reports-the-output
+    type: regex
+    pattern: 'output:\s*`?PREFLIGHT-OK'
+  - name: no-verdict
+    type: regex
+    pattern: 'verdict:|guard_verdict:|errors:'
+    match: not_contains

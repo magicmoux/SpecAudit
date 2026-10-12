@@ -1,0 +1,66 @@
+# Changelog
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
+
+Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two days in October 2026; a first 1.0.0-beta.1 was published under the EUPL-1.2 or the AGPL-3.0-or-later on 2026-10-11; history restarted at 1.0.0-beta.1 under CC BY-NC-SA 4.0 with additional permissions.
+
+## [1.0.0-beta.3] — 2026-10-12
+
+### Results
+
+- Consumption in the report: a `## Consumption` section, between "Scope of verification" and "Branch and closing", with the tokens of the orchestrator and of each agent (reviewers, adjudicators, guard reviews, probes, named from their scratch directories), each one's share, the cost per model and in total as Claude Code reports it, and the audit's share of the account's session and week windows. The audit session writes the heading with one line; once its process has ended, the launcher measures every run's stream with `references/consumption.py` and puts the section in its place, before closing builds the results folder. Cache reads are counted in tokens but cost far less, so the share of tokens is not the share of cost; no cost per agent is computed; a window's share counts any other use of the account meanwhile, and a run during which the window reset has none. With `--in-session`, the section says consumption was not measured, there being no stream.
+- Every run's stream kept: before each relaunch or `--resume`, the launcher moves `stream.jsonl` to `stream-<n>.jsonl`, and the consumption sums all of them.
+- `SPECAUDITS.md`: a `Consumption` row in each audit's section (total tokens, cost, share of the week window).
+- `evals/consumption.sh` tests `consumption.py` on synthetic streams; `local-e2e.sh` and `local-e2e-parallel.sh` check that each report's total is the one measured on its run's streams.
+
+## [1.0.0-beta.2] — 2026-10-12
+
+### Audit
+
+- Stop from the bottom up: `/spec-audit:stop` writes a stop request instead of killing the audit session; its hooks refuse each agent's next tool call, so that the agent replies with its state (kept in `partial.md`, for the agent that resumes it), then the orchestrator's next launch, so that it records the stop and ends. The process is killed only if it has not ended within five minutes.
+- Usage limits: the audit session's stream (`stream-json`) gives the account's usage of its session window and its week; above `--pause-at` (default 75 % of the session window and 50 % of the week), a hook of the audit session refuses the next agent's launch and the orchestrator stops, and the audit resumes from its last internal revision when the window resets: automatically for the session window, up to five times (`--no-auto-resume` to stop instead), by a confirmed scheduled task or by hand for the week. An agent journal, kept by hooks of the audit session (`references/journal.py`) rather than by the agents, which never kept their `progress.md`: each agent's prompt at launch (`prompt.md`), each of its tool calls with the start of its output (`journal.jsonl`), and its final reply (`result.md`); an agent stopped, killed or cut by a limit keeps its prompt and journal, and `--resume` relaunches only the agents without a result, with their prompt. `references/usage.py` reads the stream.
+- Account confirmed at launch: the audit session runs `claude -p`, billed to the account the claude CLI is logged into, which may differ from the session's. The launch now lists the accounts of the configuration folders (`references/account.py`) and asks to continue with the current one, use another logged-in one, or run in the session, before anything is created; it can remember the choice for the project (`CLAUDE_CONFIG_DIR` in `.claude/settings.local.json`), and never logs in or out. `--account <email>` checks it instead of asking, and is required where no question can be asked. The account and its folder are recorded in the register and the report.
+- `--fail-fast`: one detection wave, then the candidate errors confirmed from the most upstream, and a stop at the first confirmed error, without fixing it. The report gives the proposed fix of the statement and the results it may affect (direct uses, dependent results with their chains, results reached by a probe, main results first); the closing recommends keeping the worktree, or a full audit from there. For a first look at a document, or a beta test.
+- `--max-passes N` replaces `--max-iter N`: the budget is the number of times the document is audited, fixed and audited again as fixed. `--max-iter`, and `max-iter` in the configuration's `defaults`, stay accepted as deprecated aliases.
+- Hypothesis discharge: every use of a result by another is recorded with the hypotheses it relies on (`edges.json`), and each one the user does not visibly guarantee is probed at phase 1 by a fresh `spec-adjudicator`, which searches for an executed counterexample under the user's hypotheses. A red probe is a finding for triage, confirmed by another adjudicator; its counterexample is lifted to the results above, which join the cause graph as consequences at once. Settled probes are cached in the corpus (`discharge.json`), keyed on the texts of each edge, so that the next audit probes only what changed. `--no-discharge` turns it off. Design: `docs/hypothesis-discharge.md`.
+
+### Fixed
+
+- Windows launch: the audit session's allow list, launch command and register use native paths (`C:/…`, from `cygpath -m`), not the MSYS paths of Git Bash, which the session never matches, so that the preflight passes at its first attempt.
+- Interpreter: phase 0 keeps `python3` only if it prints a Python 3 version, else `python` (on Windows, `python3` may be the Microsoft Store stub), records it in the register (`Interpreter`), and the protocol and the agents use that one instead of a hard-coded `python3`.
+- Local end-to-end scripts (`evals/local-e2e*.sh`): one interpreter chosen the same way, and `$TEMP` normalized with `cygpath -m` where available, so that their checks no longer fail on Windows for environment reasons.
+- Index written by concurrent audits: every write of `SPECAUDITS.md` (launch, closing, stop, failure, `/spec-audit:attest --update`) is one step under a lock, an empty `SPECAUDITS.md.lock` folder next to the index (outside `.git/`, which a `dontAsk` session may not write), re-reads the file under it, changes only the audit's own entry, found by its identifier rather than its position or its `RUNNING` result, and checks afterwards that every other entry is still there. Two audits launched side by side could erase each other's entry, or one could mark the other's as finished.
+- Index written by a script: two end-to-end runs still showed one audit's launch erasing another's entry, the read and the write chained in one command and the lock released before the commit. `references/index.py` now does every write of `SPECAUDITS.md` in order, under the lock: read or create, replace or insert the audit's entry newest first, check every other entry unchanged, commit, unlock. Closing also sets the `Attested` cell to `no` by name.
+- Session id: the register's `Session` line recorded the text `${CLAUDE_SESSION_ID}`, since `launch.md` is read rather than loaded and the variable is not filled in there; the id now comes from `SKILL.md`, where it is.
+- Waiting for the audit session: an empty output no longer counts as an end (`claude -p` writes only when it finishes); only the process id does, and the launcher never relaunches while it is alive. A second session launched beside a running one had corrupted the register and the preflight count. The process and session ids are recorded as soon as the session starts.
+- Absolute paths: every script path in a command is absolute, and the lint's command is recorded in the register, so that "run the lint" copies it instead of retyping a relative path the allow list refuses.
+
+## [1.0.0-beta.1] — 2026-10-11
+
+First public beta, of the `formal` profile: proofs, algorithms, protocol and format specifications.
+
+### Audit
+
+- Cold detection by fresh `spec-reviewer` agents, in waves until a wave brings nothing new; each candidate error refuted or confirmed by a fresh `spec-adjudicator` with an executed counterexample, on the strongest oracle of the project (mechanized development, reference model, or its own script), with its evidence level.
+- Cause graph: errors fixed bottom-up, consequences blocked until their cause is fixed, suspects reassessed against the fixed text, causal loops stopping the audit.
+- Regression guards seen red before each fix, including a text guard that reads the document itself; a suspect guard judged by a fresh adjudicator, never edited by the orchestrator (corpus errors).
+- Minimal, traced fixes; critical fixes wait for the user unless `--auto`; a separate editorial track with a mechanical lint.
+- The audit runs in a dedicated `claude -p` session in its own git worktree, with a preflight of every tool, a closed list of command forms and every refusal recorded; `--in-session` keeps it in the user's session.
+- Effort set per step, with escalation on observable signals; the protocol loaded in parts, and a one-line digest per settled error, so that long audits stay affordable.
+- Stop at any time with `/spec-audit:stop`; resume with `--resume`.
+
+### Results
+
+- A report ending with a summary of issues by priority, each with its mitigation and an effort range when something supports one.
+- A self-contained results folder `SpecAudit-<YYYYmmdd_HHmmss>/` for every audit run to completion: sources as they were, report and annexes, the fixed document when no error stays open, and a corpus that replays on either version with Python alone.
+- An index `SPECAUDITS.md` with an entry for every audit launched, from its launch (`RUNNING`) to its result, linked to a section that summarizes it.
+- `/spec-audit:attest` checks the signed git tag with which a person stands by a result; the audit never signs.
+
+### Project
+
+- Audit profiles: the domain-specific rules in `skills/start/profiles/formal.md`; project configuration (`.specaudit.md` or `.specaudit/`) mapping documents to profiles, with project extensions of a profile.
+- Folders as audit targets.
+- Demo: a bubble sort specification with planted errors (`examples/demo/`), and the results of two real audits of it (`examples/demo-result/`).
+- Beta testing: installation, first test, what to test and how to report, in the README, with an issue form for beta reports.
+- Eval suite (`claude plugin eval`) and end-to-end scripts for the audit session, parallel audits, the "Accept and merge" closing, folder targets and attestation.
+- Licensed under CC BY-NC-SA 4.0 with additional permissions (`LICENSE`): use free for any purpose, commercial included; no sale of SpecAudit or of an adapted version; contributor agreement in `CONTRIBUTING.md`.

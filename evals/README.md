@@ -1,0 +1,100 @@
+# Eval suite
+
+Behavioral tests of the plugin, in the `claude plugin eval` format: each case is a folder with a `case.yaml` (prompt, limits, graders) and, for most, a `scaffold.sh` that builds the workspace from the test specification `_fixtures/selection.md` (incremental selection of the k smallest elements, with planted errors; the demo for readers, `examples/demo/bubble-sort.md`, is built the same way).
+
+They test what a reader of the protocol cannot check by reading it: that the agents keep their independence, that an executed counterexample backs each confirmation, that a full audit leaves the files and the results folder it promises, and that the audit does not bend a correct statement to fit a test.
+
+## Cases
+
+| Case | Tags | What it checks |
+|---|---|---|
+| `start-skill-triggers` | quick | a request to check the proofs of a formal document loads the start skill |
+| `stop-without-audit` | quick | `/spec-audit:stop` with no audit running says so and changes nothing |
+| `reviewer-finds-planted-errors` | quick | a fresh reviewer finds the planted errors and does not flag the correct Proposition 4 |
+| `reviewer-ignores-session-history` | quick | a reviewer is not steered by a handoff, the audit configuration or the results folder of an earlier audit |
+| `adjudicator-refutes-false-positive` | quick | an adjudicator refutes a false claim against Proposition 4 instead of forcing a confirmation |
+| `adjudicator-confirms-with-counterexample` | shell | an adjudicator confirms Lemma 3 with a counterexample it actually ran |
+| `adjudicator-probe-lifts-counterexample` | shell | in probe mode, an adjudicator finds that Proposition 3 of `_fixtures/squares.md` applies Lemma 2 without guaranteeing its hypothesis, with a counterexample run under Proposition 3's hypotheses, and lifts it to Theorem 4 |
+| `adjudicator-guard-review-faulty` | shell | in guard review, an adjudicator finds faulty a guard whose model drops duplicates |
+| `adjudicator-guard-review-faulty-low`, `-faithful-low` | measure | the same two guard reviews at `low` effort: the measurement behind running guard reviews at `low` (`--runs 3` to re-measure) |
+| `adjudicator-guard-review-faithful` | shell | in guard review, an adjudicator finds a correct guard faithful, rather than faulting every guard |
+| `attest-never-signs` | shell | `/spec-audit:attest` reports an unsigned folder as not attested and gives the command to sign it, without signing anything |
+| `attest-does-not-guess` | shell | with no argument and two folders to attest, `/spec-audit:attest` lists both instead of picking one |
+| `agents-pass-preflight` | shell | an adjudicator given the preflight probe runs it in the scratch directory given and answers in the checked format, without judging anything |
+| `e2e-demo-in-session` | e2e, shell | full audit of the demo: register, inventory, report with its summary of issues, Lemma 3 fixed, Proposition 4 unchanged, guards red first, results folder recorded |
+| `e2e-faulty-guard-in-session` | e2e, shell | full audit of the demo as a previous audit left it, with a faulty guard red at the baseline: a corpus error is opened, a fresh adjudicator reviews the guard, it is replaced, and Lemma 3 is not bent to fit it |
+
+`quick` cases run in a minute or two each. `shell` cases grant Bash and need the sandbox; `e2e` cases run a whole audit (up to 200 turns, an hour at most, about $1 each).
+
+## Running
+
+**Which account pays.** Every case and every local script launches `claude`, billed to the account the claude CLI is logged into (`claude auth status`), whatever the session that starts them. The local scripts refuse to start unless `SPECAUDIT_E2E_ACCOUNT` names that account's e-mail (`_fixtures/account-guard.sh`). They also cap their spending: at most `SPECAUDIT_E2E_MARGIN` points (default 1, or `session=1,week=2` for each window) of usage above what the account used when the batch started, in its session window and in its week. The ceiling is computed once per session window by a tiny request, shared by every script started before that window resets, and passed to each audit as `--pause-at` with `--no-auto-resume`, so that an audit past it pauses and its test ends; `SPECAUDIT_E2E_CEILING="session=N,week=N"` sets it instead. To run them, or `claude plugin eval`, on another account, log it in once under its own configuration folder, then pass that folder each time:
+
+```bash
+CLAUDE_CONFIG_DIR="$HOME/.claude-perso" claude auth login
+CLAUDE_CONFIG_DIR="$HOME/.claude-perso" SPECAUDIT_E2E_ACCOUNT=<its e-mail> evals/local-e2e.sh audit-session sonnet
+```
+
+Run the tier that covers what you changed, and the whole suite before a pull request:
+
+| Tier | Command (from the repository root) | Time | When |
+|---|---|---|---|
+| quick | `claude plugin eval . --tag quick …` | 1 to 2 min | any change to the agents or the protocol |
+| agents, attest | `--tag agents --tag attest` | about 3 min | a change to an agent, the preflight or `/spec-audit:attest` |
+| e2e | `--tag e2e`, then `evals/local-e2e.sh audit-session` | about 10 min | a change to the protocol, before a merge |
+| full | no tag, then `local-e2e.sh`, `local-e2e-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
+| parallel | `local-e2e-parallel.sh` | about 10 min | a change to the index (`SPECAUDITS.md`, `index.py`), the launch or the closing: two audits launched at the same moment are rare, so this run, about $1.60, is not part of the suite before every pull request |
+| measure | `--tag measure --runs 3` | about 2 min | to re-measure what justifies a lowered effort |
+
+Where `…` stands for the options below. The two e2e cases set the wall-clock time; at `-j 6` the others run alongside them. More concurrency than that mostly makes the runs wait on the same account's rate limit, since every run uses the same credential.
+
+The whole suite:
+
+```bash
+claude plugin eval . --scaffold --allow-tools Bash Agent Skill Write Edit --ablation none --trust-plugin --no-publish -j 6 --json evals/results/all.json
+```
+
+- `--scaffold` runs the cases' `scaffold.sh`, which only build a demo repository in the case's temporary workspace.
+- `--case <glob>` runs one case; the flag keeps only its last value, so run several cases by tag (`--tag quick`) or one command per case.
+- `--keep-temp` keeps each workspace, to read the register and the report an audit wrote; the run's transcript is in its `out/trace.jsonl`.
+- Results and an HTML report go to `evals/results/`, which git ignores.
+
+**Shell cases need a sandbox.** `plugin eval` refuses to grant Bash without one rather than run it unconfined. On Linux, install `bubblewrap` and `socat` (`apt install bubblewrap socat`); on Windows, where there is no sandbox backend, only the cases without Bash run, and `local-e2e.sh` below covers the full audit.
+
+## The audit session: `local-e2e.sh`
+
+`plugin eval` runs a case in the session it starts, so it cannot cover the default mode, where the audit runs in a `claude -p` session of its own in a worktree. `local-e2e.sh` runs that mode on the demo, as you, in a throwaway repository under the temp directory, and checks the result on disk: register, guards red first, agent table, internal revisions, the results folder `SpecAudit-<YYYYmmdd_HHmmss>/` (README, unfixed `source/`, executed counterexamples, no runner cache), both replays of the corpus, a report with the template's sections in order and the summary of issues last, a `## Consumption` section whose total is the one `consumption.py` measures on the run's streams (with `in-session`: a section saying it was not measured), and a report that never claims the document is correct.
+
+```bash
+evals/local-e2e.sh audit-session sonnet                         # one iteration: a critical fix stays pending
+evals/local-e2e.sh audit-session sonnet "--auto --max-passes 2"   # everything fixed: the fixed copy is expected at the root
+evals/local-e2e.sh in-session sonnet                            # the in-session mode, outside plugin eval
+```
+
+The third argument replaces the default audit options, `--max-passes 1`.
+
+`evals/local-e2e-parallel.sh` launches two audits at the same moment from the same repository, on two documents with opposite scenarios: `selection.md` without `--auto` (a critical fix stays pending, no fixed copy) and `_fixtures/sums.md` with `--auto` (its false proposition fixed, its true lemma kept, a fixed copy). It checks that they share nothing (worktrees, launch files, scratch roots, results folders), that both closings land in the original repository (two index entries, no leftover git lock, documents untouched), each verdict, and that each report's consumption is measured from its own audit session's streams. Each run costs about $0.50 and leaves its repository for inspection; the path is printed at the end.
+
+Two more scripts cover what neither of the above reaches, at about $0.60 each:
+
+- `evals/local-e2e-merge.sh`: the "Accept and merge" closing. A `claude -p` session cannot ask the closing question, so an audit without `--keep` applies "Keep the worktree"; the script then resumes the same session with the answer a user would give on coming back, "Accept and merge", and checks the merge (the audit branch merged, worktree and branch removed, the fixed document at the root, Proposition 4 unchanged, the corpus green) and that the index entry was updated rather than duplicated.
+- `evals/local-e2e-kill.sh`: an agent killed in the middle of its work, with the audit session, then `--resume`: the hooks kept its prompt and its journal without a result, and the resume replaced it with the same prompt in the same scratch directory, up to the report.
+- `evals/local-e2e-pause.sh`: a pause on a usage threshold (`--pause-at 1 --no-auto-resume`): the pause request, the register suspended for the usage limit, every launched agent's prompt kept; then `--resume`, which does not run again the agents that have a result, and carries the audit to its report.
+- `evals/local-e2e-fail-fast.sh`: `--fail-fast` on the demo: a stop on a confirmed root error (Lemma 3 or Example 6, never their consequence Corollary 5), the document unchanged, no fix committed, and a report whose "First error" section gives the proposed fix and the results the error may affect.
+- `evals/local-e2e-discharge.sh`: hypothesis discharge on `examples/discharge/block-search.md`: the use edges recorded, a red probe on Proposition 3 → Lemma 2 with the error put on Proposition 3, Theorem 6 added by lifting, Lemma 2 and Proposition 4 unchanged, and the probes cached and committed in the corpus.
+- `evals/local-e2e-folder.sh`: a folder as the target, `docs/` holding `selection.md` and `sums.md`, with `--auto`: one audit for both documents, each fixed as its own errors require, the index naming the folder, and the results folder holding each original and each fixed copy, with the replay red on the originals and green on the fixed copies.
+
+## Attestation: `attest-verify.sh`
+
+`evals/attest-verify.sh` tests `skills/attest/verify.py` on real signed tags, with a throwaway SSH key and repository: one folder per status (valid, unsigned, changed after signing, key not trusted, tampered tag, no tag), the resolution of a target (stamp, path, audited source, unknown target, folders still to attest) and the `--update` of the index. It needs git and `ssh-keygen`, no model and no network, and runs in a second.
+
+## Consumption: `consumption.sh`
+
+`evals/consumption.sh` tests `skills/start/references/consumption.py` on two synthetic streams, `_fixtures/stream-sample.jsonl` and `_fixtures/stream-sample-resume.jsonl`, placed as the launch folder holds them after one `--resume`: the orchestrator and two agents named from their scratch directories, one assistant message repeated on two lines and counted once, the total taken from the last `result` event of each run, the agents' output from their transcripts or left unattributed without them, shares summing to 100, cost per model and in total with none per agent, the windows' shares with a reset during the second run, and the section put in place of the report's placeholder. No model, no network; it runs in a second.
+
+## Writing a case
+
+- Prefer graders that read files or the transcript (`file_exists`, `regex`, `tool_used`) to LLM judges; when a judge is needed, state the criterion so that any notation passes ("the minimum of k and the length of L, in any notation") rather than one spelling.
+- Anchor a regex on the statement it is about: Definition 2 already contains `min(k, n)`, so an unanchored pattern for the fix of Lemma 3 passes on the untouched document.
+- A name that depends on the time (the results folder) cannot be a `file_exists` path: grade the path the register records.
+- Pair a case that expects a fault with one that expects none (`guard-review-faulty` and `-faithful`), so that an agent that always finds fault does not pass.

@@ -1,0 +1,10 @@
+{
+  "name": "spec-audit",
+  "version": "1.0.0-beta.3",
+  "description": "Catch the errors in your specs before your readers do. SpecAudit reviews them like a skeptic, and confirms an error only with evidence you can rerun. Formal documents today, extensible to every kind of spec tomorrow.",
+  "author": { "name": "Max Brönnimann" },
+  "homepage": "https://github.com/magicmoux/SpecAudit",
+  "repository": "https://github.com/magicmoux/SpecAudit",
+  "license": "CC-BY-NC-SA-4.0",
+  "keywords": ["specification", "audit", "review", "proof", "mathematics", "algorithms", "counterexample", "regression-guards"]
+}

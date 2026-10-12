@@ -1,0 +1,148 @@
+name: Beta report
+description: Report the result of an audit run during the beta of the formal profile.
+title: "[beta] "
+labels: ["beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing SpecAudit. The fields marked required are the most useful for improving the protocol.
+        Never attach the results folder (`SpecAudit-<stamp>/`) of a confidential document: it contains the document itself.
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: "`version` in `plugin.json`, or the tag of the beta round."
+      placeholder: "1.0.0-beta.1"
+    validations:
+      required: true
+
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code version
+      description: "Output of `claude --version`."
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Model of the audit, and `--model` / `--model-version` if given.
+      placeholder: "Sonnet (latest)"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Ubuntu 24.04, macOS 15, Windows 11…"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: document-kind
+    attributes:
+      label: Kind of document
+      options:
+        - Proof / paper
+        - Algorithm
+        - Protocol or format specification
+        - Other formal document
+        - Demo (examples/demo/bubble-sort.md)
+    validations:
+      required: true
+
+  - type: input
+    id: document-size
+    attributes:
+      label: Size of the document
+      description: Pages or words.
+      placeholder: "4 pages / 2,000 words"
+    validations:
+      required: true
+
+  - type: input
+    id: options
+    attributes:
+      label: Options and mode
+      description: "Audit session (default) or `--in-session`; `--fail-fast`, `--auto`, `--max-passes`, other options."
+      placeholder: "/spec-audit:start spec.md --max-passes 1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      description: The result recorded in `SPECAUDITS.md`.
+      options:
+        - FINISHED — Success
+        - FINISHED — Partial, to continue
+        - FINISHED — Partial, needs decision
+        - FINISHED — Failure
+        - INTERRUPTED
+        - FAILED — preflight
+        - FAILED — execution error
+    validations:
+      required: true
+
+  - type: textarea
+    id: missed-error
+    attributes:
+      label: An error the audit missed
+      description: The passage, and why it is wrong. Write "none found" if you found none.
+    validations:
+      required: true
+
+  - type: textarea
+    id: contested-fix
+    attributes:
+      label: A fix you contest
+      description: The statement before and after the fix, and why the fix is wrong or not the right one.
+    validations:
+      required: false
+
+  - type: textarea
+    id: wrong-verdict
+    attributes:
+      label: A real error judged false or left UNDECIDED
+      description: The error's identifier in the report, the passage, and why it is a real error.
+    validations:
+      required: false
+
+  - type: input
+    id: cost-duration
+    attributes:
+      label: Cost and duration
+      description: "The report or the `claude -p` output gives them."
+      placeholder: "$1.80, 25 min"
+    validations:
+      required: true
+
+  - type: input
+    id: refusals
+    attributes:
+      label: Tool refusals
+      description: "The register's `Refusals` count, or \"none\"."
+    validations:
+      required: true
+
+  - type: textarea
+    id: other
+    attributes:
+      label: Anything else
+      description: The document's `SPECAUDITS.md` entry, the report's "Summary of issues", excerpts, or other remarks.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confidentiality
+    attributes:
+      label: Confidentiality
+      options:
+        - label: I attach no results folder of a confidential document; for such a document I share only its `SPECAUDITS.md` entry, the report's "Summary of issues" and chosen excerpts.
+          required: true

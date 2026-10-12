@@ -1,0 +1,102 @@
+schema_version: "1.1"
+name: e2e-demo-in-session
+description: >-
+  Full audit of the demo in the session itself (--in-session --no-worktree --keep, one iteration): register, inventory
+  and report are written, Lemma 3 is fixed with a guard written red first, Proposition 4 is left unchanged.
+tags: [e2e, shell]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 200
+  timeout_seconds: 3600
+  allowed_tools: [Read, Glob, Grep, Write, Edit, Bash, Agent, Skill]
+  prompt: "/spec-audit:start selection.md --in-session --no-worktree --max-passes 1 --keep"
+graders:
+  - name: register-written
+    type: file_exists
+    path: "spec-audit/selection/register.md"
+  - name: inventory-written
+    type: file_exists
+    path: "spec-audit/selection/inventory.md"
+  - name: report-written
+    type: file_exists
+    path: "spec-audit/selection/report.md"
+  - name: lemma-3-fixed
+    type: regex
+    target: { source: file, path: selection.md }
+    # Anchored on the statement of Lemma 3: Definition 2 already contains min(k, n), so an unanchored pattern passes
+    # on the untouched document.
+    pattern: '\*\*Lemma 3\.\*\*[^\n]*(min\(k, ?\|L\|\)|min\(k, ?n\)|k ≤ \|L\||k ≤ n)'
+  - name: proposition-4-unchanged
+    type: regex
+    target: { source: file, path: selection.md }
+    pattern: 'P_k\(L \+\+ M\) = P_k\(P_k\(L\) \+\+ P_k\(M\)\)'
+  - name: guard-red-first
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    # Whole word: a bare 'red' also matches "ignored" or "recorded", which every register contains.
+    pattern: '\bred\b'
+    flags: i
+  - name: agent-table
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    pattern: 'audit-selection-(reviewer|adjudicator)'
+  # The results folder is named by the launch time, which a file_exists path cannot predict: the register records its
+  # path at closing; evals/local-e2e.sh checks the folder's contents on disk.
+  - name: results-folder-recorded
+    type: regex
+    target: { source: file, path: spec-audit/selection/register.md }
+    pattern: 'results folder:? `?SpecAudit-\d{8}_\d{6}(-\d+)?/'
+    flags: i
+  - name: index-row
+    type: regex
+    target: { source: file, path: SPECAUDITS.md }
+    # A row of the summary table, linked to the audit's section, with its object and a FINISHED result.
+    pattern: '\n\| \[[^\]]+\]\(#specaudit-\d{8}_\d{6}(-\d+)?\) \| `selection\.md` \|[^\n]*FINISHED'
+    flags: i
+  - name: index-section
+    type: regex
+    target: { source: file, path: SPECAUDITS.md }
+    pattern: '\n## SpecAudit-\d{8}_\d{6}(-\d+)?\n[\s\S]*?\| Results folder \| \[SpecAudit-'
+  - name: report-sections
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '## Result[\s\S]*## Cause graph[\s\S]*## Modified statements[\s\S]*## Errors[\s\S]*## Open points[\s\S]*## Corpus[\s\S]*## Scope of verification[\s\S]*## Consumption[\s\S]*## Branch and closing'
+  # With --in-session there is no stream: the section says consumption was not measured, and why.
+  - name: report-consumption-not-measured
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '## Consumption\s*\n[^\n]*not measured[^\n]*in-session'
+    flags: i
+  - name: report-lemma-3-fixed
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    # The entry of Modified statements (a table row or a list item), after its arrow: other lines describe the error
+    # with the same min(k, n).
+    pattern: '## Modified statements(?:(?!\n## )[\s\S])*?\n(?:\| |- )[^\n→]*Lemma 3\b[^\n]*→[^\n]*(min\(k, ?\\?\|L\\?\|\)|min\(k, ?n\)|k ≤ \\?\|L\\?\||k ≤ n)'
+  - name: report-no-overclaim
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '(document|proofs?|it) (is|are) (now )?(correct|verified)\b(?![^\n]*\bby\b)'
+    flags: i
+    match: not_contains
+  # The structure is checked by regex: a judge reading the whole report is noisy on it.
+  - name: summary-of-issues-last
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '## Summary of issues\s*\n\|[^\n]*Priority(?![\s\S]*\n## )'
+  - name: summary-priorities-in-order
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '## Summary of issues[\s\S]*?(\n\| Done [\s\S]*\n\| P[123] |\n\| P3 [\s\S]*\n\| P[12] |\n\| P2 [\s\S]*\n\| P1 )'
+    match: not_contains
+  - name: summary-fixed-errors-done
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '\n\| Done \|[^\n]*F-1-1'
+  - name: summary-no-bare-effort
+    type: regex
+    target: { source: file, path: spec-audit/selection/report.md }
+    pattern: '\n\| P[123] \|(?:[^|\n]*\|){5} *\d+(?:\.\d+)? *\|'
+    match: not_contains

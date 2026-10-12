@@ -1,0 +1,130 @@
+{
+  "documents": {
+    "bubble-sort.md": {
+      "source": "source/bubble-sort.md",
+      "fixed": "bubble-sort.fixed.md"
+    }
+  },
+  "guards": [
+    {
+      "error": "F-1-1",
+      "file": "resources/corpus/test_F_1_1.py",
+      "text": false,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_1_1.py"
+      ]
+    },
+    {
+      "error": "F-1-1",
+      "file": "resources/corpus/test_F_1_1_text.py",
+      "text": true,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_1_1_text.py"
+      ]
+    },
+    {
+      "error": "F-1-3",
+      "file": "resources/corpus/test_F_1_3.py",
+      "text": false,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_1_3.py"
+      ]
+    },
+    {
+      "error": "F-1-3",
+      "file": "resources/corpus/test_F_1_3_text.py",
+      "text": true,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_1_3_text.py"
+      ]
+    },
+    {
+      "error": "F-1-4",
+      "file": "resources/corpus/test_F_1_4.py",
+      "text": false,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_1_4.py"
+      ]
+    },
+    {
+      "error": "F-1-4",
+      "file": "resources/corpus/test_F_1_4_text.py",
+      "text": true,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_1_4_text.py"
+      ]
+    },
+    {
+      "error": "F-1-5",
+      "file": "resources/corpus/test_F_1_5_text.py",
+      "text": true,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_1_5_text.py"
+      ]
+    },
+    {
+      "error": "F-2-1",
+      "file": "resources/corpus/test_F_2_1.py",
+      "text": false,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_2_1.py"
+      ]
+    },
+    {
+      "error": "F-2-1",
+      "file": "resources/corpus/test_F_2_1_text.py",
+      "text": true,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_F_2_1_text.py"
+      ]
+    },
+    {
+      "error": "lint",
+      "file": "resources/corpus/test_lint.py",
+      "text": true,
+      "command": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "resources/corpus/test_lint.py"
+      ]
+    }
+  ]
+}

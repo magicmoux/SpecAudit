@@ -1,0 +1,39 @@
+schema_version: "1.1"
+name: reviewer-finds-planted-errors
+description: A fresh spec-reviewer finds the planted errors of the demo and does not flag the correct Proposition 4.
+tags: [agents, quick]
+runs: 1
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Agent]
+  prompt: |
+    Launch the agent spec-audit:spec-reviewer with exactly this message, then reply with its YAML output unchanged:
+
+    Review this document in full, as a referee discovering it: selection.md (in the current directory).
+    Normative dependencies (definitions it uses): none.
+    Angle: full.
+    Scratch directory for your computations: ./scratch/reviewer-a.
+    Oracles of the project you may run for your tests: none.
+    Return your list in the format given by your instructions.
+graders:
+  - name: lemma-3-false
+    type: regex
+    pattern: 'Lemma 3'
+  - name: example-6-wrong
+    type: regex
+    pattern: 'Example 6'
+  - name: corollary-5-or-chain
+    type: regex
+    pattern: 'Corollary 5|Algorithm 7'
+  - name: yaml-format
+    type: regex
+    pattern: 'errors:\s*\n\s*- id: R1'
+  - name: no-overcorrection
+    type: llm
+    criteria: >-
+      The reviewer's output must not claim that Proposition 4 (P_k(L ++ M) = P_k(P_k(L) ++ P_k(M))) is false as a
+      statement. Reporting a gap in its proof (duplicates handling) is acceptable; claiming a counterexample to the
+      statement itself is a failure.
