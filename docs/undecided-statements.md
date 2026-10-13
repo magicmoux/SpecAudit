@@ -1,6 +1,6 @@
 # Undecided statements (design)
 
-Status: design, not implemented. Three mechanisms, and two moments where the user decides how they apply: splitting an undecided statement into cases, an attempt ledger that stops on method saturation, and a budget per item. Two more are left for later: a cache of attempts across audits, and a stop condition for an audit whose remaining items all wait on open cases.
+Status: design, not implemented. Three mechanisms, the kind of each undecided result, and two moments where the user decides how they apply: splitting an undecided statement into cases, an attempt ledger that stops on method saturation, and a budget per item. Two more are left for later: a cache of attempts across audits, and a stop condition for an audit whose remaining items all wait on open cases.
 
 ## Why
 
@@ -63,20 +63,35 @@ Each item gets its own budget, so that no item can spend the audit's.
 
 The global budget (`--max-passes`, the usage threshold) still applies; the per-item budget only keeps one item from spending it.
 
+## Kinds of undecided
+
+"Undecided" says that no verdict was reached, not why. The adjudicator of every UNDECIDED verdict, and of every attempt, states which kind it met, with its evidence, and the orchestrator records it in the ledger:
+
+| Kind | What it means | Evidence the adjudicator gives | What follows |
+|---|---|---|---|
+| **Environment** | the attempt could not run: a tool refused, an interpreter or a prover missing | the refusal or the error, word for word | not mathematical: fixed (4.1), and the attempt does not count toward saturation |
+| **Bounded search** | the search ran and found nothing, within a bound | the bound reached and the domain covered ("exhaustive up to n = 7", "10⁶ random inputs, seed 1"), with the script and its output | a partial result with a figure: a fact for the next attempt, raised by the next one if it can; at OPEN, a sentinel guard on that bound |
+| **Probably independent** | the statement seems to need something the document does not give | an argued reduction: to a known open problem, to a case the hypotheses leave free, or a model of the hypotheses where the statement fails that the adjudicator could not execute | more computation is unlikely to help: a decision for a person, who may add the missing hypothesis |
+
+A kind is a claim like a verdict, made by the adjudicator, never by the orchestrator; "probably independent" is never a proof of independence, and the report says so.
+
+The kind decides the cheapest next step: an environment problem costs a fix, a bounded search a larger bound or another family, a probable independence a human decision. It is also what the two questions below are asked with.
+
 ## When the user decides
 
 Undecidability is not known after detection (phase 1): a reviewer's finding is a candidate, and many are confirmed or refuted by their first adjudicator in minutes. A question at that point would make the user rule on predictions. The user is asked at two moments, where an answer changes what the audit does.
 
-**1. After phase 3: a policy, asked once, for every item at risk.** The cause graph is built and every candidate is known, so the items likely to resist can be named before any is attempted: no oracle of the table covers them at the evidence level their statement calls for; their statement has unbounded quantifiers; or they are main results, or upstream of one. One question lists them, each with why it is at risk, and asks how to treat them:
+**1. After phase 3: a policy, asked once, for every item at risk.** The cause graph is built and every candidate is known, so the items likely to resist can be named before any is attempted: no oracle of the table covers them at the evidence level their statement calls for; their statement has unbounded quantifiers; or they are main results, or upstream of one. One question lists them, each with why it is at risk, and asks how to treat them, by kind once a kind is known (an item can resist differently than predicted):
 - a budget per item: attempts, oracle time, and a token ceiling;
 - *k* and *m*, the saturation rule;
 - split into cases and restrict to the cases that hold without asking again, or restrict nothing without the user's approval;
 - a hypothesis, a constraint or a hint the user adds: where the user's knowledge of the domain counts most, as in the case that motivated this design, recorded in the register as the user's and handed to the adjudicators as part of the document's context, never as a verdict;
-- leave the item open at once, with no attempt beyond the first.
+- leave the item open at once, with no attempt beyond the first;
+- per kind of undecided: fix the environment and retry, raise the bound of a bounded search, or stop at once on a probable independence and keep it for a person.
 
 The answer is recorded in the register and applies to these items for the rest of the audit. An item not at risk that turns out to resist follows the defaults.
 
-**2. When an item becomes OPEN, and only if it blocks a main result.** The question comes with the item's cases and its ledger in short ("three families, six attempts, exhaustive up to n = 7, no progress in the last two"), and offers: continue with a larger budget, restrict the statement to the cases that hold (a critical fix), add a hypothesis, or leave it open. An OPEN item that blocks no main result is not asked about: it goes to the report.
+**2. When an item becomes OPEN, and only if it blocks a main result.** The question comes with the item's cases, the kind of each open case and its ledger in short ("bounded search: three families, six attempts, exhaustive up to n = 7, no progress in the last two"; or "probably independent: reduces to …"), and offers: continue with a larger budget, restrict the statement to the cases that hold (a critical fix), add a hypothesis, or leave it open. An OPEN item that blocks no main result is not asked about: it goes to the report.
 
 **In the audit session.** The audit session runs `claude -p` and cannot ask anything. Hence:
 - **a default policy**, in the project configuration (`defaults: undecided-policy`, with the budgets, *k* and *m*) or as an option of the command, applied whenever no one can answer, and recorded as applied;
@@ -102,7 +117,7 @@ An OPEN item is listed in the report's "Open points" with its cases, its ledger 
 - `references/register.md`: a `Cases` table and an `Attempts` table in the error entry; the new statuses.
 - `references/report.md`: open cases, ledgers and the exhaustiveness of each partition in "Open points" and "Scope of verification".
 - Profile: a `Method families` section, and default budgets per severity.
-- `agents/spec-adjudicator.md`: the `cases` field, the method family of each attempt, the progress made, and the instruction to change family.
+- `agents/spec-adjudicator.md`: the `cases` field, the method family of each attempt, the progress made, the kind of an undecided result with its evidence, and the instruction to change family.
 - Parameters and configuration: `item-attempts`, `item-oracle-time`, *k* and *m*, and `undecided-policy`, the default answer to the two questions.
 - Closing and launch: the state `suspended (decision needed)`, which the launcher answers and resumes like a usage-limit pause (`references/launch.md`, step 6).
 - Unchanged: one agent at a time, each on the current revision; an attempt is one adjudicator.
