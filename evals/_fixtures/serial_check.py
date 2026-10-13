@@ -1,21 +1,62 @@
 #!/usr/bin/env python3
-"""Check from the agents' journals that no two agents of an audit ran at the same time.
+"""Check that no two agents of an audit ran at the same time.
 
-  python3 serial_check.py <scratch root>
+  python3 serial_check.py <scratch root> [<stream.jsonl>...]
 
-Every agent's scratch directory under the root holds the journal.jsonl that the audit session's hooks write
-(skills/start/references/journal.py): a "launch" record when the orchestrator launches it, and a "stop" record when it
-ends. Each launch opens an interval, closed by the next stop of the same journal (a replacement relaunched in the same
-directory opens a new one); a launch never closed is an agent killed or cut, which runs to the end of the audit for
-this check. Prints one line per agent and every overlap; exit code 0 when the intervals are disjoint, 1 otherwise, 2 when
-no agent was found.
+Two independent records, both kept outside the orchestrator's control:
+  - the audit session's streams (default: every stream*.jsonl of <scratch root>/launch): the orchestrator's Agent calls,
+    each a tool_use answered by its tool_result. A foreground agent's result arrives when it ends, so between a launch
+    and its result there must be no other launch;
+  - the agents' journals, which the session's hooks write (skills/start/references/journal.py): a "launch" record
+    opens an interval, closed by the next "stop" record of the same journal, or else by the time of the result.md or
+    partial.md the hook wrote (a stop record can be missing when a reply was empty); a launch never closed runs to the
+    end of the audit for this check.
+Prints each agent and every overlap; exit code 0 when both records show agents one at a time, 1 otherwise, 2 when
+neither found an agent.
 """
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
 
 FAR = datetime.max
+
+
+def stream_overlaps(paths):
+    """(launches, overlaps) from the orchestrator's Agent calls in the streams."""
+    launches, overlaps = 0, []
+    for path in paths:
+        open_call = None
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if e.get("parent_tool_use_id") is not None:
+                continue
+            content = (e.get("message") or {}).get("content") or []
+            if not isinstance(content, list):
+                continue
+            for b in content:
+                if not isinstance(b, dict):
+                    continue
+                if e.get("type") == "assistant" and b.get("type") == "tool_use" and b.get("name") in ("Agent", "Task"):
+                    launches += 1
+                    desc = (b.get("input") or {}).get("description") or b.get("id")
+                    if open_call:
+                        overlaps.append(f"stream: {desc} launched before {open_call[1]} returned")
+                    open_call = (b.get("id"), desc)
+                elif e.get("type") == "user" and b.get("type") == "tool_result" and open_call \
+                        and b.get("tool_use_id") == open_call[0]:
+                    open_call = None
+    return launches, overlaps
+
+
+def ended_at(scratch):
+    times = [datetime.fromtimestamp(os.path.getmtime(scratch / f)).replace(microsecond=0)
+             for f in ("result.md", "partial.md") if (scratch / f).exists()]
+    return max(times) if times else FAR
 
 
 def intervals(root):
@@ -29,35 +70,39 @@ def intervals(root):
             except (ValueError, KeyError):
                 continue
             if r.get("event") == "launch":
-                if start is not None:  # relaunched without a stop: the previous one is counted as running until now
+                if start is not None:  # relaunched without a stop record: the previous one ended before this launch
                     found.append((start, t, journal.parent))
                 start = t
             elif r.get("event") == "stop" and start is not None:
                 found.append((start, t, journal.parent))
                 start = None
         if start is not None:
-            found.append((start, FAR, journal.parent))
+            end = ended_at(journal.parent)
+            found.append((start, end if end >= start else FAR, journal.parent))
     return sorted(found, key=lambda i: (i[0], i[1]))
 
 
-def main(root):
+def main(root, streams):
+    root = Path(root)
+    streams = streams or sorted((root / "launch").glob("stream*.jsonl"))
+    launches, problems = stream_overlaps(streams)
     agents = intervals(root)
-    if not agents:
-        print(f"no agent journal under {root}")
+    if not agents and not launches:
+        print(f"no agent found under {root}")
         return 2
-    overlaps = 0
     end, holder = None, None
     for start, stop, scratch in agents:
         name = Path(scratch).relative_to(root).as_posix()
-        print(f"{start:%H:%M:%S} – {'running' if stop is FAR else f'{stop:%H:%M:%S}'}  {name}")
+        print(f"{start:%H:%M:%S} - {'running' if stop is FAR else f'{stop:%H:%M:%S}'}  {name}")
         if end is not None and start < end:
-            print(f"  OVERLAP: {name} launched while {holder} was still running")
-            overlaps += 1
+            problems.append(f"journal: {name} launched while {holder} was still running")
         if end is None or stop > end:
             end, holder = stop, name
-    print(f"{len(agents)} agent run(s), {overlaps} overlap(s)")
-    return 1 if overlaps else 0
+    for p in problems:
+        print("  OVERLAP " + p)
+    print(f"{launches} launch(es) in the stream, {len(agents)} agent run(s) in the journals, {len(problems)} overlap(s)")
+    return 1 if problems else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main(Path(sys.argv[1])))
+    sys.exit(main(sys.argv[1], sys.argv[2:]))

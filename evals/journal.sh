@@ -62,6 +62,19 @@ rec a 00:00 launch; rec a 01:00 stop; rec b 01:00 launch; rec b 02:00 stop; rec 
 check "serial runs pass" "$PY '$SERIAL' '$J' > '$TMP/serial.log'"
 rec a 02:45 launch
 check "an overlap is reported" "! $PY '$SERIAL' '$J' > '$TMP/serial.log' && grep -q OVERLAP '$TMP/serial.log'"
+# A journal whose stop record is missing ends when its agent's result.md was written.
+J2="$TMP/journals2"; mkdir -p "$J2/x" "$J2/y"
+printf '{"t": "2000-01-01T10:00:00", "event": "launch"}\n' > "$J2/x/journal.jsonl"; touch -d '2000-01-01 10:01:00' "$J2/x/result.md"
+printf '{"t": "2000-01-01T10:02:00", "event": "launch"}\n{"t": "2000-01-01T10:03:00", "event": "stop"}\n' > "$J2/y/journal.jsonl"
+check "a missing stop record falls back on result.md" "$PY '$SERIAL' '$J2' > '$TMP/serial2.log'"
+# The stream: an Agent call launched before the previous one returned.
+mkdir -p "$J2/launch"
+u() { printf '{"type": "assistant", "parent_tool_use_id": null, "message": {"content": [{"type": "tool_use", "id": "%s", "name": "Agent", "input": {"description": "%s"}}]}}\n' "$1" "$1"; }
+r() { printf '{"type": "user", "parent_tool_use_id": null, "message": {"content": [{"type": "tool_result", "tool_use_id": "%s", "content": "done"}]}}\n' "$1"; }
+{ u a; r a; u b; r b; } > "$J2/launch/stream.jsonl"
+check "stream: launches one after the other pass" "$PY '$SERIAL' '$J2' > '$TMP/serial3.log'"
+{ u a; u b; r a; r b; } > "$J2/launch/stream.jsonl"
+check "stream: a launch before the previous result is an overlap" "! $PY '$SERIAL' '$J2' > '$TMP/serial4.log' && grep -q 'OVERLAP stream' '$TMP/serial4.log'"
 
 echo "$fails failure(s)"
 exit $((fails > 0))
