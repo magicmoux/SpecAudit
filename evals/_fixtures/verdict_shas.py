@@ -37,7 +37,8 @@ def main(path):
             shas += found
     else:
         problems.append("no agent table")
-    verdicts = re.findall(r"^\s*- \*\*Verdicts\*\*:(.*)$", text, re.M)
+    # The field as register.md gives it ("- **Verdicts**: …"), or folded into another line of the entry ("Verdicts: …").
+    verdicts = re.findall(r"\*{0,2}Verdicts\*{0,2}:(.*)$", text, re.M)
     if not verdicts:
         problems.append("no Verdicts line")
     for line in verdicts:
