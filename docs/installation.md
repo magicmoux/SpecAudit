@@ -9,7 +9,7 @@
 | A model for the agents | `spec-reviewer` and `spec-adjudicator` declare `model: inherit`: they run on the audit session's model, your session's by default, or the one given with `--model` and `--model-version` |
 | An interpreter for the guards (Python 3 by default) | counterexamples and guards are executed scripts; the skill follows the project's test runner if it has one |
 | A GPG or SSH signing key in git, or Sigstore's `gitsign` (optional) | to attest a result with a signed tag, on your own machine; `/spec-audit:attest` checks it |
-| An interactive session (recommended) | critical fixes and closing go through a question to the user; without one, the worktree is kept and nothing is merged |
+| An interactive session (recommended) | critical fixes and closing go through a question to the user; without one, the closing keeps the branch; the audit never merges it in any case |
 
 ## 1. From the GitHub marketplace (recommended)
 

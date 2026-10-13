@@ -2,9 +2,10 @@
 """Hook of the audit session: keep each agent's journal in its scratch directory, whatever the agent does.
 
   python3 journal.py [--stream <stream.jsonl> --pause-at <threshold> --flag <pause-requested>] [--ended <file>]
-                     [--stop <stop-requested>]
+                     [--stop <stop-requested>] [--lock <agent-running>]
 
-Registered by the launcher (references/launch.md, step 6) for PreToolUse, PostToolUse, SubagentStop and SessionEnd, it
+Registered by the launcher (references/launch.md, step 6) for PreToolUse, PostToolUse, PostToolUseFailure, SubagentStop
+and SessionEnd, it
 reads the hook's JSON on stdin and writes, in the scratch directory named in the agent's message ("Scratch directory: <path>"):
   prompt.md      the agent's message, word for word, when the orchestrator launches it (PreToolUse on Agent);
   journal.jsonl  one line per tool call of the agent: the tool, its input and the start of its output (PostToolUse);
@@ -24,10 +25,17 @@ an agent's next tool call is refused with the instruction to reply now with its 
 partial.md rather than result.md, so that the resume relaunches it, the replacement starting from that state; and the
 orchestrator's next launch is refused, so that it waits for its agents, records the stop and ends. Each level ends
 after the one below it has reported, instead of being cut in the middle of its reasoning.
+And it holds the audit to one agent at a time (--lock, a folder in the scratch root; SKILL.md, "One agent at a time"):
+every launch runs in the foreground (run_in_background is set to false), and a launch while another agent of the audit
+has not returned is refused, so that no two agents ever read the document, run an oracle or write a file at once. The
+lock is a folder created by mkdir, which either creates it or fails, so two launches in one message cannot both pass;
+it names the running agent's scratch directory, and is released when the Agent call returns (PostToolUse or
+PostToolUseFailure), or found stale once that agent has its result.md or partial.md (a hook that did not run).
 Apart from these refusals it never blocks a tool call: any error is ignored, and the exit code is 0.
 """
 import json
 import re
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -102,8 +110,35 @@ def paused(args):
 STOP_AGENT = ("stop requested: run nothing more. Reply now, and end, with your current state: what you have read, "
               "the findings or the verdict in progress with their evidence, and the scripts and outputs worth reusing. "
               "A fresh agent will resume from it.")
-STOP_ORCHESTRATOR = ("stop requested: launch no agent. Wait for the agents running to reply, record their state in the "
-                     "register, commit, set the state to suspended (stopped on request) and end.")
+STOP_ORCHESTRATOR = ("stop requested: launch no agent. Record the state of the last agent in the register, commit, set "
+                     "the state to suspended (stopped on request) and end.")
+
+
+ONE_AT_A_TIME = ("one agent at a time: {running} has not returned yet. Launch no other agent until its result is in "
+                 "(SKILL.md, \"One agent at a time\"); never launch two in one message, nor in the background.")
+
+
+def take_lock(lock, scratch):
+    """None when the lock is taken for this agent; otherwise the scratch directory of the agent still running."""
+    lock = Path(lock)
+    for _ in range(2):
+        try:
+            lock.mkdir(parents=True)
+        except FileExistsError:
+            holder = lock / "scratch"
+            running = Path(holder.read_text(encoding="utf-8").strip()) if holder.exists() else None
+            if running is None or (running / "result.md").exists() or (running / "partial.md").exists():
+                shutil.rmtree(lock, ignore_errors=True)  # stale: its agent ended without its release
+                continue
+            return running
+        (lock / "scratch").write_text(scratch.as_posix() if scratch else "", encoding="utf-8")
+        return None
+    return Path("?")
+
+
+def release_lock(lock):
+    if lock:
+        shutil.rmtree(lock, ignore_errors=True)
 
 
 def handle(event, args):
@@ -123,22 +158,34 @@ def handle(event, args):
                 record_prompt(scratch, prompt)
                 append(scratch, {"event": "refused", "stop": True})
             return STOP_ORCHESTRATOR
-    if name == "PreToolUse" and event.get("tool_name") in ("Agent", "Task") and not event.get("agent_id"):
-        prompt = (event.get("tool_input") or {}).get("prompt", "")
+    orchestrator_agent = event.get("tool_name") in ("Agent", "Task") and not event.get("agent_id")
+    if name == "PreToolUse" and orchestrator_agent:
+        tool_input = event.get("tool_input") or {}
+        prompt = tool_input.get("prompt", "")
         scratch = scratch_of(prompt)
+        if args.lock:
+            running = take_lock(args.lock, scratch)
+            if running is not None:
+                return ONE_AT_A_TIME.format(running=f"the agent of {running}")
         sent = record_prompt(scratch, prompt) if scratch else prompt
         pause = paused(args)
         if pause:
+            release_lock(args.lock)
             if scratch:
                 append(scratch, {"event": "refused", "pause": pause})
             return (f"paused: usage limit ({pause.get('window')} window at {pause.get('utilization')}), resumes at "
-                    f"{pause.get('resumeAtLocal')}. Launch no other agent: wait for those running, record the pause "
-                    f"in the register and stop (SKILL.md, \"Agent journal\").")
+                    f"{pause.get('resumeAtLocal')}. Launch no other agent: record the pause in the register and stop "
+                    f"(SKILL.md, \"Agent journal\").")
         if scratch:
-            append(scratch, {"event": "launch", "description": (event.get("tool_input") or {}).get("description")})
-        if sent != prompt:
+            append(scratch, {"event": "launch", "description": tool_input.get("description")})
+        updated = {**tool_input, "prompt": sent}
+        if args.lock:
+            updated["run_in_background"] = False
+        if updated != tool_input:
             return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow",
-                                           "updatedInput": {**event["tool_input"], "prompt": sent}}}
+                                           "updatedInput": updated}}
+    elif name in ("PostToolUse", "PostToolUseFailure") and orchestrator_agent:
+        release_lock(args.lock)
     elif name == "SessionEnd" and args.ended:
         Path(args.ended).write_text(json.dumps({"reason": event.get("reason"), "t": time.strftime("%Y-%m-%dT%H:%M:%S")})
                                     + "\n", encoding="utf-8")
@@ -163,9 +210,11 @@ if __name__ == "__main__":
     ap.add_argument("--flag")
     ap.add_argument("--ended")
     ap.add_argument("--stop")
+    ap.add_argument("--lock")
+    args = ap.parse_args()  # before stdin: --help must not wait for an event
     reason = None
     try:
-        reason = handle(json.loads(sys.stdin.read()), ap.parse_args())
+        reason = handle(json.loads(sys.stdin.read()), args)
     except Exception:  # a journal must never stop the audit
         pass
     if isinstance(reason, dict):

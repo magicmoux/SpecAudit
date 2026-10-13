@@ -37,7 +37,7 @@ State the document's **normative dependencies** (the files whose definitions it 
 | `--account <email>` | asked at launch | the account the audit session (`claude -p`) is billed to, as `claude auth status` names it. Without it, the launch shows the account the CLI uses and asks you to confirm it, use another, or run in your session; with it, the launch checks it and stops on a mismatch. Required in a non-interactive session |
 | `--pause-at <N \| session=N,week=N \| off>` | `session=75,week=50` | pauses the audit once the account's usage reaches N % of its five-hour session window or of its week, read from the audit session's stream; `session=80,week=70` sets each, `off` none. The orchestrator stops before launching the next agent, and the launcher resumes the audit when the window resets: automatically for the session window (up to five times), by a scheduled task you confirm, or by hand, for the week. Ignored with `--in-session` |
 | `--no-auto-resume` | no | on a pause, stops instead of waiting for the session window to reset, with the time and the command to resume |
-| `--fail-fast` | no | one detection wave, then the candidates confirmed from the most upstream, and a stop at the first confirmed error, without fixing it; the report gives the proposed fix of the statement and every result it may affect. For a first look at a document, or a beta test |
+| `--fail-fast` | no | one reviewer and the hypothesis probes, then the candidates confirmed one at a time from the most upstream, and a stop at the first confirmed error, without fixing it; the report gives the proposed fix of the statement and every result it may affect. For a first look at a document, or a beta test |
 | `--no-discharge` | no | skips hypothesis discharge: no probe of the use edges ([design](hypothesis-discharge.md)) |
 
 ## Project configuration
@@ -94,7 +94,7 @@ An option on the command wins over `defaults`. The reviewers and the adjudicator
    - if a session-history folder such as tokenforge's `.forge/` is tracked by git, or with `--no-worktree`: the reviewers could read your sessions' history there. Should it be untracked and added to `.gitignore` (or a worktree used), or only ignored by the agents? An untracked `.forge/` raises no question: it never reaches the worktree.
    - if an oracle of the project cannot run from the worktree alone (toolchain missing, cache too large to share, runner not installed): what should be installed or shared?
 
-   It then creates the worktree `<parent of the repository>/<repository>-audit-<slug>` on the branch `audit/<slug>`, where `<slug>` is the document name in lowercase. It names the session `[AUDIT] <slug>` when the app allows it (Claude desktop app), or suggests that you run `/rename [AUDIT] <slug>`: this is the session from which the audit can be stopped.
+   It then reserves the audit's name, `SpecAudit-<stamp>` (the launch time, `YYYYmmdd_HHmmss`), and creates the worktree `<parent of the repository>/<repository>-audit-<slug>` on the branch `audit/<stamp>`, where `<slug>` is the document name in lowercase: the branch carries the same stamp as the audit's results folder and index entry, so each audit has its own branch, even two audits of the same document. It names the session `[AUDIT] <slug>` when the app allows it (Claude desktop app), or suggests that you run `/rename [AUDIT] <slug>`: this is the session from which the audit can be stopped.
 
    It then establishes the **environment**: what your session exposes and the audit ignores (plugins, skills, connectors, hooks), and the project's **oracles**, every artifact that can decide statements of the document (a mechanized development such as Lean, a reference model or checker, a test runner), each with the statements it covers and its command, run once in the worktree and recorded by strength in the register. Ignored files an oracle needs are shared by a link (third-party caches), copied with their SHA-256 recorded (unversioned inputs) or rebuilt (build outputs): the baseline must be green from the worktree alone.
 2. **Audit session.** Unless `--in-session` is given, the audit itself runs in a session of its own, launched by yours in the worktree (see [below](#the-audit-session)). Your session waits for it, then runs the closing from its report and the register.
@@ -135,7 +135,11 @@ In the worktree:
 | `<corpus>/` (`spec-guards/` by default) | guards of each error (a text guard among them), mechanical lint script, and `discharge.json`, the probes settled so far, reused by the next audit |
 | `SpecAudit-<YYYYmmdd_HHmmss>/`, `SPECAUDITS.md` | the audit's index entry from its launch, and its results folder at closing (next section) |
 
-Commits stay on the `audit/<slug>` branch: one **internal revision** per fixed error, plus one per iteration. Each one is a verified state (every guard green), marked incomplete in its commit message until closing, because the consequences of the error may not have been reassessed yet. The skill commits only its own files and never pushes.
+Commits stay on the `audit/<stamp>` branch: one **internal revision** per fixed error, plus one per iteration, then a **final commit** at closing (document, corpus, register, report). Each internal revision is a verified state (every guard green), marked incomplete in its commit message, because the consequences of the error may not have been reassessed yet. The skill commits only its own files, never merges the branch and never pushes: merging it is yours to decide, by your own means.
+
+### One agent at a time
+
+The audit runs its agents one after the other, in the foreground, never side by side: running them in parallel would cost the same tokens, and they would race on the project's oracles (two `lake build` on one build directory), on files, and on a text being fixed under an agent reading it. Detection reads the whole document, each reviewer fresh and unaware of the others' results. Verification then takes one item at a time, causes before consequences: before verifying an item, the orchestrator rereads its passage on the current revision (re-quoting it, or dropping it if a fix already removed the defect); the adjudicator runs on that revision, whose commit is recorded with its verdict; a confirmed error is fixed, guarded and committed; and before the next item, the inventory, the uses of hypotheses (`edges.json`) and the cause graph are brought up to date, and the uses whose texts the fix changed are probed again at once. An audit that fixes is therefore long, by design. Every verdict names the commit it was reached on, in the register and in the report's "Scope of verification", so it can be replayed on exactly that text.
 
 ## Results folder
 
@@ -172,12 +176,12 @@ The signature ties the folder's exact content to your GPG or SSH key (or to your
 |---|---|
 | `RUNNING` | from the launch until the audit ends, and during a `--resume`; still `RUNNING` for an audit that is not running means its session died without a chance to say so |
 | `FINISHED` | the outcome: `Success`, `Partial, to continue`, `Partial, needs decision`, or `Failure` with its reason |
-| `INTERRUPTED` | stopped on request: `suspended`, `kept last revision` or `cancelled` |
+| `INTERRUPTED` | stopped on request: `suspended`, `ended at last revision` or `cancelled` |
 | `FAILED` | `preflight` (a tool refused at every attempt) or `execution error` |
 
 The entry is committed in your branch at launch, on its own, so that an audit is never left without a trace; each audit only ever changes its own entry. The index sits at the root, with the results folders: one place to look for every audit of the project, whatever was audited, which a file next to each document could not give once a folder and a document inside it are both audited, or a document is moved.
 
-The README identifies the sources: with git, the repository (remote URL, or path), the branch, the base commit, the head of the audit branch and, after a merge, the merge commit. Two kinds of files are referenced (path, origin, SHA-256) rather than copied into `source/`: anything that may hold credentials (`.env`, keys), because the folder is committed and may be pushed, and files over 10 MB, which git already keeps at the recorded commit. The audit has no network access, so a cited reference that is not in the repository is listed in `docs/bibliography.md`, not downloaded.
+The README identifies the sources: with git, the repository (remote URL, or path), the branch, the base commit, and the audit's branch `audit/<stamp>` with its final commit, where the fixes are; the index entry names them too. Two kinds of files are referenced (path, origin, SHA-256) rather than copied into `source/`: anything that may hold credentials (`.env`, keys), because the folder is committed and may be pushed, and files over 10 MB, which git already keeps at the recorded commit. The audit has no network access, so a cited reference that is not in the repository is listed in `docs/bibliography.md`, not downloaded.
 
 An interrupted audit (stopped and cancelled, or failed on an execution error) has no result to record: its report, register and `corrections.patch` are archived under `spec-audit/<slug>/<YYYY-MM-DD>-<outcome>/` instead, and the results folder comes when a resumed or new audit runs to its end. The reviewers and adjudicators of later audits never read these folders: they hold the errors already found and how they were judged.
 
@@ -252,42 +256,41 @@ The audit's outcome determines the recommended option, always the safest one:
 
 | Outcome | Condition | Recommended option |
 |---|---|---|
-| Success | stop by convergence or exhaustion, corpus and lint green, nothing pending | Accept and merge |
+| Success | stop by convergence or exhaustion, corpus and lint green, nothing pending | Keep the branch |
 | Partial, to continue | budget reached or detection not saturated, corpus and lint green | Run another check |
-| Partial, needs decision | undecided error, blocked chain, result conditional on an unresolved error, or pending critical fix | Keep the worktree |
+| Partial, needs decision | undecided error, blocked chain, result conditional on an unresolved error, or pending critical fix | Keep the branch |
 | Failure | causal loop, recurrence, oscillation, non-convergence, corpus or lint red, execution error | Abandon |
 
 | Option | Effect |
 |---|---|
-| Accept and merge | safety checks, `--no-ff` merge of `audit/<slug>` into the original branch, then removal of the worktree and the branch |
-| Run another check | new series of iterations in the same worktree, with new agents and a new budget; nothing is merged |
-| Keep the worktree | neither merge nor removal; results folder `SpecAudit-YYYYmmdd_HHmmss/` committed in the original branch |
-| Abandon | results folder committed in the original branch, then removal of the worktree and the branch |
+| Keep the branch | final commit on `audit/<stamp>`; results folder `SpecAudit-YYYYmmdd_HHmmss/` and index entry committed in the original branch; the branch and its worktree stay |
+| Run another check | new series of iterations on the same branch, with new agents and a new budget |
+| Abandon | final commit, results folder and index entry committed in the original branch as for "Keep", then removal of the worktree and the branch; the fixes stay in `resources/corrections.patch` |
 
-"Accept" is never offered if the corpus or the lint is red, and "Run another check" is not offered after a causal loop, a recurrence, an oscillation or a non-convergence. An ambiguous free answer leads to the question being asked again: the skill never merges or deletes on an ambiguous answer.
+**The audit never merges.** Whatever the outcome and the answer, the fixes stay on `audit/<stamp>`, and the audit neither merges the branch nor proposes a merge or a pull request. Only the results folder and the index entry come to your branch, so that it records every audit without taking any fix. Review the branch, then merge it, or not, by your own means (`git merge audit/<stamp>`, or a pull request of your own).
 
-The merge does not happen, and the worktree is kept, if the original branch has changed since the start of the audit, if integrating its new commits causes a conflict, if the corpus or the lint turn red again after that integration, or if the original repository has uncommitted changes that get in the way of the merge.
+"Run another check" is not offered after a causal loop, a recurrence, an oscillation or a non-convergence. An ambiguous free answer leads to the question being asked again: the skill never deletes on an ambiguous answer.
 
 ## Stopping an audit
 
 You can stop an audit at any time, from the session that launched it only (`[AUDIT] <slug>` when it could be renamed):
 
-1. press **Esc** to interrupt the current turn; the background agents keep running at this point;
+1. press **Esc** to interrupt the current turn (the audit session runs in its own process, and keeps running at this point);
 2. run `/spec-audit:stop`, or ask in words to stop the audit.
 
 A slash command typed while Claude is working is queued until the end of the turn, hence Esc first. From another session, `/spec-audit:stop <document>` changes nothing and names the session that runs the audit: only that one knows the step in progress and the agents running.
 
-The skill then stops the audit session's process, which ends its agents (with `--in-session`, every agent of the audit), reports its last internal revision (the errors fixed up to it, marked incomplete, and what it lacks), and asks:
+The skill then stops the audit session's process, which ends the agent it was running (with `--in-session`, Esc already interrupted it), reports its last internal revision (the errors fixed up to it, marked incomplete, and what it lacks), and asks:
 
 | Option | Effect |
 |---|---|
-| Suspend (recommended) | nothing is merged or deleted; `--resume` continues from the last revision |
-| Keep the last revision as the new base | the unverified changes after that revision are saved as a patch, the report is written and marked incomplete, then the revision is merged into the original branch with the same safety checks as "Accept and merge"; a later audit starts from it |
+| Suspend (recommended) | nothing is deleted; `--resume` continues from the last revision |
+| End at the last revision | the unverified changes after that revision are saved as a patch, the report is written and marked incomplete, and the branch ends with a final commit, kept and not merged: merging it, so that a later audit starts from it, is yours to decide |
 | Cancel | report, register and patch archived in the original branch, then the worktree and the branch are removed |
 
-"Keep the last revision" is only offered once at least one error has been fixed. If the question cannot be asked, the audit is suspended.
+"End at the last revision" is only offered once at least one error has been fixed. If the question cannot be asked, the audit is suspended.
 
-The stop report also lists the interrupted agents and their scratch directories. Claude Code cannot pause an agent, so nothing is paused: at resume, each interrupted agent is replaced by a fresh one with the same message and the same scratch directory, where it finds the journal, scripts and outputs of the agent it replaces and redoes only its judgment. For the same reason, the skill asks you a question only once no agent is running, except for this stop: a question would block the orchestrator while the agents kept running and spending.
+The stop report also names the interrupted agent, if one was running, and its scratch directory. Claude Code cannot pause an agent, so nothing is paused: at resume, the interrupted agent is replaced by a fresh one with the same message and the same scratch directory, where it finds the journal, scripts and outputs of the agent it replaces and redoes only its judgment. Since agents run one at a time, there is at most one to replace, and no agent is ever running when the skill asks you a question.
 
 ## After closing
 
@@ -306,12 +309,18 @@ The stop report also lists the interrupted agents and their scratch directories.
   git apply --3way SpecAudit-<YYYYmmdd_HHmmss>/resources/corrections.patch
   ```
 
-- **Resume a kept worktree**: run the skill again with `--resume`, or ask to replay only the closing of the audit.
-- **Remove a kept worktree** by hand:
+- **Merge the fixes**, if you accept them: the audit never does. Review the branch, then merge it as you would any branch (the README of the results folder names it and its final commit):
+
+  ```bash
+  git merge audit/<stamp>
+  ```
+
+- **Resume a suspended audit**: run the skill again with `--resume`.
+- **Remove a kept branch** by hand, once you have merged it or decided not to:
 
   ```bash
   git worktree remove "<repository>-audit-<slug>"
-  git branch -D audit/<slug>
+  git branch -D audit/<stamp>
   ```
 
 - **Push**: the skill never pushes; that is up to you.

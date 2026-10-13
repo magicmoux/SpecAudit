@@ -34,13 +34,13 @@ Passages that are correct but misleading: the "ambiguity" form defects (phase 5)
 Guards added, lint rules added, command to replay everything.
 
 ## Scope of verification
-What was checked and how (agent review, bounded exhaustive test, mechanized proof), the confirmations by evidence level (formal, model, ad hoc), the effort of each kind of step and the escalations with their triggers, the commands refused during the audit (who, which form, and whether a retry in an allowed form settled it), since a verdict reached around a refusal deserves a second look, the account the audit was billed to, the oracles used and the session resources ignored, hypothesis discharge (edges, stated, settled by the cache, probed; verdicts RED, DISCHARGED, GREEN with their level, UNDECIDED; errors found by a probe and results reached by lifting), or that it was skipped, and what was not checked. A GREEN probe found no counterexample at its level: it is not a proof that the hypothesis holds.
+What was checked and how (agent review, bounded exhaustive test, mechanized proof), the confirmations by evidence level (formal, model, ad hoc), the effort of each kind of step and the escalations with their triggers, the revisions the verification ran on (each agent's, from the agent table, and each verdict's, from the errors' `Verdicts`: every verdict tied to a commit of `audit/<stamp>`, on which it can be replayed; the items whose passage a fix had changed before their verification, re-quoted or resolved at the freshness check, 4.0; the agents ran one at a time), the commands refused during the audit (who, which form, and whether a retry in an allowed form settled it), since a verdict reached around a refusal deserves a second look, the account the audit was billed to, the oracles used and the session resources ignored, hypothesis discharge (edges, stated, settled by the cache, probed; verdicts RED, DISCHARGED, GREEN with their level, UNDECIDED; errors found by a probe and results reached by lifting), or that it was skipped, and what was not checked. A GREEN probe found no counterexample at its level: it is not a proof that the hypothesis holds.
 
 ## Consumption
 Measured by the launcher once the session ends.
 
 ## Branch and closing
-Worktree, branch, base, commits, outcome, recommended closing option.
+Worktree, branch `audit/<stamp>`, base, internal revisions, outcome, recommended closing option; the branch is never merged by the audit.
 
 ## Summary of issues
 | Priority | ID | Issue | Location | Status | Mitigation or solution | Effort (person-days) | Basis |
@@ -62,7 +62,7 @@ Totals per priority: the sum of the estimated ranges (low sum – high sum, in p
 
 **Consumption.** Write the section as the template shows, the heading and that one line, nothing else: you write the report before your session ends, so you cannot know what it consumed, and the launcher replaces the line with the measure from your stream once your process has ended (`references/launch.md`, step 6, "Consumption"). Never fill it with figures of your own. With `--in-session`, write instead: "Not measured: the audit ran in the launcher's session (`--in-session`), which has no stream of its own to measure it from."
 
-Under `## Branch and closing`, just before the summary of issues, give the worktree (path, branch `audit/<slug>`, base, commits), the audit outcome and the recommended closing option (phase 8).
+Under `## Branch and closing`, just before the summary of issues, give the worktree (path, branch `audit/<stamp>`, base, internal revisions with their commits), the audit outcome and the recommended closing option (phase 8). Say that the fixes stay on that branch, which the audit ends with a final commit and never merges: the user merges it, or not, by their own means. Never propose a merge or a pull request.
 
 Review by agents and bounded tests are neither peer review nor proof. Never write that a proof is "verified" without saying by what; only a mechanized proof can be called machine-verified. For the same reason, never call the document or a part of it "correct": say what was checked and how ("no error found by two cold reviews; Lemma 3 guarded by a bounded check up to length 4"). The reader judges the report by what it says was done, not by its conclusion.
 

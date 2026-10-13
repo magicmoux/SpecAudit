@@ -4,6 +4,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two days in October 2026; a first 1.0.0-beta.1 was published under the EUPL-1.2 or the AGPL-3.0-or-later on 2026-10-11; history restarted at 1.0.0-beta.1 under CC BY-NC-SA 4.0 with additional permissions.
 
+## [1.0.0-beta.4] — 2026-10-13
+
+### Audit
+
+- One agent at a time: reviewers, adjudicators, probes and guard reviews run one after the other, in the foreground; the orchestrator launches one, waits for its result, then decides the next. Parallel agents saved no tokens, and raced on shared oracles (several `lake build` on one build directory), on texts being fixed and on files. In the audit session the hook (`references/journal.py`, `--lock`) makes every launch a foreground one and refuses a launch while an agent has not returned. A `--resume` has at most one unfinished agent to replace. Detection is unchanged in substance: every reviewer reads the whole document, fresh, without the others' results.
+- Verification on a fresh state, one item at a time, roots before consequences: before verifying an item, its passage is reread at `HEAD` and re-quoted, or the item dropped (RESOLVED) when a fix already removed the defect (4.0, "Freshness"); every agent records the revision it ran on in the agent table, and every verdict its revision in the error's new `Verdicts` field, shown in the report's "Scope of verification"; a confirmed error is fixed, guarded and committed as an internal revision before the next item; and right after that commit, the inventory, `edges.json` and the cause graph are updated, and the use edges whose texts changed are probed again at once instead of at the next iteration. `discharge.py select` keeps the status of an edge already settled in the audit while its texts are unchanged (and a new status `refuted`), so that a re-probe touches only what the fix changed. `--fail-fast` follows the same loop.
+- The audit's branch is `audit/<stamp>`, the stamp of its results folder and index entry, reserved at launch (now step 3, before the worktree is created), instead of `audit/<slug>` with `-2`, `-3` suffixes. The worktree directory keeps its name.
+
+### Closing
+
+- The audit never merges its branch, nor proposes a merge or a pull request: "Accept and merge" is removed. It ends with a final commit on `audit/<stamp>` (document, corpus, register, report); the user merges it, or not, by their own means. The closing choices are "Keep the branch" (the default, and the non-interactive rule), "Run another check" and "Abandon". The results folder and the index entry still come back to the original branch, committed by path under the index lock, and name the branch and its final commit. The stop's "Keep the last revision as the new base" becomes "End at the last revision": a final commit on the branch, kept and not merged (index result `INTERRUPTED — ended at last revision`).
+
+### Tests
+
+- `evals/local-e2e.sh` checks, from the agents' journals, that no two agents overlapped (`_fixtures/serial_check.py`); that every agent and verdict revision is a commit of the audit's branch (`_fixtures/verdict_shas.py`); that the branch is `audit/<stamp>` with the results folder's stamp and ends with a final commit; and that nothing was merged into the original branch, which took only the results folder and the index, both naming the branch and its final commit. It also prints the wall-clock time and the audit session's tokens and cost.
+- `evals/local-e2e-merge.sh` becomes `evals/local-e2e-no-merge.sh`: the closing without `--keep`, every error fixable, and no merge.
+- `evals/local-e2e-parallel.sh` checks one branch `audit/<stamp>` per audit, agents one at a time in each, and no merge.
+- `evals/journal.sh` tests the hook's one-agent lock on synthetic events, and `serial_check.py`.
+
+### Fixed
+
+- `journal.py --help` no longer waits on its standard input.
+
 ## [1.0.0-beta.3] — 2026-10-12
 
 ### Results

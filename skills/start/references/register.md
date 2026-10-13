@@ -11,7 +11,7 @@
 - Launched by: <name> <e-mail> (<source: git | GIT_AUTHOR_* | system user | unknown>, <context: local | cloud session | CI | routine>); Resumed by: <same>, if a `--resume` came from someone else
 - Launched: <YYYYmmdd_HHmmss>, local time, UTC<offset> (launch of `/spec-audit:start`; kept by `--resume`; names the results folder `SpecAudit-<YYYYmmdd_HHmmss>/`)
 - Original repository: <path>, remote <URL | none>, branch <name>, head <hash>
-- Worktree: <path>, branch audit/<slug>, base <hash>
+- Worktree: <path>, branch audit/<stamp> (the stamp of the results folder), base <hash>; final commit <hash>, at closing (never merged by the audit)
 - Scratch root: <worktree>-scratch/ (audit session) | <worktree>/spec-audit/<slug>/scratch/ (`--in-session`, listed in .git/info/exclude); every agent's scratch directory is under it
 - Interpreter: <command> (the one phase 0, step 4, ran and saw print a Python 3 version: `python3`, or `python` where `python3` is missing or a stub; written `<python>` in the protocol and given to every agent); paths: native | POSIX (native on Windows: `C:/…`, from `cygpath -m`)
 - Preflight: passed, attempt <n> of 3 | failed (<tool>, <command form>, <refusal>), attempt <n> of 3 (the attempt is written in both cases: a pass at attempt 2 means the launch was fixed once)
@@ -48,11 +48,11 @@ Worktree autonomy, from the original directory <path>:
 
 ## Agents
 
-Every agent launched, in launch order. Its scratch directory holds its scripts, their outputs and, in the audit session, its journal (`prompt.md`, `journal.jsonl`, `result.md`, written by hooks), so that a replacement can reuse them.
+Every agent launched, in launch order, one at a time: a row is `done` (or `stopped`) before the next one is `running`. Its scratch directory holds its scripts, their outputs and, in the audit session, its journal (`prompt.md`, `journal.jsonl`, `result.md`, written by hooks), so that a replacement can reuse them. `Revision` is `git rev-parse --short HEAD` at its launch, the documents having no uncommitted change: the exact text it read.
 
-| Name | Id | Role | Error or wave | Effort | Scratch | State |
+| Name | Role | Error or wave | Effort | Revision | Scratch | State |
 |---|---|---|---|---|---|---|
-| audit-<slug>-reviewer-i1-w1-a | <agent id returned at launch, for a background agent> | reviewer | iteration 1, wave 1, full | usual \| medium \| low; escalated from <effort> (<trigger>) | <scratch>/iter-1/reviewer-a | pending \| running \| done \| stopped \| replaced by <name> |
+| audit-<slug>-reviewer-i1-w1-a | reviewer | iteration 1, wave 1, full | usual \| medium \| low; escalated from <effort> (<trigger>) | `4a55898` | <scratch>/iter-1/reviewer-a | pending \| running \| done \| stopped \| replaced by <name> |
 
 ## Iteration log
 
@@ -83,9 +83,11 @@ Cycle: none | <errors of the cycle> → stop.
 
 `select`: <edges> edges, <n> stated, <n> from the cache, <n> to probe (`--strongest <level>`).
 
-| Edge | User → used | Hypothesis | Probe | Verdict | Level | Lifted to | Finding | Edge status |
-|---|---|---|---|---|---|---|---|---|
-| E-3 | Proposition 3 → Lemma 2 | 0 ≤ x | audit-<slug>-probe-E-3 | RED | ad hoc | Theorem 4 | F-1-2, F-1-3 | red → needed |
+Probes of phase 1, then the re-probes after each fix (`references/discharge.md`, "Re-probe after a fix"), each on the revision it was launched on.
+
+| Edge | User → used | Hypothesis | Probe | Revision | Verdict | Level | Lifted to | Finding | Edge status |
+|---|---|---|---|---|---|---|---|---|---|
+| E-3 | Proposition 3 → Lemma 2 | 0 ≤ x | audit-<slug>-probe-E-3 | `4a55898` | RED | ad hoc | Theorem 4 | F-1-2, F-1-3 | red → needed |
 
 ## Errors
 
@@ -102,7 +104,7 @@ Cycle: none | <errors of the cycle> → stop.
 - **Status**: DETECTED | BLOCKED (by F-…) | CONFIRMED | REFUTED | UNDECIDED | FIXED | RESOLVED (by F-…) | ESCALATED | RECURRENCE
 - **Type**: false statement | incomplete proof | insufficient scoping | definition | algorithm or complexity | inconsistency
 - **Severity**: critical (false result) | major (incomplete proof, missing hypothesis) | minor (local imprecision)
-- **Location**: section, and exact quote of the passage (two lines at most)
+- **Location**: section, and exact quote of the passage (two lines at most), as of the last freshness check (4.0): re-quoted, with the revision, when a fix changed it
 - **Description**: what is wrong, and why
 - **Causes**: F-… (with the justification of the edge), or "root"
 - **Consequences**: F-…
@@ -110,6 +112,7 @@ Cycle: none | <errors of the cycle> → stop.
 - **Counterexample(s)**: minimal instance, result expected according to the text, result obtained, path of the script and its command (a counterexample is always executed, never evaluated by hand)
 - **Evidence**: formal (<oracle>) | model (<oracle>) | ad hoc
 - **Adjudicator's verdict**: summary, and reason for rejection if any; misleading wording, if flagged
+- **Verdicts**: every verdict on this entry, in order, each with the revision its agent was launched on: `` `<sha>` <CONFIRMED | REFUTED | UNDECIDED | RESOLVED (freshness) | user decision> (<agent name or "user">) ``, separated by semicolons (a first confirmation, an escalation, a reassessment, a user decision); every sha is a commit of `audit/<stamp>`
 - **Impact**: dependent results and passages (from the inventory)
 - **Guards**: paths in the corpus; red state before the fix, green after
 - **Fix**: nature (statement fix | scoping addition | proof completion); before → after; commit
@@ -122,7 +125,7 @@ Identifiers are never reassigned. A refuted error stays in the register: it is w
 
 ## Index of the audits (`SPECAUDITS.md`, at the root of the project)
 
-Every audit launched in the project has an entry, from its launch: a row of the summary table, linked to a section of its own. Both are kept newest first. The entry's identifier is the results folder's name, `SpecAudit-<stamp>`, reserved at launch, so the row, the section, the folder and the attestation tag all carry the same name.
+Every audit launched in the project has an entry, from its launch: a row of the summary table, linked to a section of its own. Both are kept newest first. The entry's identifier is the results folder's name, `SpecAudit-<stamp>`, reserved at launch, so the row, the section, the folder, the attestation tag and the audit's branch, `audit/<stamp>`, all carry the same name.
 
 ```markdown
 # SpecAudit index
@@ -137,7 +140,7 @@ Every audit launched in this project, newest first. Each entry is written at lau
 
 ## SpecAudit-20261011_002827
 
-Audit of the three documents of `docs/spec/` (`merge.md`, `bounds.md`, `index.md`), launched by Ada Lovelace from a local session on `main`. It confirmed five errors and fixed four, each with its guards; the fifth, the main theorem's bound in the abstract, is a critical fix that awaits a decision, and convergence was not established in one iteration. The worktree was kept.
+Audit of the three documents of `docs/spec/` (`merge.md`, `bounds.md`, `index.md`), launched by Ada Lovelace from a local session on `main`. It confirmed five errors and fixed four, each with its guards; the fifth, the main theorem's bound in the abstract, is a critical fix that awaits a decision, and convergence was not established in one iteration. The fixes are on the branch `audit/20261011_002827`, kept and not merged: merging it is the user's decision.
 
 | | |
 |---|---|
@@ -145,7 +148,8 @@ Audit of the three documents of `docs/spec/` (`merge.md`, `bounds.md`, `index.md
 | Audited object | `docs/spec/` (folder, 3 documents) |
 | Base | `4a55898` on `main` |
 | Result | FINISHED — Partial, needs decision |
-| Closing | Keep the worktree |
+| Closing | Keep the branch |
+| Branch | `audit/20261011_002827`, final commit `9c1e2f7`, kept, not merged |
 | Errors confirmed / fixed | 5 / 4 |
 | Fixed copy | no (a critical fix is pending) |
 | Consumption | 6.41 M tokens, $2.93, 3 points of the week window |
@@ -162,14 +166,14 @@ Audit of `selection.md`, stopped by Alan Turing during iteration 1 and suspended
 | Audited object | `selection.md` |
 | Base | `f87c1e4` on `main` |
 | Result | INTERRUPTED — suspended |
-| Results folder | none yet; worktree `SpecAudit-audit-selection`, branch `audit/selection` |
+| Results folder | none yet; worktree `SpecAudit-audit-selection`, branch `audit/20261010_213708` |
 | Attested | — |
 ```
 
 **Result**: a status, how the audit ended, then a detail, what it found or why it stopped:
 - `RUNNING`, from the launch until the audit ends, and again during a `--resume`;
 - `FINISHED — <outcome>`: the audit ran to its end; the outcome is the one of closing, 8.1 (`Success`, `Partial, to continue`, `Partial, needs decision`, `Failure` with its reason: causal loop, recurrence, oscillation, non-convergence);
-- `INTERRUPTED — suspended | kept last revision | cancelled`: stopped on request (8.9);
+- `INTERRUPTED — suspended | ended at last revision | cancelled`: stopped on request (8.9);
 - `FAILED — preflight | execution error`: the audit could not run, or stopped on an error; the section says which tool or step, and where the archive is (8.4.1).
 
 **Section**: one paragraph that a reader who was not there can act on (what was audited, by whom, what was found, fixed and left open, what to do next), then the table. Its `Consumption` row, written at closing, is the `index` value of `consumption.py --json` (`references/launch.md`, step 6): the total tokens, the cost and the audit's share of the week window, whose details and caveats are in the report; `not measured (--in-session)` with `--in-session`. Write the paragraph in plain words, and keep the details in the table and in the results folder.

@@ -39,7 +39,7 @@ check "guard red first recorded" "grep -qiwE 'red' '$DIR/register.md'"
 check "agent table filled" "grep -qE 'audit-selection-(reviewer|adjudicator)' '$DIR/register.md'"
 # git log --grep rather than a pipe into grep -q: under pipefail, grep -q exits at the first match and git log's SIGPIPE fails the check.
 check "internal revision committed" "[ -n \"\$(git -C '$AUDIT' log --oneline -F --grep 'incomplete: audit in progress')\" ]"
-# The results folder comes back to the root of the original repository at closing (--keep applies "Keep the worktree"),
+# The results folder comes back to the root of the original repository at closing (--keep applies "Keep the branch"),
 # named by the launch time of the command, which this script takes just before launching.
 RES="$(ls -d "$WORK"/SpecAudit-*/ 2>/dev/null | head -1)"
 check "results folder named by launch time, to the second" "$PY -c \"import sys,re,datetime as d; m=re.search(r'/SpecAudit-(\\d{8}_\\d{6})(-\\d+)?/\\Z', sys.argv[1]); t=m and d.datetime.strptime(m.group(1), '%Y%m%d_%H%M%S').timestamp(); sys.exit(0 if m and $START - 1 <= t <= $START + 120 else 1)\" '$RES'"
@@ -56,6 +56,34 @@ check "README explains attestation" "grep -qi 'attest' '${RES}README.md' && grep
 check "results README with contents" "grep -q 'source/' '${RES}README.md' && grep -q 'resources/' '${RES}README.md'"
 BASE="$(git -C "$WORK" rev-list --max-parents=0 HEAD | cut -c1-7)"  # the demo repository has a single starting commit
 check "results README identifies the base commit" "grep -qF '$BASE' '${RES}README.md'"
+# One agent at a time, each tied to a revision: the agents' journals show no overlap (audit session: its hooks write
+# them), and every revision of the agent table and of the errors' Verdicts is a commit of the audit's branch.
+STAMP="${NAME#SpecAudit-}"; BR="audit/$STAMP"; ON=HEAD
+[ "$MODE" = audit-session ] && ON="$BR"
+shas_on_branch() {
+  local s
+  "$PY" "$PLUGIN/evals/_fixtures/verdict_shas.py" "$DIR/register.md" | tr -d '\r' > "$WORK/shas.txt" || return 1
+  [ -s "$WORK/shas.txt" ] || return 1
+  while read -r s; do git -C "$AUDIT" merge-base --is-ancestor "$s" "$ON" 2>/dev/null || { echo "  $s is not a commit of $ON"; return 1; }; done < "$WORK/shas.txt"
+}
+check "every agent and every verdict tied to a commit of the audit's branch" "shas_on_branch"
+if [ "$MODE" = audit-session ]; then
+  check "no two agents overlapped (agent journals)" "$PY '$PLUGIN/evals/_fixtures/serial_check.py' '$AUDIT-scratch' > '$WORK/serial.log'"
+  # The branch is the audit's identifier, audit/<stamp> with the results folder's stamp, and the only audit branch.
+  check "audit branch named audit/<stamp>, the results folder's stamp" "git -C '$WORK' rev-parse -q --verify 'refs/heads/$BR' >/dev/null && [ \"\$(git -C '$WORK' branch --list 'audit/*' | wc -l)\" -eq 1 ]"
+  check "register records the branch" "grep -qF '$BR' '$DIR/register.md'"
+  FINAL="$(git -C "$WORK" rev-parse "$BR" 2>/dev/null)"
+  # Never merged: no merge commit on the original branch, the final commit not in it, the document as it was, and the
+  # original branch took only the results folder and the index, both committed there.
+  check "audit branch ends with a final commit, nothing left uncommitted" "git -C '$AUDIT' log -1 --format=%s | grep -qi 'final' && [ -z \"\$(git -C '$AUDIT' status --porcelain --untracked-files=no)\" ]"
+  check "nothing merged into the original branch" "[ -z \"\$(git -C '$WORK' log --merges --format=%h)\" ] && ! git -C '$WORK' merge-base --is-ancestor '$FINAL' HEAD"
+  check "original document untouched" "cmp -s '$WORK/selection.md' '$PLUGIN/evals/_fixtures/selection.md'"
+  ROOT_COMMIT="$(git -C "$WORK" rev-list --max-parents=0 HEAD)"
+  check "original branch took only the results folder and the index" "[ -z \"\$(git -C '$WORK' log --format= --name-only '$ROOT_COMMIT..HEAD' | grep -v '^\$' | grep -vE '^(SPECAUDITS\\.md|$NAME/)')\" ]"
+  check "results folder and index committed on the original branch" "git -C '$WORK' ls-files --error-unmatch '$NAME/README.md' >/dev/null 2>&1 && [ -z \"\$(git -C '$WORK' status --porcelain -- SPECAUDITS.md '$NAME')\" ]"
+  check "results README names the branch and its final commit" "grep -qF '$BR' '${RES}README.md' && grep -qF '${FINAL:0:7}' '${RES}README.md'"
+  check "index entry names the branch and its final commit" "awk -v id='## '\"$NAME\" '\$0==id{f=1;next} /^## /{f=0} f' '$WORK/SPECAUDITS.md' > '$WORK/entry.md' && grep -qF '$BR' '$WORK/entry.md' && grep -qF '${FINAL:0:7}' '$WORK/entry.md'"
+fi
 check "original source kept unfixed" "grep -qF '|P_k(L)| = k.' '${RES}source/selection.md'"
 check "report and patch in results" "[ -f '${RES}report.md' ] && [ -f '${RES}resources/corrections.patch' ]"
 check "executed counterexamples kept" "[ -n \"\$(find '${RES}resources/counterexamples' -name '*.py' 2>/dev/null)\" ]"
@@ -96,5 +124,9 @@ else
 fi
 check "report does not claim correctness" "[ -z \"\$(grep -iE '(document|it|proof)s? (is|are) (now )?(correct|verified)' '$DIR/report.md' | grep -viE '\\b(not|no|never|cannot)\\b')\" ]"
 python -X utf8 -c "import json; d = json.load(open('result.json', encoding='utf-8')); print('cost USD', d.get('total_cost_usd'), '| turns', d.get('num_turns'), '| denials', len(d.get('permission_denials', [])))" 2>/dev/null
+echo "wall-clock $(( $(date +%s) - START )) s"
+# The audit session's own consumption, from its streams (the line above is the launcher's session only).
+[ "$MODE" = audit-session ] && "$PY" "$PLUGIN/skills/start/references/consumption.py" "$AUDIT-scratch/launch" --no-transcripts --json 2>/dev/null \
+  | "$PY" -X utf8 -c "import json,sys; d=json.load(sys.stdin); t=d['total']; print('audit session: tokens', t['total'], '(input', t['input'], '| cache write', t['cache_write'], '| cache read', t['cache_read'], '| output', str(t['output']) + ') | cost USD', d['cost']['total'])"
 echo "$fails failure(s); artifacts in $WORK"
 exit $((fails > 0))
