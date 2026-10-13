@@ -1,6 +1,6 @@
 # Undecided statements (design)
 
-Status: design, not implemented. Three mechanisms: splitting an undecided statement into cases, an attempt ledger that stops on method saturation, and a budget per item. Two more are left for later: a cache of attempts across audits, and a stop condition for an audit whose remaining items all wait on open cases.
+Status: design, not implemented. Three mechanisms, and two moments where the user decides how they apply: splitting an undecided statement into cases, an attempt ledger that stops on method saturation, and a budget per item. Two more are left for later: a cache of attempts across audits, and a stop condition for an audit whose remaining items all wait on open cases.
 
 ## Why
 
@@ -63,6 +63,27 @@ Each item gets its own budget, so that no item can spend the audit's.
 
 The global budget (`--max-passes`, the usage threshold) still applies; the per-item budget only keeps one item from spending it.
 
+## When the user decides
+
+Undecidability is not known after detection (phase 1): a reviewer's finding is a candidate, and many are confirmed or refuted by their first adjudicator in minutes. A question at that point would make the user rule on predictions. The user is asked at two moments, where an answer changes what the audit does.
+
+**1. After phase 3: a policy, asked once, for every item at risk.** The cause graph is built and every candidate is known, so the items likely to resist can be named before any is attempted: no oracle of the table covers them at the evidence level their statement calls for; their statement has unbounded quantifiers; or they are main results, or upstream of one. One question lists them, each with why it is at risk, and asks how to treat them:
+- a budget per item: attempts, oracle time, and a token ceiling;
+- *k* and *m*, the saturation rule;
+- split into cases and restrict to the cases that hold without asking again, or restrict nothing without the user's approval;
+- a hypothesis, a constraint or a hint the user adds: where the user's knowledge of the domain counts most, as in the case that motivated this design, recorded in the register as the user's and handed to the adjudicators as part of the document's context, never as a verdict;
+- leave the item open at once, with no attempt beyond the first.
+
+The answer is recorded in the register and applies to these items for the rest of the audit. An item not at risk that turns out to resist follows the defaults.
+
+**2. When an item becomes OPEN, and only if it blocks a main result.** The question comes with the item's cases and its ledger in short ("three families, six attempts, exhaustive up to n = 7, no progress in the last two"), and offers: continue with a larger budget, restrict the statement to the cases that hold (a critical fix), add a hypothesis, or leave it open. An OPEN item that blocks no main result is not asked about: it goes to the report.
+
+**In the audit session.** The audit session runs `claude -p` and cannot ask anything. Hence:
+- **a default policy**, in the project configuration (`defaults: undecided-policy`, with the budgets, *k* and *m*) or as an option of the command, applied whenever no one can answer, and recorded as applied;
+- **a pause for a decision**: at either moment, the orchestrator writes the question and its options in the register, sets the state to `suspended (decision needed)`, commits and ends. The launcher, which can ask, puts the question to the user, writes the answer in the register, and resumes the audit with `--resume`, as after a usage limit. With `--auto`, or where the launcher cannot ask either, the default policy applies and the audit does not stop.
+
+Each question interrupts the audit, so there are only these two: one batch after phase 3, then a question only for what blocks a main result. Showing the user the candidates biases no agent: the user is not a cold reviewer, and the agents never see the question or the answer, only the hypotheses the user chose to add to the document's context.
+
 ## Statuses
 
 | Status | Meaning |
@@ -82,7 +103,8 @@ An OPEN item is listed in the report's "Open points" with its cases, its ledger 
 - `references/report.md`: open cases, ledgers and the exhaustiveness of each partition in "Open points" and "Scope of verification".
 - Profile: a `Method families` section, and default budgets per severity.
 - `agents/spec-adjudicator.md`: the `cases` field, the method family of each attempt, the progress made, and the instruction to change family.
-- Parameters and configuration: `item-attempts`, `item-oracle-time`, and *k* and *m*.
+- Parameters and configuration: `item-attempts`, `item-oracle-time`, *k* and *m*, and `undecided-policy`, the default answer to the two questions.
+- Closing and launch: the state `suspended (decision needed)`, which the launcher answers and resumes like a usage-limit pause (`references/launch.md`, step 6).
 - Unchanged: one agent at a time, each on the current revision; an attempt is one adjudicator.
 
 ## Open questions
