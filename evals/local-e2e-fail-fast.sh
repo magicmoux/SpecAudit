@@ -38,7 +38,8 @@ check "not its consequence" "! printf '%s' \"\$FIRST\" | head -3 | grep -qE 'Cor
 check "proposed fix, not applied" "printf '%s' \"\$FIRST\" | grep -qiE 'not applied'"
 check "results it may affect" "printf '%s' \"\$FIRST\" | grep -qE 'Corollary 5|Algorithm 7|Conclusion|Example 6'"
 check "an executed counterexample" "[ -n \"\$(find '$AUDIT-scratch' '$DIR/scratch' -path '*adjudicator*' -name '*.py' 2>/dev/null)\" ]"
-check "document unchanged" "cmp -s '$AUDIT/selection.md' '$PLUGIN/evals/_fixtures/selection.md'"
+# Ignoring CR: git may check the worktree out with CRLF (core.autocrlf), which is no change of the audit's.
+check "document unchanged" "cmp -s <(tr -d '\r' < '$AUDIT/selection.md') '$PLUGIN/evals/_fixtures/selection.md'"
 check "no fix committed" "[ -z \"\$(git -C '$AUDIT' log --oneline -F --grep 'fixed [incomplete')\" ]"
 check "stop commit" "[ -n \"\$(git -C '$AUDIT' log --oneline -F --grep 'stopped at first error')\" ]"
 RES="$(ls -d "$WORK"/SpecAudit-*/ 2>/dev/null | head -1)"

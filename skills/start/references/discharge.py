@@ -24,6 +24,9 @@ profile and the four texts, and sets each edge's status:
               settled by the cache for this key (cached: true); a not_refuted entry is reused only when its
               evidence level is at least the strongest level of the oracle table;
   to probe    everything else.
+An edge already settled in this audit (needed, discharged, not_refuted; red, its finding in triage; refuted, its finding refuted) keeps its
+status as long as its texts are those it was settled on (its stored key): select runs again right after every fix
+(SKILL.md, 4.4), before the iteration's record, and must then return only the edges whose texts the fix changed.
 It prints the ids to probe. Exit code 1 when a quote is not found in the documents (the edge's text is then not
 the document's, and its key would be meaningless), 2 on a malformed file.
 
@@ -44,6 +47,7 @@ from pathlib import Path
 LEVELS = {"ad hoc": 0, "ad-hoc": 0, "model": 1, "formal": 2}
 FINAL = {"needed", "discharged"}
 CACHED = FINAL | {"not_refuted"}
+SETTLED = CACHED | {"red", "refuted"}  # kept by select while the edge's texts are those it was settled on
 TEXTS = ("used_statement", "hypothesis", "user_statement", "use_passage")
 
 
@@ -85,11 +89,15 @@ def select(edges_path, cache_path, strongest):
         return 1
     to_probe = []
     for e in edges:
-        e["key"] = key(profile, e)
-        hit = cache.get(e["key"])
-        e["cached"] = False
+        k = key(profile, e)
+        settled = e.get("status") in SETTLED and e.get("key") == k
+        e["key"] = k
+        hit = cache.get(k)
+        e["cached"] = e.get("cached", False) if settled else False
         if e["guarantee"] != "unstated":
             e["status"] = "stated"
+        elif settled:
+            pass
         elif hit and (hit["status"] in FINAL or LEVELS[hit["level"]] >= LEVELS[strongest]):
             e.update(status=hit["status"], oracle=hit["oracle"], level=hit["level"], cached=True)
         else:

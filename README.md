@@ -8,7 +8,7 @@
 
 SpecAudit audits documents that make claims a reader can check, and fixes the errors it can prove. Its core does not depend on the domain; what counts as an error, as evidence and as a guard comes from an **audit profile**, one per kind of document. **Only the `formal` profile is implemented so far**: papers, proofs, algorithm, protocol or format specifications, audited for logical, mathematical and algorithmic errors. Profiles for functional specifications and requirements, UI specifications, research positioning and experimental protocols are planned, and open to contributions ([Future work](#future-work-up-for-grabs)); until they exist, a non-formal document is audited with the formal rules, which suit it poorly ([Limits](#limits-risks-and-side-effects)).
 
-Fresh reviewer agents with no history detect the errors; an independent adjudicator agent confirms each one with an executed counterexample; confirmed errors are ordered into a cause graph and fixed bottom-up, each fix being preceded by a regression guard in a growing test corpus. The whole audit runs in a dedicated git worktree and ends with a report and a multiple-choice closing question.
+Fresh reviewer agents with no history detect the errors; an independent adjudicator agent confirms each one with an executed counterexample; confirmed errors are ordered into a cause graph and fixed bottom-up, one at a time, each verified on the current revision and each fix being preceded by a regression guard in a growing test corpus. The whole audit runs on a branch of its own, in a dedicated git worktree, and ends with a final commit on that branch, which it never merges, a report and a multiple-choice closing question.
 
 The `formal` profile is in beta: to take part, see [Beta testing](#beta-testing).
 
@@ -32,10 +32,11 @@ Three principles guide everything else:
 - **Minimal, traced fixes**: statement fix, scoping addition or proof repair; never a strengthening, never a silent deletion; critical fixes wait for your approval.
 - **Separate editorial track**: typos, numbering, cross-references and bibliography, with a mechanical lint that grows with each class of defect fixed.
 - **Your project's architecture, followed**: `/spec-audit:init` proposes `SPECAUDIT_ARCH.md`, the role of each part of the repository, which you confirm or adjust; the audit changes only the documents marked audited (and a mapped formal counterpart with its statement), leaves originals, normative references, sources and oracles alone, and refuses to run without the file.
-- **Git isolation**: everything happens in an `audit/<slug>` worktree, with local commits, without touching your working directory and without ever pushing.
+- **Git isolation**: everything happens on a branch `audit/<stamp>`, named like the audit's results folder, checked out in a worktree of its own, with local commits, without touching your working directory, without ever merging and without ever pushing.
+- **One agent at a time, on a known revision**: agents run one after the other, never side by side, so none races another on an oracle, a file or a text being fixed; every error is verified on the revision its predecessor's fix left, and every verdict records the commit it was reached on.
 - **A session of its own**: by default the audit runs in a dedicated `claude -p` session started in the worktree, with none of your plugins, skills, connectors, hooks or memory, allowed to run exactly git and the project's oracles; `--in-session` keeps it in your session.
 - **Explicit stop conditions**: convergence, budget, recurrence, oscillation, non-convergence, causal loop or exhaustion.
-- **You decide the closing**: full report, ending with a summary of issues by priority, each with its mitigation and an effort range in person-days when something supports one; then a multiple-choice question (accept and merge, run another check, keep, abandon), the safest option being recommended.
+- **You decide the closing**: full report, ending with a summary of issues by priority, each with its mitigation and an effort range in person-days when something supports one; then a multiple-choice question (keep the branch, run another check, abandon), the safest option being recommended. The audit never merges its branch: you merge it, or not, by your own means.
 - **A self-contained, indexed result**: every audit run to completion leaves `SpecAudit-<YYYYmmdd_HHmmss>/` at the root of the project, with the sources as they were, the report, the fixed document when no error stays open, and a corpus that replays on either version; `SPECAUDITS.md` has an entry for every audit launched, from its launch to its result, linked to a section that summarizes it.
 - **Attestation you control**: `/spec-audit:attest` checks the signed git tag with which you stand by a result; the audit never signs in your name.
 - **Context economy**: each agent gets only what its step needs, the orchestrator carries a one-line digest per settled error, and the protocol is loaded in parts, so that long audits stay affordable.
@@ -103,7 +104,7 @@ or enable auto-update under `/plugin` → Marketplaces. A new copy is installed 
 
 **What to test.** Real formal documents of your own: proofs, algorithms, protocol or format specifications. Begin with `--fail-fast`, which stops at the first confirmed error and reports its proposed fix and the results it may affect, then run full audits, with a few pages and `--max-passes 1` first, then longer ones. Non-formal documents are out of scope of this beta: only the `formal` profile exists, and it suits them poorly ([Limits](#limits-risks-and-side-effects)).
 
-**One audit at a time.** Several audits at once in the same repository work: each runs in its own worktree, and they share only the index `SPECAUDITS.md`, whose writes are serialized. But this is not yet validated beyond the tests, so for this beta, run one audit at a time per repository.
+**One audit at a time.** Several audits at once in the same repository work: each runs on its own branch, in its own worktree, and they share only the index `SPECAUDITS.md` and the results folders at the root of the original branch, whose writes are serialized. But this is not yet validated beyond the tests, so for this beta, run one audit at a time per repository.
 
 **Cost.** Measured on the demo, an audit costs about $0.50 to $2.50 with Sonnet, depending on the mode (audit session by default, or `--in-session`). A real document costs several times more; `--max-passes` bounds the spending.
 
@@ -125,7 +126,7 @@ or enable auto-update under `/plugin` → Marketplaces. A new copy is installed 
 | `--in-session` | run the orchestrator in your session instead of a session of its own |
 | `--model <family\|id>` | model of the audit session and of its agents (default: your session's family) |
 | `--model-version <v>` | version of that family (default: `latest`) |
-| `--keep` | ask no question at closing and keep the worktree (the results folder still comes back) |
+| `--keep` | ask no question at closing and keep the branch (the results folder still comes back) |
 | `--uniform-effort` | launch every agent at its usual effort, without per-step routing |
 | `--account <email>` | the account the audit session is billed to: checked instead of asking at launch, required where no question can be asked |
 | `--pause-at <N \| session=N,week=N \| off>` | pause at N % of the account's session window or week (default `session=75,week=50`), and resume when it resets |
@@ -137,9 +138,9 @@ Details and examples: [docs/usage.md](docs/usage.md).
 
 ## What an audit produces
 
-In the worktree `<repository>-audit-<slug>`, on the branch `audit/<slug>`:
+In the worktree `<repository>-audit-<slug>`, on the branch `audit/<stamp>`:
 
-- the fixed document, one fix per confirmed error, committed locally;
+- the fixed document, one fix per confirmed error, each committed as an internal revision, then a final commit at closing;
 - `spec-audit/<slug>/register.md`: the audit's memory (log, cause graph, each error with its counterexample, verdict, guards and fix);
 - `spec-audit/<slug>/inventory.md`: definitions, results and their dependencies;
 - `spec-audit/<slug>/report.md`: the final report, with what the audit consumed: tokens per agent, cost, and its share of your account's session and week windows;
@@ -183,7 +184,7 @@ An audit launches several agents per pass: it consumes a lot of tokens. `--max-p
 - **Not for refereeing.** Do not use SpecAudit on a manuscript submitted to you for review: sending a confidential submission to an AI service breaks the confidentiality of peer review, and many journals forbid it. The intended use is an author auditing their own text.
 - **Effort estimates are indicative ranges**, with their basis and a confidence; the audit knows neither your team nor its pace.
 
-**What an audit does to your project.** It creates a worktree and a branch `audit/<slug>` next to your repository, a guard corpus (`spec-guards/` by default), the index `SPECAUDITS.md` and a results folder `SpecAudit-<stamp>/` at the root. It commits on your current branch twice: the index entry at launch, the results folder and the index at closing; "Accept and merge" also merges the audit branch into it. It never pushes, and never signs.
+**What an audit does to your project.** It creates a branch `audit/<stamp>` and its worktree next to your repository, a guard corpus (`spec-guards/` by default) on that branch, the index `SPECAUDITS.md` and a results folder `SpecAudit-<stamp>/` at the root. It commits on your current branch twice, and only these two: the index entry at launch, the results folder and the index at closing; both name the audit's branch and its final commit. The fixes stay on `audit/<stamp>`: the audit never merges it, nor proposes a merge or a pull request; you review it and merge it, or not, by your own means. It never pushes, and never signs.
 
 **What it runs.** The agents write and run scripts (counterexamples, guards) on your machine, with the permissions of the session, restricted in the default mode to the command forms the protocol lists. An audited document is input the agents read and act on: audit documents whose origin you trust, or run the audit in a container or a throwaway clone.
 
@@ -223,7 +224,7 @@ SpecAudit/
 │   │   │   ├── arch.py        reads SPECAUDIT_ARCH.md: roles, the check of each commit, the hook of the audit session
 │   │   │   ├── report.md      template and rules of the final report
 │   │   │   ├── corpus-errors.md  procedure for a guard suspected of being wrong
-│   │   │   ├── closing.md     phase 8: closing, results folder, index, merge, stop
+│   │   │   ├── closing.md     phase 8: closing, final commit, results folder, index, stop
 │   │   │   ├── register.md    formats of the register, its entries, the guards, the index
 │   │   │   ├── replay.py      replays a results folder's corpus on the original or the fixed document
 │   │   │   └── with_docs.py   runs a command on another version of the document (SPEC_DOCS)

@@ -2,7 +2,8 @@
 # Two audits launched at the same moment from the same repository, on two different documents, with opposite
 # scenarios: selection.md without --auto (a critical fix stays pending: partial, no fixed copy) and sums.md with --auto
 # (its one false proposition is fixed, its true lemma kept: every error fixed, fixed copy). It checks that nothing is
-# shared between them (worktrees, launch files, scratch roots, results folders), that both closings land in the
+# shared between them (branches audit/<stamp>, worktrees, launch files, scratch roots, results folders), that each runs
+# its agents one at a time, that neither is merged, that both closings land in the
 # original repository (two index rows, two results folders, no lost commit or leftover lock), and each verdict.
 # Usage: evals/local-e2e-parallel.sh [model]
 set -uo pipefail
@@ -39,7 +40,12 @@ P=$(dirname "$WORK"); N=$(basename "$WORK")
 WA="$P/$N-audit-selection"; WB="$P/$N-audit-sums"
 
 # Nothing shared
-check "two worktrees, one per document" "[ -d '$WA' ] && [ -d '$WB' ] && git -C '$WORK' worktree list | grep -q 'audit/selection' && git -C '$WORK' worktree list | grep -q 'audit/sums'"
+# Each audit on its own branch, audit/<stamp>, named by its own results folder's stamp.
+branch_of() { git -C "$1" rev-parse --abbrev-ref HEAD 2>/dev/null; }
+BA="$(branch_of "$WA")"; BB="$(branch_of "$WB")"
+check "two worktrees, one per document" "[ -d '$WA' ] && [ -d '$WB' ]"
+check "two audit branches audit/<stamp>, distinct, each named by a results folder" "[ -n '$BA' ] && [ '$BA' != '$BB' ] && [ -d '$WORK/SpecAudit-${BA#audit/}' ] && [ -d '$WORK/SpecAudit-${BB#audit/}' ] && case '$BA$BB' in audit/*audit/*) true;; *) false;; esac"
+check "agents one at a time in each audit" "$PY '$PLUGIN/evals/_fixtures/serial_check.py' '$WA-scratch' > '$WORK/serial-a.log' && $PY '$PLUGIN/evals/_fixtures/serial_check.py' '$WB-scratch' > '$WORK/serial-b.log'"
 check "launch files per audit" "[ -f '$WA-scratch/launch/protocol.md' ] && [ -f '$WB-scratch/launch/protocol.md' ] && [ -f '$WA-scratch/launch/agents.json' ] && [ -f '$WB-scratch/launch/agents.json' ]"
 check "each register records its own scratch root" "grep -qF 'Scratch root: $WA-scratch' '$WA/spec-audit/selection/register.md' && grep -qF 'Scratch root: $WB-scratch' '$WB/spec-audit/sums/register.md'"
 for R in "$WA/spec-audit/selection/register.md" "$WB/spec-audit/sums/register.md"; do
@@ -73,9 +79,11 @@ index_never_lost() {
 }
 check "no index commit drops the other audit's entry" "index_never_lost"
 check "original documents untouched (keep)" "cmp -s '$WORK/selection.md' '$PLUGIN/evals/_fixtures/selection.md' && cmp -s '$WORK/sums.md' '$PLUGIN/evals/_fixtures/sums.md'"
+check "nothing merged into the original branch" "[ -z \"\$(git -C '$WORK' log --merges --format=%h)\" ] && ! git -C '$WORK' merge-base --is-ancestor '$BA' HEAD && ! git -C '$WORK' merge-base --is-ancestor '$BB' HEAD"
 RA=$(grep -lF 'selection.md' "$WORK"/SpecAudit-*/README.md 2>/dev/null | head -1 | xargs -r dirname)
 RB=$(grep -lF 'sums.md' "$WORK"/SpecAudit-*/README.md 2>/dev/null | grep -v "^${RA:-none}/" | head -1 | xargs -r dirname)
 check "each folder holds only its own source" "[ -f '$RA/source/selection.md' ] && [ ! -e '$RA/source/sums.md' ] && [ -f '$RB/source/sums.md' ] && [ ! -e '$RB/source/selection.md' ]"
+check "each folder names its own branch" "grep -qF '$BA' '$RA/README.md' && grep -qF '$BB' '$RB/README.md'"
 
 # Verdicts
 for R in "$RA" "$RB"; do
