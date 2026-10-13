@@ -1,6 +1,6 @@
 # Phase 8 — Closing, and the stop on request
 
-Part of `/spec-audit:start`, whose folder is `skills/start/` of the plugin (`SKILL.md` gives its full path as `${CLAUDE_SKILL_DIR}`, which a file read afterwards does not substitute: below, `${CLAUDE_SKILL_DIR}` means that folder): read by the launcher once the audit session has written its report, by the orchestrator with `--in-session` once it has written the report, and by `/spec-audit:stop`. The terms (register, report, corpus, internal revision, "Questions only when idle") are those of `SKILL.md`; the formats of the index and of the guards are in `references/register.md`.
+Part of `/spec-audit:start`, whose folder is `skills/start/` of the plugin (`SKILL.md` gives its full path as `${CLAUDE_SKILL_DIR}`, which a file read afterwards does not substitute: below, `${CLAUDE_SKILL_DIR}` means that folder): read by the launcher once the audit session has written its report, by the orchestrator with `--in-session` once it has written the report, and by `/spec-audit:stop`. The terms (register, report, corpus, internal revision, "Questions between agents") are those of `SKILL.md`; the formats of the index and of the guards are in `references/register.md`.
 
 
 Closing is decided with the user, through a multiple-choice question, after they have been able to read the report. It is run by the launcher (your session) from the report and the register written by the audit session, or by you with `--in-session`.
