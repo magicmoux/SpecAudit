@@ -4,6 +4,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two days in October 2026; a first 1.0.0-beta.1 was published under the EUPL-1.2 or the AGPL-3.0-or-later on 2026-10-11; history restarted at 1.0.0-beta.1 under CC BY-NC-SA 4.0 with additional permissions.
 
+## [1.0.0-beta.4] — 2026-10-13
+
+### Project architecture
+
+- `/spec-audit:init`, user-invoked: scans the files git tracks, reading only what it needs (folder names, READMEs, build files such as `lakefile.toml` and `lean-toolchain`, the markers of formal content, tables that look like a correspondence between results and formal names), and proposes the project's architecture: one role per path (`audited`, `original`, `prior-version`, `normative`, `sources`, `oracle` with its command, correspondence table and guard location, `ignored`), the profile of each audited document (`formal`, the only one, said so for anything else), and the mapped pairs, a document and its formal counterpart, which change together. It shows the proposal as a table, asks to accept, adjust or cancel, and only then writes `SPECAUDIT_ARCH.md` and offers to commit it alone; where no question can be asked, it prints the proposal and stops. Run again, it proposes the changes against the existing file. `skills/init/scan.py` does the scan.
+- `/spec-audit:start` refuses to run without `SPECAUDIT_ARCH.md`, before anything is asked or created, and names `/spec-audit:init`; a document it is asked to audit must be `audited` in it.
+- The audit follows the architecture: the oracle table is built from its `Oracles` rows instead of being discovered; reviewers and adjudicators receive the `normative` documents it gives; guards for an oracle go where its row says; and only the `audited` paths may be modified, with the audit's own corpus and records, and a mapped counterpart only together with its document. `skills/start/references/arch.py` holds this twice: a hook of the audit session refuses such an edit at once, and a check of the staged paths before every commit refuses it again; a refused change is restored and recorded as an error of the audit (`Architecture refusals` in the register, listed in the report). A fix that needs a read-only path is not made: the error stays confirmed, its fix proposed in the report.
+- Reviewer isolation: reviewers and adjudicators may read `SPECAUDIT_ARCH.md`, which holds only what a referee could see in the repository, and must never read `SPECAUDITS.md`, the `SpecAudit-*/` folders, `spec-audit/`, the configuration, or the paths marked `original`, `prior-version` or `ignored`: said in `agents/*.md`, in a line that ends every message the orchestrator writes to them, and enforced in the audit session by the same hook.
+- Orchestrator configuration: `.specaudit.md` or `.specaudit/config.md` keeps what only the orchestrator reads (version convention, defaults of the options, notes on scope and focus), `.specaudit/` the files the audit needs. Its keys `profiles` and `normative` moved to `SPECAUDIT_ARCH.md`; they are still read in this version, where the architecture says nothing, with a deprecation note, and init moves them.
+- `docs/profiles.md`: step 3 of the roadmap, the profile proposed from the document's signals and written down once confirmed, is done, and generalized to the whole architecture.
+
+### Tests
+
+- `evals/arch.sh` (no model): the proposal on a fixture project (`evals/_fixtures/arch-project/`: original manuscript and references, revised version and proofs, a Lean development with a correspondence table), the refusal without the file, the commit check and the hook. `evals/local-init.sh`: init run non-interactively on the fixture, and start refused without the file. New cases `init-proposes-architecture` and `start-refuses-without-arch`; `reviewer-ignores-session-history` gains an index lure.
+- Every repository the cases and scripts build writes a minimal `SPECAUDIT_ARCH.md` first (`evals/_fixtures/write-arch.sh`).
+
+### Fixed
+
+- Audit billed to the wrong account: a session started from the Claude desktop app (or an Agent SDK host, or another `claude` session) hands its children its own credentials, a local proxy (`ANTHROPIC_BASE_URL` with `CLAUDE_CODE_ACCOUNT_UUID`…) or a token, which win over `CLAUDE_CONFIG_DIR`; the audit session was billed to the launcher's account whatever account the launch had settled, while `claude auth status` named the chosen one. `account.py clean-env` lists those variables, the audit session is launched under `env <clean-env>`, and `account.py list` reads the folders the same way. The eval scripts' account guard (`evals/_fixtures/account-guard.sh`) removes them too, so that a test started from the desktop app runs on the account it names.
+- Results folder nested in itself: at a closing that keeps or abandons, the folder reserved at launch already exists, so copying the results folder onto it put them in `SpecAudit-<stamp>/SpecAudit-<stamp>/`, where the index's link and `replay.py` do not find them. `closing.md` now gives the copy of the contents (`cp -r "<worktree>/<folder>/." "<original repository>/<folder>/"`), and `index.py --add` refuses a results folder without `README.md` at its root, naming the nesting when it sees it.
+
 ## [1.0.0-beta.3] — 2026-10-12
 
 ### Results

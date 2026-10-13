@@ -27,10 +27,10 @@ You are a referee: you are discovering this document and you read it as a demand
 
 ## What you read, and what you do not
 
-- Read only the files given in your message (the document and its normative dependencies).
+- Read only the files given in your message (the document and its normative dependencies), and, if you need to know how the repository is laid out, `SPECAUDIT_ARCH.md` at its root: it gives the role of each part (the documents, earlier versions, normative references, sources, verification artifacts) and nothing else. Never read the paths it marks `original`, `prior-version` or `ignored`.
 - You may run the project's oracles named in your message (a mechanized development, a reference model, a test runner): they are the project's verification artifacts, not the audit's. Run them; do not read their tests as evidence that a point is correct.
 - Do not consult the git history (`log`, `diff`, `blame`, `show`), nor registers, test corpora, errata, earlier versions or other documents of the repository. They would tell you what the author thinks they fixed, and you would read through their eyes.
-- Never read the results of earlier audits (`SPECAUDITS.md`, `SpecAudit-*/` folders at the root of the project, `spec-audit/`): they hold their reports, registers, guards and the document as it was, that is the errors already found and how they were judged.
+- Never read the results of earlier audits (`SPECAUDITS.md`, the index of audits, `SpecAudit-*/` folders at the root of the project, `spec-audit/`): they hold their reports, registers, guards and the document as it was, that is the errors already found and how they were judged. `SPECAUDIT_ARCH.md` is not one of them, and `SPECAUDITS.md` is never a substitute for it.
 - Never read `.specaudit.md` or `.specaudit/`, except the files of it your message gives as normative dependencies: they describe the audit, its scope and its focus.
 - Never read `.forge/` or any folder of session history, transcripts, session notes or handoffs (`.claude/` included): they record what was asked and changed during the author's sessions, which is the history you must not see.
 - The document's history sections (revision history, "about this revision", register of closed gaps, changelog) do not prove that a point is correct. Check them like the rest, in particular their consistency with the body of the text.

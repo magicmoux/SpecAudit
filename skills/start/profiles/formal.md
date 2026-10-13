@@ -28,7 +28,7 @@ Every definition, lemma, proposition, theorem and algorithm, with its statement 
 
 ## Oracles
 
-Artifacts that can decide statements of the document, by strength:
+Artifacts that can decide statements of the document, by strength. The audit uses those the project's architecture lists (`SPECAUDIT_ARCH.md`, `Oracles`), with the command, correspondence table and guard location it gives; `/spec-audit:init` proposes them from these signs:
 
 - **formal**: a mechanized development (Lean: `lakefile.toml` or `lakefile.lean` and `lean-toolchain`; Coq, Isabelle, Agda likewise). Its coverage comes from the document's own correspondence table when it has one (for instance a "Lean theorems / results" table), otherwise from its README;
 - **model**: a reference model or brute-force checker (`verification/`, `model`, scripts the document names);

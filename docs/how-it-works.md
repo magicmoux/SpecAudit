@@ -22,8 +22,8 @@ Only errors follow the full protocol. **Form defects** (typo outside formulas, n
 |---|---|---|---|
 | Launcher | your session, guided by the skill | your session, the original repository, the register | worktree and register (preparation), stop, closing |
 | Orchestrator | the audit session, a `claude -p` process launched in the worktree, or your session with `--in-session` | everything in the worktree: register, corpus, oracles, git history | document, corpus, register |
-| Reviewer | `spec-reviewer` agent, fresh for each wave | the document and its normative dependencies, nothing else | nothing, outside its scratch directory |
-| Adjudicator | `spec-adjudicator` agent, fresh for each error | one error and the document | nothing, outside its scratch directory |
+| Reviewer | `spec-reviewer` agent, fresh for each wave | the document, its normative dependencies and the project's architecture (`SPECAUDIT_ARCH.md`), nothing else | nothing, outside its scratch directory |
+| Adjudicator | `spec-adjudicator` agent, fresh for each error | one error, the document and the project's architecture | nothing, outside its scratch directory |
 
 Isolation is at the heart of the design:
 
@@ -31,7 +31,9 @@ Isolation is at the heart of the design:
 - the adjudicator receives the error alone, without the reviewer's identity or the other errors, and judges the text as it is now;
 - the orchestrator never adjudicates: it would be judging its own work. For the same reason it never runs a counterexample in an adjudicator's place, and never changes a guard on its own judgment (corpus errors, below);
 - no agent is launched as a "fork", which would inherit the conversation and therefore the history;
-- no agent reads a session-history folder (tokenforge's `.forge/`, transcripts, handoffs), the audit configuration beyond the normative files it declares, or the results of earlier audits (`SPECAUDITS.md`, `SpecAudit-*/`, `spec-audit/`), which hold the errors already found and how they were judged; a history folder that git tracks is untracked before the worktree is created, if the user agrees;
+- no agent reads a session-history folder (tokenforge's `.forge/`, transcripts, handoffs), the audit configuration, the paths the architecture marks `original`, `prior-version` or `ignored`, or the results of earlier audits (`SPECAUDITS.md`, `SpecAudit-*/`, `spec-audit/`), which hold the errors already found and how they were judged; every message to an agent ends with that rule, and in the audit session a hook refuses such a read; a history folder that git tracks is untracked before the worktree is created, if the user agrees;
+- agents may read `SPECAUDIT_ARCH.md`, the project's layout, because it holds only what a referee could see in the repository; what concerns the audit (scope, focus, results not to change) is in the configuration, which only the orchestrator reads;
+- the audit changes only what the architecture lets it change (the audited documents, its corpus and guard locations, a mapped formal counterpart together with its statement): a hook refuses an edit outside that, and a check of every commit refuses it again;
 - the audit runs in a session of its own, with no settings, plugin, skill, connector, hook, memory or conversation of the launcher's, and a Bash allow list that is exactly git, the project's oracles and the interpreter of the agents' own scripts restricted to their scratch directories: what it could run is what the register says it ran.
 
 ## Context economy

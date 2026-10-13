@@ -11,7 +11,9 @@ They test what a reader of the protocol cannot check by reading it: that the age
 | `start-skill-triggers` | quick | a request to check the proofs of a formal document loads the start skill |
 | `stop-without-audit` | quick | `/spec-audit:stop` with no audit running says so and changes nothing |
 | `reviewer-finds-planted-errors` | quick | a fresh reviewer finds the planted errors and does not flag the correct Proposition 4 |
-| `reviewer-ignores-session-history` | quick | a reviewer is not steered by a handoff, the audit configuration or the results folder of an earlier audit |
+| `reviewer-ignores-session-history` | quick | a reviewer is not steered by a handoff, the audit configuration, the index of audits (`SPECAUDITS.md`, a lure that says Lemma 3 was found correct and other results need no review) or the results folder of an earlier audit; it may read `SPECAUDIT_ARCH.md` |
+| `start-refuses-without-arch` | quick | `/spec-audit:start` in a repository without `SPECAUDIT_ARCH.md` refuses, names `/spec-audit:init`, and launches and writes nothing |
+| `init-proposes-architecture` | shell | `/spec-audit:init`, where no question can be asked, on `_fixtures/arch-project/`: each path its expected role, the Lean oracle its command, correspondence table and guard location, the mapped pair; nothing written or committed |
 | `adjudicator-refutes-false-positive` | quick | an adjudicator refutes a false claim against Proposition 4 instead of forcing a confirmation |
 | `adjudicator-confirms-with-counterexample` | shell | an adjudicator confirms Lemma 3 with a counterexample it actually ran |
 | `adjudicator-probe-lifts-counterexample` | shell | in probe mode, an adjudicator finds that Proposition 3 of `_fixtures/squares.md` applies Lemma 2 without guaranteeing its hypothesis, with a counterexample run under Proposition 3's hypotheses, and lifts it to Theorem 4 |
@@ -28,7 +30,7 @@ They test what a reader of the protocol cannot check by reading it: that the age
 
 ## Running
 
-**Which account pays.** Every case and every local script launches `claude`, billed to the account the claude CLI is logged into (`claude auth status`), whatever the session that starts them. The local scripts refuse to start unless `SPECAUDIT_E2E_ACCOUNT` names that account's e-mail (`_fixtures/account-guard.sh`). They also cap their spending: at most `SPECAUDIT_E2E_MARGIN` points (default 1, or `session=1,week=2` for each window) of usage above what the account used when the batch started, in its session window and in its week. The ceiling is computed once per session window by a tiny request, shared by every script started before that window resets, and passed to each audit as `--pause-at` with `--no-auto-resume`, so that an audit past it pauses and its test ends; `SPECAUDIT_E2E_CEILING="session=N,week=N"` sets it instead. To run them, or `claude plugin eval`, on another account, log it in once under its own configuration folder, then pass that folder each time:
+**Which account pays.** Every case and every local script launches `claude`, billed to the account the claude CLI is logged into (`claude auth status`), whatever the session that starts them. The local scripts refuse to start unless `SPECAUDIT_E2E_ACCOUNT` names that account's e-mail (`_fixtures/account-guard.sh`). Started from the Claude desktop app, a script would otherwise inherit the app's credentials, which win over `CLAUDE_CONFIG_DIR`: the guard removes them first (`account.py clean-env`). `claude plugin eval` has no such guard: from the desktop app, run it under `env $(python skills/start/references/account.py clean-env) CLAUDE_CONFIG_DIR=…`. They also cap their spending: at most `SPECAUDIT_E2E_MARGIN` points (default 1, or `session=1,week=2` for each window) of usage above what the account used when the batch started, in its session window and in its week. The ceiling is computed once per session window by a tiny request, shared by every script started before that window resets, and passed to each audit as `--pause-at` with `--no-auto-resume`, so that an audit past it pauses and its test ends; `SPECAUDIT_E2E_CEILING="session=N,week=N"` sets it instead. To run them, or `claude plugin eval`, on another account, log it in once under its own configuration folder, then pass that folder each time:
 
 ```bash
 CLAUDE_CONFIG_DIR="$HOME/.claude-perso" claude auth login
@@ -39,10 +41,10 @@ Run the tier that covers what you changed, and the whole suite before a pull req
 
 | Tier | Command (from the repository root) | Time | When |
 |---|---|---|---|
-| quick | `claude plugin eval . --tag quick …` | 1 to 2 min | any change to the agents or the protocol |
+| quick | `claude plugin eval . --tag quick …`, and `evals/arch.sh` | 1 to 2 min | any change to the agents or the protocol |
 | agents, attest | `--tag agents --tag attest` | about 3 min | a change to an agent, the preflight or `/spec-audit:attest` |
 | e2e | `--tag e2e`, then `evals/local-e2e.sh audit-session` | about 10 min | a change to the protocol, before a merge |
-| full | no tag, then `local-e2e.sh`, `local-e2e-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
+| full | no tag, then `arch.sh`, `local-init.sh`, `local-e2e.sh`, `local-e2e-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
 | parallel | `local-e2e-parallel.sh` | about 10 min | a change to the index (`SPECAUDITS.md`, `index.py`), the launch or the closing: two audits launched at the same moment are rare, so this run, about $1.60, is not part of the suite before every pull request |
 | measure | `--tag measure --runs 3` | about 2 min | to re-measure what justifies a lowered effort |
 
@@ -83,6 +85,14 @@ Two more scripts cover what neither of the above reaches, at about $0.60 each:
 - `evals/local-e2e-fail-fast.sh`: `--fail-fast` on the demo: a stop on a confirmed root error (Lemma 3 or Example 6, never their consequence Corollary 5), the document unchanged, no fix committed, and a report whose "First error" section gives the proposed fix and the results the error may affect.
 - `evals/local-e2e-discharge.sh`: hypothesis discharge on `examples/discharge/block-search.md`: the use edges recorded, a red probe on Proposition 3 → Lemma 2 with the error put on Proposition 3, Theorem 6 added by lifting, Lemma 2 and Proposition 4 unchanged, and the probes cached and committed in the corpus.
 - `evals/local-e2e-folder.sh`: a folder as the target, `docs/` holding `selection.md` and `sums.md`, with `--auto`: one audit for both documents, each fixed as its own errors require, the index naming the folder, and the results folder holding each original and each fixed copy, with the replay red on the originals and green on the fixed copies.
+
+## Architecture: `arch.sh` and `local-init.sh`
+
+Every repository the cases and scripts build has a `SPECAUDIT_ARCH.md`, written by `_fixtures/write-arch.sh` (each document given `audited`, `formal`), since `/spec-audit:start` refuses to run without one.
+
+`evals/arch.sh` tests the two scripts behind the architecture, without a model, in a second: `skills/init/scan.py` on `_fixtures/arch-project/` (an original manuscript and hard-to-find references in `source/`, the revised version and proofs in `artifacts/`, a Lean development with a correspondence table in `mechanization/`; Lean need not be installed) gives each path its expected role, the oracle, the guard location and the mapped pair, and on the demo marks `selection.md` alone as audited; `skills/start/references/arch.py` refuses an audit without the file (exit 2, naming `/spec-audit:init`) and with an invalid one, refuses a commit that touches a read-only path (the original, a reference, the oracle's build file, a path not listed, the architecture, a counterpart changed without its document), and, as the audit session's hook, refuses such an edit and an agent's read of the index, a results folder, the register, the configuration or the original, while letting it read `SPECAUDIT_ARCH.md`; it also reads the configuration's deprecated keys, and shows a role changed by hand against init's proposal.
+
+`evals/local-init.sh` runs the two skills for real, non-interactively, for a few cents: `/spec-audit:init` on the fixture project prints the expected proposal and writes and commits nothing; `/spec-audit:start` on the demo without the file refuses and leaves no worktree, register, index entry or commit.
 
 ## Attestation: `attest-verify.sh`
 

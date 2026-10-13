@@ -18,7 +18,8 @@ PY=python3; "$PY" -c "import sys; sys.exit(sys.version_info[0] != 3)" >/dev/null
 WORK="$(mktemp -d "$TMP/sa-par-XXXX")"
 cd "$WORK" && . "$PLUGIN/evals/_fixtures/demo-repo.sh"
 cp "$PLUGIN/evals/_fixtures/sums.md" .
-git -c user.name=eval -c user.email=eval@example.invalid add sums.md
+bash "$PLUGIN/evals/_fixtures/write-arch.sh" selection.md sums.md > SPECAUDIT_ARCH.md
+git -c user.name=eval -c user.email=eval@example.invalid add sums.md SPECAUDIT_ARCH.md
 git -c user.name=eval -c user.email=eval@example.invalid commit -qm "Sums specification"
 echo "plugin $PLUGIN, model $MODEL, repo $WORK"
 

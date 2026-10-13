@@ -3,7 +3,7 @@
 **Catch the errors in your specs before your readers do.** SpecAudit reviews them like a skeptic, and confirms an error only with evidence you can rerun. Formal documents today; other kinds of spec planned, open to contributions.
 
 [![License: CC BY-NC-SA 4.0 with additional permissions](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0%20%2B-lightgrey.svg)](LICENSE)
-![Version 1.0.0-beta.3](https://img.shields.io/badge/version-1.0.0--beta.3-orange.svg)
+![Version 1.0.0-beta.4](https://img.shields.io/badge/version-1.0.0--beta.4-orange.svg)
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A63D2.svg)
 
 SpecAudit audits documents that make claims a reader can check, and fixes the errors it can prove. Its core does not depend on the domain; what counts as an error, as evidence and as a guard comes from an **audit profile**, one per kind of document. **Only the `formal` profile is implemented so far**: papers, proofs, algorithm, protocol or format specifications, audited for logical, mathematical and algorithmic errors. Profiles for functional specifications and requirements, UI specifications, research positioning and experimental protocols are planned, and open to contributions ([Future work](#future-work-up-for-grabs)); until they exist, a non-formal document is audited with the formal rules, which suit it poorly ([Limits](#limits-risks-and-side-effects)).
@@ -31,6 +31,7 @@ Three principles guide everything else:
 - **Guards are checked too**: a guard suspected of being wrong is never edited by the orchestrator, which writes the fixes as well; a fresh adjudicator judges it against the text, and a replacement must be seen red first.
 - **Minimal, traced fixes**: statement fix, scoping addition or proof repair; never a strengthening, never a silent deletion; critical fixes wait for your approval.
 - **Separate editorial track**: typos, numbering, cross-references and bibliography, with a mechanical lint that grows with each class of defect fixed.
+- **Your project's architecture, followed**: `/spec-audit:init` proposes `SPECAUDIT_ARCH.md`, the role of each part of the repository, which you confirm or adjust; the audit changes only the documents marked audited (and a mapped formal counterpart with its statement), leaves originals, normative references, sources and oracles alone, and refuses to run without the file.
 - **Git isolation**: everything happens in an `audit/<slug>` worktree, with local commits, without touching your working directory and without ever pushing.
 - **A session of its own**: by default the audit runs in a dedicated `claude -p` session started in the worktree, with none of your plugins, skills, connectors, hooks or memory, allowed to run exactly git and the project's oracles; `--in-session` keeps it in your session.
 - **Explicit stop conditions**: convergence, budget, recurrence, oscillation, non-convergence, causal loop or exhaustion.
@@ -60,7 +61,13 @@ Installation for a project or a team, from a local clone, or without the plugin 
 
 ## Quick start
 
-From the git repository that contains the document:
+From the git repository that contains the document, first describe the project's architecture, once:
+
+```text
+/spec-audit:init
+```
+
+It proposes a role for each part of the repository (the documents to audit, earlier versions, normative references, sources, verification artifacts such as a Lean development, what to ignore), asks you to confirm or adjust, and writes `SPECAUDIT_ARCH.md`. The audit refuses to run without it. Then audit:
 
 ```text
 /spec-audit:start docs/specification.md
@@ -108,7 +115,7 @@ or enable auto-update under `/plugin` → Marketplaces. A new copy is installed 
 
 | Parameter | Effect |
 |---|---|
-| `<document>` | the audited file or files, or a folder, for the documents it contains |
+| `<document>` | the audited file or files, or a folder, for the documents it contains; each must be `audited` in `SPECAUDIT_ARCH.md` (`/spec-audit:init`) |
 | `--corpus <dir>` | global guard corpus (default: the project's verification corpus, otherwise `spec-guards/`) |
 | `--max-passes N` | how many times the document is audited at most: audited, fixed, then audited again as fixed (default: 5) |
 | `--auto` | also apply critical fixes without waiting for your approval |
@@ -206,10 +213,14 @@ SpecAudit/
 │   ├── plugin.json            plugin manifest
 │   └── marketplace.json       the repository is also a marketplace
 ├── skills/
+│   ├── init/
+│   │   ├── SKILL.md           /spec-audit:init, proposes the project's architecture, SPECAUDIT_ARCH.md
+│   │   └── scan.py            the scan of the repository behind the proposal
 │   ├── start/
 │   │   ├── SKILL.md           /spec-audit:start, orchestrator: core protocol, phases 1 to 7, report
 │   │   ├── references/
 │   │   │   ├── launch.md      phase 0, steps 1 to 6: worktree, environment, audit session
+│   │   │   ├── arch.py        reads SPECAUDIT_ARCH.md: roles, the check of each commit, the hook of the audit session
 │   │   │   ├── report.md      template and rules of the final report
 │   │   │   ├── corpus-errors.md  procedure for a guard suspected of being wrong
 │   │   │   ├── closing.md     phase 8: closing, results folder, index, merge, stop
@@ -240,12 +251,12 @@ What is planned and not yet done. Each item is open to contributions: say in an 
 
 **Hypothesis discharge — high priority** ([design](docs/hypothesis-discharge.md)). Implemented; to validate on real documents of the `formal` profile, and to tune: which oracle level may mark an edge discharged, and a normalization of statements that lets a pure rewording keep its cache entries.
 
-**Audit profiles** ([design](docs/profiles.md)). Step 1, the formal rules moved into `skills/start/profiles/formal.md` and the project configuration mapping documents to profiles, is done. Next:
+**Audit profiles** ([design](docs/profiles.md)). Step 1, the formal rules moved into `skills/start/profiles/formal.md`, is done, and step 3 is done in a more general form: `/spec-audit:init` proposes the profile of each document, with the rest of the project's architecture, and writes it into `SPECAUDIT_ARCH.md` once confirmed. Next:
 
 | Step | What | Size |
 |---|---|---|
 | 2 | `profiles/functional.md` (ambiguous, incomplete, untestable or contradictory requirements; evidence by a replayed scenario, a decision table checked by script, or a contradiction quoted on both sides; acceptance tests as guards); agents made generic, the taxonomy passed in their message; `--profile <name>` | large: a profile, two agents, an eval fixture with planted defects and its graders |
-| 3 | a heuristic that proposes the profile at phase 0 from the document's signals, then offers to write the answer into the project configuration | medium |
+| 3 | ~~a heuristic that proposes the profile from the document's signals, then writes the answer down~~: done by `/spec-audit:init`; left for step 2, the signals of the new profiles (`skills/init/scan.py`) | small |
 | 4 | resources on demand: frozen sources exported with their SHA-256, executable oracles joining the allow list, normative references, each chosen by the user at phase 0 | medium |
 | 5 | `research`, then `ui` and `experimental`, each tested on a real document of its domain | one profile at a time |
 

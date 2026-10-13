@@ -1,0 +1,9 @@
+name = "selection"
+defaultTargets = ["Selection", "Guards"]
+
+[[lean_lib]]
+name = "Selection"
+
+[[lean_lib]]
+name = "Guards"
+globs = ["Guards.+"]

@@ -83,6 +83,7 @@ Bash:
 ```bash
 mkdir -p ~/.claude/skills ~/.claude/agents
 cp -r SpecAudit/skills/start ~/.claude/skills/spec-audit-start
+cp -r SpecAudit/skills/init ~/.claude/skills/spec-audit-init
 cp -r SpecAudit/skills/stop ~/.claude/skills/spec-audit-stop
 cp -r SpecAudit/skills/attest ~/.claude/skills/spec-audit-attest
 cp SpecAudit/agents/*.md ~/.claude/agents/
@@ -93,14 +94,15 @@ PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force "$HOME\.claude\skills", "$HOME\.claude\agents" | Out-Null
 Copy-Item -Recurse SpecAudit\skills\start "$HOME\.claude\skills\spec-audit-start"
+Copy-Item -Recurse SpecAudit\skills\init "$HOME\.claude\skills\spec-audit-init"
 Copy-Item -Recurse SpecAudit\skills\stop "$HOME\.claude\skills\spec-audit-stop"
 Copy-Item -Recurse SpecAudit\skills\attest "$HOME\.claude\skills\spec-audit-attest"
 Copy-Item SpecAudit\agents\*.md "$HOME\.claude\agents\"
 ```
 
-For a single project, copy them into `.claude/skills/` and `.claude/agents/` at the project root instead. Keep the folder names given above: the stop skill finds the start skill's `references/closing.md` in `../spec-audit-start/`, and each skill copies its `references/` and scripts with it.
+For a single project, copy them into `.claude/skills/` and `.claude/agents/` at the project root instead. Keep the folder names given above: the stop skill finds the start skill's `references/closing.md` in `../spec-audit-start/`, the init skill its `references/arch.py` there too, and each skill copies its `references/` and scripts with it.
 
-The names change: a skill takes the name of its folder, so the commands are `/spec-audit-start`, `/spec-audit-stop` and `/spec-audit-attest`, and the agents `spec-reviewer` and `spec-adjudicator` (instead of `/spec-audit:start`, `/spec-audit:stop`, `/spec-audit:attest`, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`). The skill recognizes both forms of the agent names.
+The names change: a skill takes the name of its folder, so the commands are `/spec-audit-init`, `/spec-audit-start`, `/spec-audit-stop` and `/spec-audit-attest`, and the agents `spec-reviewer` and `spec-adjudicator` (instead of `/spec-audit:init`, `/spec-audit:start`, `/spec-audit:stop`, `/spec-audit:attest`, `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`). The skill recognizes both forms of the agent names.
 
 ## Check the installation
 
@@ -109,7 +111,7 @@ claude plugin list
 claude plugin details spec-audit
 ```
 
-The plugin must appear as `spec-audit@spec-audit`, with three skills (`start`, `stop`, `attest`) and two agents. In a session, `/agents` lists `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`, and typing `/spec-audit` suggests `/spec-audit:start`, `/spec-audit:stop` and `/spec-audit:attest`.
+The plugin must appear as `spec-audit@spec-audit`, with four skills (`init`, `start`, `stop`, `attest`) and two agents. In a session, `/agents` lists `spec-audit:spec-reviewer` and `spec-audit:spec-adjudicator`, and typing `/spec-audit` suggests `/spec-audit:init`, `/spec-audit:start`, `/spec-audit:stop` and `/spec-audit:attest`.
 
 ## Update
 
@@ -127,7 +129,7 @@ claude plugin uninstall spec-audit@spec-audit
 claude plugin marketplace remove spec-audit
 ```
 
-For a manual installation, delete `~/.claude/skills/spec-audit-start/`, `~/.claude/skills/spec-audit-stop/`, `~/.claude/agents/spec-reviewer.md` and `~/.claude/agents/spec-adjudicator.md`.
+For a manual installation, delete `~/.claude/skills/spec-audit-init/`, `~/.claude/skills/spec-audit-start/`, `~/.claude/skills/spec-audit-stop/`, `~/.claude/skills/spec-audit-attest/`, `~/.claude/agents/spec-reviewer.md` and `~/.claude/agents/spec-adjudicator.md`.
 
 Audits already carried out are not affected: their reports, registers and guards stay in your repositories.
 

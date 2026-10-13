@@ -17,8 +17,8 @@ TMP="${TEMP:-${TMPDIR:-/tmp}}"
 command -v cygpath >/dev/null 2>&1 && TMP="$(cygpath -m "$TMP")"
 PY=python3; "$PY" -c "import sys; sys.exit(sys.version_info[0] != 3)" >/dev/null 2>&1 || PY=python
 WORK="$(mktemp -d "$TMP/sa-dis-XXXX")"
-cd "$WORK" && cp "$PLUGIN/examples/discharge/block-search.md" . && git init -q \
-  && git -c user.name=eval -c user.email=eval@example.invalid add block-search.md \
+cd "$WORK" && cp "$PLUGIN/examples/discharge/block-search.md" . && bash "$PLUGIN/evals/_fixtures/write-arch.sh" block-search.md > SPECAUDIT_ARCH.md \
+  && git init -q && git -c user.name=eval -c user.email=eval@example.invalid add block-search.md SPECAUDIT_ARCH.md \
   && git -c user.name=eval -c user.email=eval@example.invalid commit -qm "Example specification"
 
 AUDIT_OPTS=${3:---max-passes 1}

@@ -18,7 +18,9 @@
 - Refusals: <n> (each in the agent table's row or the log: who, command, message, retried in which form, outcome)
 - Parameters: max-passes = N, auto = yes/no, fail-fast = yes/no, pause-at = <N | session=N,week=N | off>, auto-resume = yes/no, model = <family or id>, version = <v> | latest (passed: `--model <value>`)
 - Version convention: fix in place | new revision <name>
-- Configuration: <.specaudit.md | .specaudit/config.md | none>, <commit | copied, sha256:…>; profile <name>; answer to the tracking question if one was asked
+- Architecture: SPECAUDIT_ARCH.md, <commit | copied, sha256:…>; audited: <paths>, profile <name>; normative dependencies given: <paths | none>; warnings of `arch.py require` <or none>; artifacts that look like oracles but are not in it <or none>
+- Architecture refusals: <n> (each: path, role, the step and the error whose fix touched it, refused by the hook or by `arch.py check`, restored; an error of the audit, listed in the report)
+- Configuration: <.specaudit.md | .specaudit/config.md | none>, <commit | copied, sha256:…>; deprecated keys `profiles` / `normative` <used for: … | none>; answer to the tracking question if one was asked
 - Session: <id>, state: running | stopping | suspended | suspended (usage limit: session | week, resumes <time>) | closed
 - Resumes: <n> automatic resumes after a usage limit (at most 5), each with its window and time
 - Mode: audit session (pid <pid>, session <id>) | in-session
@@ -30,13 +32,13 @@ Resources of the launcher's session, ignored by the audit: <plugins, skills, con
 
 Session history in the project: <folders found (`.forge/`…), tracked | untracked, and the answer: untracked and ignored | kept, ignored by the agents | worktree used | continued>, or "none".
 
-Oracles of the worktree, by strength (every command verified in the worktree at phase 0):
+Oracles of the worktree, by strength, from the architecture's `Oracles` table (every command verified in the worktree at phase 0):
 
-| Oracle | Kind | Path | Covers | Correspondence | Command |
-|---|---|---|---|---|---|
-| lean | formal | mechanization/ | Theorems 6.x, Lemmas 6.y | §6.6 table | `lake build` |
-| model | model | verification/model.py | rules of §4, Theorem 6.6 by bounded brute force | README | `python verification/run.py --seed 1` |
-| guards | runner | verification/guards/ | the corpus | — | `python verification/guards/run_guards.py` |
+| Oracle | Kind | Path | Covers | Correspondence | Command | Guards |
+|---|---|---|---|---|---|---|
+| lean | formal | mechanization/ | Theorems 6.x, Lemmas 6.y | §6.6 table | `lake -d mechanization build` | mechanization/Guards/ |
+| model | model | verification/model.py | rules of §4, Theorem 6.6 by bounded brute force | README | `python verification/run.py --seed 1` | — |
+| guards | runner | verification/guards/ | the corpus | — | `python verification/guards/run_guards.py` | — |
 
 Worktree autonomy, from the original directory <path>:
 

@@ -1,6 +1,6 @@
 # Audit profiles (design)
 
-Status: design. Only the first step is implemented: the rules specific to formal documents have moved to [`skills/start/profiles/formal.md`](../skills/start/profiles/formal.md), with no change in behavior. Everything else below is planned.
+Status: design. Two steps are implemented: the rules specific to formal documents have moved to [`skills/start/profiles/formal.md`](../skills/start/profiles/formal.md), with no change in behavior; and the profile of each document is proposed from its signals and written down once confirmed, by `/spec-audit:init` in the project's architecture, `SPECAUDIT_ARCH.md` (step 3, generalized: see "Choosing the profile"). Everything else below is planned.
 
 ## Why profiles
 
@@ -44,21 +44,20 @@ A document may combine profiles: a main one, and sections under another (a "Rela
 By order of precedence:
 
 1. **`--profile <name>`** on the command, for a one-off audit.
-2. **The project configuration**, `.specaudit.md` or `.specaudit/config.md` (implemented, see [usage](usage.md#project-configuration)): its `profiles` key maps document patterns to profiles.
+2. **The project's architecture**, `SPECAUDIT_ARCH.md` (implemented, see [usage](usage.md#project-architecture-spec-auditinit)): the `Profile` column of each `audited` path. `/spec-audit:start` refuses to run without the file. (The `profiles` key of `.specaudit.md` or `.specaudit/config.md`, which held this before, is deprecated: still read for one version, where the architecture says nothing.)
 
-   ```yaml
-   profiles:
-     "observation-derivative-calculus*.md": formal
-     "42.*_CANDIDATE_*.md": formal
-     "4[04]_*.md": research
-     "51_OUT_benchmark_harness.md": experimental
-   resources:
-     research: [sources/]
+   ```markdown
+   | Path | Role | Profile | Description |
+   |---|---|---|---|
+   | `observation-derivative-calculus*.md` | audited | formal | the calculus |
+   | `4[04]_*.md` | audited | research | positioning and related work |
+   | `51_OUT_benchmark_harness.md` | audited | experimental | benchmark protocol |
+   | `sources/` | sources | — | the corpus of cited works |
    ```
 
-3. **A heuristic**, when nothing is configured, from signals in the document: theorem, lemma, proof, quantifiers → `formal`; numbered requirements (REQ-…), "shall / must", user stories, acceptance criteria → `functional`; screens, components, journeys, links to mock-ups → `ui`; dense citations, positioning, state of the art → `research`. The heuristic never decides alone: phase 0 proposes its result in one question, then offers to write the answer into the project configuration, so that the next audit does not ask again.
+3. **A heuristic**, which `/spec-audit:init` applies (implemented for `formal`), from signals in the document: theorem, lemma, proof, quantifiers → `formal`; numbered requirements (REQ-…), "shall / must", user stories, acceptance criteria → `functional`; screens, components, journeys, links to mock-ups → `ui`; dense citations, positioning, state of the art → `research`. The heuristic never decides alone: init proposes its result with the rest of the architecture, the user confirms or adjusts it, and the answer is written into `SPECAUDIT_ARCH.md`, so that no audit asks again. Until another profile exists, init says so for a document without formal signals.
 
-**Existing project or initial roadmap.** Both end in the same configuration. On an existing project, the first audit scans the documents and proposes a complete configuration for the user to validate. On a new project, the roadmap or initial plan declares which deliverable falls under which profile, and the configuration is written with it.
+**Existing project or initial roadmap.** Both end in the same file. On an existing project, `/spec-audit:init` scans the repository and proposes a complete architecture for the user to validate: the profile of each audited document, and the role of every other part (earlier versions, normative references, sources, oracles), which this design called resources. On a new project, the roadmap or initial plan declares which deliverable falls under which profile, and the architecture is written with it.
 
 ## Resources on demand
 
@@ -66,9 +65,9 @@ Plugins, connectors and skills can serve an audit, but never as live context in 
 
 | Role | Example | How it enters |
 |---|---|---|
-| **Frozen source** | a mock-up connector, a ticket tracker, a prior-art search service | the launcher queries it once, exports the content as files into the worktree with their SHA-256, and adds them to the oracle table |
+| **Frozen source** | a mock-up connector, a ticket tracker, a prior-art search service | the launcher queries it once, exports the content as files into the worktree with their SHA-256, and adds them to the oracle table (a frozen file already in the repository is a `sources` path of the architecture) |
 | **Executable oracle** | a plugin providing a command-line checker, a journey test runner | its command joins the audit session's allow list, like `lake` today |
-| **Normative reference** | a requirements writing guide, an internal standard | it becomes a declared normative dependency, given to the reviewers as a file |
+| **Normative reference** | a requirements writing guide, an internal standard | it becomes a `normative` path of the architecture, given to the reviewers as a file |
 
 A skill that only brings instructions or know-how fills none of these roles: it stays in the launcher's session, which may use it to produce an oracle (for instance to generate acceptance tests that then become a runner).
 
@@ -84,7 +83,7 @@ A skill that only brings instructions or know-how fills none of these roles: it 
 
 1. Move the formal rules into `profiles/formal.md`, with no change in behavior. **Done.**
 2. Write `profiles/functional.md`; make the agents generic (taxonomy, evidence and angles passed in their message); add `--profile`. (The project configuration, `.specaudit.md` or `.specaudit/`, is done.)
-3. Add the heuristic and the configuration proposal at phase 0.
+3. Add the heuristic and the configuration proposal. **Done, generalized**: `/spec-audit:init` proposes the whole architecture of the project (roles, profiles, oracles, mapped pairs), writes `SPECAUDIT_ARCH.md` once confirmed, and the audit refuses to run without it. The signals of each new profile are added to `skills/init/scan.py` with the profile.
 4. Add the resources flow (frozen sources, executable oracles, normative references).
 5. Write `research`, then `ui` and `experimental`, each tested on a real document of its domain.
 

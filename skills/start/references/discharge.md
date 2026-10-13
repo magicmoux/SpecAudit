@@ -31,6 +31,7 @@ Results above the user, in order, each applying the previous one: <Q, R… with 
 Oracle table: <of the register>.
 Scratch directory: <scratch root>/iter-<k>/probe-<E-…>.
 Return the probe block of your output format.
+<the isolation line of SKILL.md, "Roles", word for word>
 ```
 
 Nothing about the audit, the reviewers' findings or the register: like a reviewer, a prober told where others looked looks there too.

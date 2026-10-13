@@ -23,7 +23,7 @@ For each result touched: before → after, nature (statement fix, scoping, proof
 | ID | Severity | Type | Causes | Status | Fix | Guards | Commit |
 
 ## Open points
-Undecided errors and the chains they block, references to check, recurrences, oscillations, corpus errors (open, or settled by a guard that covers fewer cases), faulty project tests, pending critical fixes, detection not saturated.
+Undecided errors and the chains they block, references to check, recurrences, oscillations, corpus errors (open, or settled by a guard that covers fewer cases), faulty project tests, pending critical fixes, fixes not made because they need a path the architecture does not let the audit change, architecture refusals (errors of the audit: a change it attempted outside what `SPECAUDIT_ARCH.md` allows, refused and restored), detection not saturated.
 Results conditional on an unresolved error, directly or through another result: for each, the error it depends on and the chain through which it uses it.
 Each open point with its mitigation: what would settle it (the adjudicator's `to_settle`), the fix or hypothesis proposed (statement before → after), and the check that would confirm it (oracle, guard to add, expert to consult).
 
@@ -34,7 +34,7 @@ Passages that are correct but misleading: the "ambiguity" form defects (phase 5)
 Guards added, lint rules added, command to replay everything.
 
 ## Scope of verification
-What was checked and how (agent review, bounded exhaustive test, mechanized proof), the confirmations by evidence level (formal, model, ad hoc), the effort of each kind of step and the escalations with their triggers, the commands refused during the audit (who, which form, and whether a retry in an allowed form settled it), since a verdict reached around a refusal deserves a second look, the account the audit was billed to, the oracles used and the session resources ignored, hypothesis discharge (edges, stated, settled by the cache, probed; verdicts RED, DISCHARGED, GREEN with their level, UNDECIDED; errors found by a probe and results reached by lifting), or that it was skipped, and what was not checked. A GREEN probe found no counterexample at its level: it is not a proof that the hypothesis holds.
+What was checked and how (agent review, bounded exhaustive test, mechanized proof), the confirmations by evidence level (formal, model, ad hoc), the effort of each kind of step and the escalations with their triggers, the commands refused during the audit (who, which form, and whether a retry in an allowed form settled it), since a verdict reached around a refusal deserves a second look, the account the audit was billed to, the architecture followed (`SPECAUDIT_ARCH.md`: the audited paths and their profile, the normative dependencies given, the oracles it lists, any deprecated keys of the configuration still applied), the oracles used and the session resources ignored, hypothesis discharge (edges, stated, settled by the cache, probed; verdicts RED, DISCHARGED, GREEN with their level, UNDECIDED; errors found by a probe and results reached by lifting), or that it was skipped, and what was not checked. A GREEN probe found no counterexample at its level: it is not a proof that the hypothesis holds.
 
 ## Consumption
 Measured by the launcher once the session ends.
@@ -51,7 +51,7 @@ Totals per priority: the sum of the estimated ranges (low sum – high sum, in p
 
 - **Priority**:
   - **P1**: what leaves a claim of the document false or unsupported now: a confirmed error whose critical fix is pending or refused, a fix reverted, a causal loop, a recurrence, a result of the abstract or of the conclusion conditional on an unresolved error.
-  - **P2**: undecided errors and the chains they block, unrepaired incomplete proofs, the other conditional results, open corpus errors and faulty project tests, detection not saturated.
+  - **P2**: undecided errors and the chains they block, unrepaired incomplete proofs, the other conditional results, open corpus errors and faulty project tests, fixes that need a path the audit may not change, architecture refusals, detection not saturated.
   - **P3**: imprecisions, references to check, form defects left open.
   - **Done**: errors and defects fixed by the audit, guarded; listed so that the summary is complete, with "—" as effort.
   - The review of the modified statements by the author is work still to do, so it is one **P3** row, the last of the P3 rows and before Done, with its effort: counted once there rather than on every Done row, and in priority order like every other row, so that the table can be read top down as the list of what is left.

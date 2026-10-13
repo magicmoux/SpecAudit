@@ -2,13 +2,14 @@
 
 ## Launching an audit
 
-Open Claude Code in the git repository that contains the document, then invoke the skill:
+Open Claude Code in the git repository that contains the document. Once per project, describe its architecture ([below](#project-architecture-spec-auditinit)), then invoke the skill:
 
 ```text
+/spec-audit:init
 /spec-audit:start <document> [options]
 ```
 
-With a manual installation (without the plugin system), the commands are `/spec-audit-start` and `/spec-audit-stop`.
+The document must be one the architecture marks `audited`. With a manual installation (without the plugin system), the commands are `/spec-audit-init`, `/spec-audit-start` and `/spec-audit-stop`.
 
 The skill also triggers without being named, as soon as you ask to proofread, check, audit, harden or make reliable a formal document:
 
@@ -16,7 +17,7 @@ The skill also triggers without being named, as soon as you ask to proofread, ch
 - "Hunt for errors in the lemmas of `spec/protocol.md` before submission."
 - "Audit the format specification in `docs/format.md`, three passes at most."
 
-State the document's **normative dependencies** (the files whose definitions it uses) in your request: the reviewers will receive them along with it.
+The document's **normative dependencies** (the files whose definitions it uses) come from the architecture: the reviewers receive them along with it.
 
 ## Parameters
 
@@ -34,27 +35,84 @@ State the document's **normative dependencies** (the files whose definitions it 
 | `--model-version <v>` | `latest` | version of that family, `5.5` for instance; `latest` passes the alias, a version passes `claude-<family>-<version>` (`claude-opus-5-5`); ignored when `--model` is a full id |
 | `--keep` | no | at closing, asks no question and keeps the worktree; the results folder and the index entry still come back to your branch |
 | `--uniform-effort` | launch every agent at its usual effort: no lowered effort for narrow steps, no escalation |
-| `--account <email>` | asked at launch | the account the audit session (`claude -p`) is billed to, as `claude auth status` names it. Without it, the launch shows the account the CLI uses and asks you to confirm it, use another, or run in your session; with it, the launch checks it and stops on a mismatch. Required in a non-interactive session |
+| `--account <email>` | asked at launch | the account the audit session (`claude -p`) is billed to, as `claude auth status` names it. Without it, the launch shows the account the CLI uses and asks you to confirm it, use another, or run in your session; with it, the launch checks it and stops on a mismatch. Required in a non-interactive session. Launched from the desktop app, the audit session does not inherit the app's account: the launch removes the credentials the app hands to its children |
 | `--pause-at <N \| session=N,week=N \| off>` | `session=75,week=50` | pauses the audit once the account's usage reaches N % of its five-hour session window or of its week, read from the audit session's stream; `session=80,week=70` sets each, `off` none. The orchestrator stops before launching the next agent, and the launcher resumes the audit when the window resets: automatically for the session window (up to five times), by a scheduled task you confirm, or by hand, for the week. Ignored with `--in-session` |
 | `--no-auto-resume` | no | on a pause, stops instead of waiting for the session window to reset, with the time and the command to resume |
 | `--fail-fast` | no | one detection wave, then the candidates confirmed from the most upstream, and a stop at the first confirmed error, without fixing it; the report gives the proposed fix of the statement and every result it may affect. For a first look at a document, or a beta test |
 | `--no-discharge` | no | skips hypothesis discharge: no probe of the use edges ([design](hypothesis-discharge.md)) |
 
+## Project architecture: `/spec-audit:init`
+
+An audit follows the project's **architecture**, `SPECAUDIT_ARCH.md` at the root of the repository: which documents it checks and may fix, which ones are earlier versions, normative references or sources it must leave alone, which verification artifacts can decide a statement and how to run them, and where its guards go. **`/spec-audit:start` refuses to run without it**, and says so: no audit runs on a guessed structure. Write it once per project, before the first audit:
+
+```text
+/spec-audit:init
+```
+
+1. **Scan.** It lists the files git tracks (nothing git ignores) and reads only what it needs: file kinds, folder names, READMEs, build files (`lakefile.toml` or `lakefile.lean`, `lean-toolchain`, `_CoqProject`, `pyproject.toml`…), the markers of formal content in documents, and tables that look like a correspondence between the documents' results and formal names.
+2. **Proposal.** One role per path, the profile of each audited document, the oracles with their command, and the pairs that change together:
+
+   | Role | Meaning | During an audit |
+   |---|---|---|
+   | `audited` | the documents to check | checked, and fixed where wrong |
+   | `original`, `prior-version` | earlier versions | read-only, never given to an agent |
+   | `normative` | documents whose definitions the audited ones use | read-only, given to the reviewers |
+   | `sources` | references and bibliographic material | frozen; the bibliography is checked against them |
+   | `oracle` | a verification artifact: a mechanized development, a reference model, a test runner | read-only, run with its command; guards go where its row says |
+   | `ignored` | what the audit must neither read nor touch | — |
+   | (not listed) | a README, a license, the project's code | read-only, readable |
+
+   `formal` is the only profile so far: for a document of another kind, init says so, and you choose between auditing it with `formal`, which suits it poorly, and leaving it out. A **mapped pair** is an audited document whose statements have a formal counterpart (through a correspondence table): a fix of the statement includes its counterpart and the table, in the same revision, and the counterpart may change only then.
+3. **Confirmation.** It shows the proposal as a table and asks you to accept it, adjust it (say what to change) or cancel. It never writes before you answer; in a session that cannot ask (`claude -p`, an eval), it prints the proposal and stops.
+4. **File.** It writes `SPECAUDIT_ARCH.md`, checks it, and offers to commit it alone; it never commits without asking. Run again, it proposes the changes against the existing file, and keeps the rows you wrote on purpose.
+
+For a project laid out as `source/` (the original manuscript, and hard-to-find references brought in by hand), `artifacts/` (the revised version and its proofs) and `mechanization/` (a Lean development with a correspondence table), the file reads:
+
+```markdown
+## Paths
+
+| Path | Role | Profile | Description |
+|---|---|---|---|
+| `artifacts/` | audited | formal | the revised version of the paper, and the detailed proofs |
+| `source/manuscript.md` | original | — | the manuscript as first submitted |
+| `source/references/` | sources | — | copies of hard-to-find references |
+| `mechanization/` | oracle | — | Lean definitions and theorems |
+
+## Oracles
+
+| Path | Kind | Command | Correspondence | Guards |
+|---|---|---|---|---|
+| `mechanization/` | formal | `lake -d mechanization build` | `mechanization/CORRESPONDENCE.md` | `mechanization/Guards/` |
+
+## Normative dependencies
+
+| Document | Normative |
+|---|---|
+
+## Mapped pairs
+
+| Document | Counterpart | Correspondence |
+|---|---|---|
+| `artifacts/manuscript-revised.md` | `mechanization/Selection/`, `mechanization/Selection.lean` | `mechanization/CORRESPONDENCE.md` |
+```
+
+**Format**, for an edit by hand: four tables under these headings, after a short header. A path is relative to the root; `dir/` is a folder and everything in it; `*` matches within one segment and `**` across segments (`docs/spec-*.md` for a document fixed in new revisions); when several rows match a path, the most specific one holds (an exact file, then the longest literal part). A cell may list several paths, separated by commas; `—` means none. An oracle's command runs from the root, without `cd`; its guard location must be a place its command builds. A document without a row in "Normative dependencies" gets every `normative` path. `/spec-audit:start` checks the file before anything else, and stops on an unknown role or when nothing is audited.
+
+**What the audit may change** is exactly: the `audited` paths, its own guard corpus and the oracles' guard locations, its records (`spec-audit/`, the results folder, the index), and the counterpart of a mapped pair together with its document. Never the architecture itself, nor the configuration below. In the audit session, a hook refuses an edit outside that at once; before every commit, a check of the staged paths refuses it again (both `skills/start/references/arch.py`). A refused change is restored and recorded as an error of the audit, listed in the report. A fix that would need a read-only path (a normative definition, a source) is not made: the error stays confirmed, with its fix proposed in the report.
+
+**What the reviewers see.** Reviewers and adjudicators may read `SPECAUDIT_ARCH.md`, and nothing in it concerns audits: it says only what a referee could see in the repository. They never read `SPECAUDITS.md`, the results folders, `spec-audit/`, the configuration, or the paths marked `original`, `prior-version` or `ignored`.
+
 ## Project configuration
 
-A project can keep its audit settings in a configuration tracked by git, so that every audit starts from the same choices:
+Beside the architecture, which describes the project, a project can keep what concerns its audits in a configuration tracked by git, which only the orchestrator reads, so that every audit starts from the same choices:
 
 - **`.specaudit.md`** at the root, when the configuration is all the audit needs;
-- **`.specaudit/`**, with `config.md` plus the files the audit needs that the project does not have: normative references (`normative/`) and project extensions of a profile (`profiles/<profile>.md`).
+- **`.specaudit/`**, with `config.md` plus the files the audit needs that the project does not have: normative references (`normative/`, listed as `normative` in the architecture so that the reviewers receive them) and project extensions of a profile (`profiles/<profile>.md`).
 
-Both use one format: a YAML front matter (profile per document pattern, normative dependencies, version convention, defaults of the command's options), then free notes for the orchestrator.
+Both use one format: a YAML front matter (version convention, defaults of the command's options), then free notes for the orchestrator: scope, focus, results not to be changed.
 
 ```markdown
 ---
-profiles:
-  "observation-derivative-calculus*.md": formal
-normative:
-  "observation-derivative-calculus*.md": [42_STATE_theory.md]
 version-convention: new revision ("<name> - revision N.md")
 defaults:
   max-passes: 3
@@ -64,7 +122,7 @@ defaults:
 Scope of the theory, results not to be changed, status of the proofs.
 ```
 
-An option on the command wins over `defaults`. The reviewers and the adjudicators never read the configuration, which describes the audit; they receive only the normative files it declares. If the configuration is untracked or ignored by git, the skill warns and asks before creating the worktree: track it and commit it alone (recommended), use it for this audit only (copied, SHA-256 recorded), or ignore it. The worktree holds only what git tracks, so an untracked configuration would otherwise be missing from it.
+An option on the command wins over `defaults`. The reviewers and the adjudicators never read the configuration, which describes the audit. Its former keys `profiles` and `normative` describe the project, and moved to `SPECAUDIT_ARCH.md`: they are still read in this version, where the architecture says nothing, with a deprecation note in the register and the report, and `/spec-audit:init` moves them. If the configuration is untracked or ignored by git, the skill warns and asks before creating the worktree: track it and commit it alone (recommended), use it for this audit only (copied, SHA-256 recorded), or ignore it. The worktree holds only what git tracks, so an untracked configuration would otherwise be missing from it.
 
 ## Examples
 
@@ -87,7 +145,7 @@ An option on the command wins over `defaults`. The reviewers and the adjudicator
 
 ## Workflow, from your point of view
 
-1. **Preparation.** The skill reads the project's rules (`CLAUDE.md`, conventions), which take precedence over its own. It may ask you a question:
+1. **Preparation.** The skill checks the project's architecture first, and stops if `SPECAUDIT_ARCH.md` is missing or invalid, or if the document is not `audited` in it. It then reads the project's rules (`CLAUDE.md`, conventions), which take precedence over its own. It may ask you a question:
    - if the document, its dependencies or the corpus have uncommitted changes: they will not exist in the worktree, so should it audit the committed version or should you commit first?
    - if the project's version convention is unclear: fix in place, or create a new revision?
    - if the folder is not a git repository: should one be initialized?
@@ -96,7 +154,7 @@ An option on the command wins over `defaults`. The reviewers and the adjudicator
 
    It then creates the worktree `<parent of the repository>/<repository>-audit-<slug>` on the branch `audit/<slug>`, where `<slug>` is the document name in lowercase. It names the session `[AUDIT] <slug>` when the app allows it (Claude desktop app), or suggests that you run `/rename [AUDIT] <slug>`: this is the session from which the audit can be stopped.
 
-   It then establishes the **environment**: what your session exposes and the audit ignores (plugins, skills, connectors, hooks), and the project's **oracles**, every artifact that can decide statements of the document (a mechanized development such as Lean, a reference model or checker, a test runner), each with the statements it covers and its command, run once in the worktree and recorded by strength in the register. Ignored files an oracle needs are shared by a link (third-party caches), copied with their SHA-256 recorded (unversioned inputs) or rebuilt (build outputs): the baseline must be green from the worktree alone.
+   It then establishes the **environment**: what your session exposes and the audit ignores (plugins, skills, connectors, hooks), and the project's **oracles**, the ones the architecture lists (a mechanized development such as Lean, a reference model or checker, a test runner), each with the statements it covers and its command, run once in the worktree and recorded by strength in the register. Ignored files an oracle needs are shared by a link (third-party caches), copied with their SHA-256 recorded (unversioned inputs) or rebuilt (build outputs): the baseline must be green from the worktree alone.
 2. **Audit session.** Unless `--in-session` is given, the audit itself runs in a session of its own, launched by yours in the worktree (see [below](#the-audit-session)). Your session waits for it, then runs the closing from its report and the register.
 3. **Iterations.** Detection, triage, cause graph, adjudication, guards, fixes and editorial track run without intervention. The register is updated after each step.
 4. **Critical fixes.** If a fix changes the statement of a main result or withdraws a result, the skill first handles everything else, then presents the pending critical fixes to you together (statement before and after, counterexample, impact) and waits for your approval. With `--auto`, it applies them and flags it. In the default mode, the audit session cannot ask you: they stay pending, the report lists them, and the closing recommends keeping the worktree.
@@ -111,6 +169,7 @@ By default, your session only prepares the audit (project rules, worktree, envir
 - the file tools, Bash and the Agent tool only, and the two agents of the plugin, passed with `--agents`;
 - the model given by `--model` and `--model-version`, otherwise the latest of your session's family, which the two agents inherit;
 - a permission mode that denies anything not allowed in advance, and an allow list that is exactly `git` (push denied) and the command of each oracle recorded in the register;
+- a hook that holds the architecture: an edit outside what the audit may change, or an agent's read of what it must not see, is refused;
 - the protocol as its system prompt, and the register's path in its request.
 
 Its process id and session id are recorded in the register. It cannot ask you anything: a critical fix stays pending unless `--auto`, an undecided error is escalated in the report, and it never runs the closing. When it ends, your session reads the report and the register, and asks you the closing question.
@@ -323,5 +382,5 @@ The stop report also lists the interrupted agents and their scratch directories.
 - **Bound the spending** with `--max-passes` and `--model`: each pass launches several agents, on the audit session's model.
 - **Long documents**: the skill splits them by sections, giving each reviewer the definitions, the notation and the list of statements, and adds a cross-section consistency pass.
 - **Project rules**: what `CLAUDE.md` says (attribution, document versioning, commit policy) takes precedence over the skill; write down there the constraints specific to your documents.
-- **Mechanized development**: if the project has one (Lean, Coq, Isabelle, Agda), keep in the document a correspondence table from its results to the formal theorems. The audit then confirms errors on the formal statements, and refuses an ad hoc confirmation of a statement that has a formal counterpart.
-- **Bibliography**: a reference is only fixed against its source (local PDF, publisher's page, DBLP); otherwise it is marked "to be checked". Put the sources in the repository so that they can be consulted.
+- **Mechanized development**: if the project has one (Lean, Coq, Isabelle, Agda), keep a correspondence table from the document's results to the formal theorems, and list the development as an `oracle` in `SPECAUDIT_ARCH.md`, with the table and the mapped pair. The audit then confirms errors on the formal statements, and refuses an ad hoc confirmation of a statement that has a formal counterpart.
+- **Bibliography**: a reference is only fixed against its source (local PDF, publisher's page, DBLP); otherwise it is marked "to be checked". Put the sources in the repository, marked `sources` in the architecture, so that they can be consulted and are never changed.
