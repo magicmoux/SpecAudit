@@ -33,9 +33,11 @@ check "init: source/references/ sources" "grep -qE '\`?source/references/\`? *\\
 check "init: mechanization/ oracle" "grep -qE '\`?mechanization/\`? *\\| *oracle\\b' '$A'"
 check "init: the Lean command, run from the root" "grep -qF 'lake -d mechanization build' '$A'"
 check "init: the correspondence table and the guard location" "grep -qF 'mechanization/CORRESPONDENCE.md' '$A' && grep -qF 'mechanization/Guards/' '$A'"
-check "init: the mapped pair" "grep -qE 'artifacts/manuscript-revised\\.md\`? *\\|[^\\n]*mechanization/Selection' '$A'"
+# The pair on one line, whatever joins it: a table row, "maps to", an arrow.
+check "init: the mapped pair" "grep -qE 'artifacts/manuscript-revised\\.md.*mechanization/Selection|mechanization/Selection.*artifacts/manuscript-revised\\.md' '$A'"
 check "init: README.md not given a role" "! grep -qE '^\\| *\`?README\\.md\`? *\\|' '$A'"
-check "init: says nothing was written" "grep -qiE 'not (been )?written|nothing (was )?written|did not write|no file' '$A'"
+# Any wording of it: "not written", "haven't written" (straight or curly apostrophe), "nothing was written", "wrote nothing"…
+check "init: says nothing was written" "grep -qiE '(not|n.{1,3}t) (yet )?(been )?written|nothing (was |has been )?written|did ?n.{0,3}t write|wrote nothing|without writing|no file' '$A'"
 check "init: no SPECAUDIT_ARCH.md written" "[ ! -e '$P/SPECAUDIT_ARCH.md' ]"
 check "init: no commit" "[ \"\$(git -C '$P' rev-parse HEAD)\" = '$HEAD0' ]"
 
