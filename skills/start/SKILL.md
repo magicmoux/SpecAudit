@@ -44,7 +44,7 @@ What counts as an error, as evidence and as a guard depends on the kind of docum
 - `--corpus <dir>`: the global guard corpus. Default: the project's existing verification corpus if any (follow its conventions), else `spec-guards/` at the root.
 - `--max-passes N`: maximum number of passes (default 5): the document is audited, fixed, then audited again as fixed, N times in all at most. A pass is what this protocol calls an iteration (phases 1 to 6). `--max-iter`, and `max-iter` in the configuration's `defaults`, are deprecated aliases.
 - `--auto`: also apply critical fixes without pausing (see 4.3).
-- `--resume`: resume an interrupted or suspended audit from its register, in its existing worktree, from its last internal revision (4.3).
+- `--resume`: resume an interrupted or suspended audit from its register, in its existing worktree, from its last internal revision (4.3). The audit keeps the parameters its register records; some may be changed at a resume, others not ("Options at resume").
 - `--base <ref>`: starting branch or commit of the worktree (default: `HEAD` of the current repository).
 - `--no-worktree`: work in the current directory, without a worktree, when it is already isolated for the audit.
 - `--in-session`: run the orchestrator in the current session. By default the audit runs in its own session (phase 0, step 6), started in the worktree with the file tools, Bash, the two agents and the project's oracles, and none of your session's plugins, skills, connectors, hooks or memory.
@@ -59,6 +59,16 @@ What counts as an error, as evidence and as a guard depends on the kind of docum
 - `--uniform-effort`: launch every agent at its usual effort, without the per-step routing ("Effort per step"): for an audit whose cost does not matter, or to compare runs step for step.
 
 An option given on the command wins over the project configuration's `defaults`, which win over the defaults above.
+
+**Options at resume.** A `--resume` continues an audit whose parameters are in its register (`Parameters`), not a new one: every option it is not given keeps the value the register records, whatever the configuration's `defaults` say now. Options given with it are of three kinds:
+
+| Kind | Options | At a resume |
+|---|---|---|
+| Fixed | `<document>`, `--corpus`, `--base`, `--no-worktree`, `--in-session`, `--fail-fast` | refused if it differs from the register: stop before anything is launched, saying which option and the value recorded. They fix what is audited, where, on which branch and with which corpus, or the nature of the audit: changing them is a new audit, or, for `--fail-fast`, "Run another check" at closing |
+| Changeable | `--max-passes`, `--auto`, `--keep`, `--pause-at`, `--no-auto-resume`, `--account`, `--uniform-effort`, `--no-discharge` | the value given replaces the register's from this resume on |
+| Changeable, flagged | `--model`, `--model-version` | accepted, and flagged: the verdicts before and after the change come from different models, while one model keeps them comparable ("Effort per step"); every agent's row and every verdict already names its revision, and the register now says from which resume on the model changed |
+
+Record every change in the register, before anything else of the resume: the `Parameters` line takes the new values, and its history one line per resume that changed something (when, who, which option, old → new). The report lists these changes in "Scope of verification". Options a resume did not change are not repeated. A resume the launcher starts on its own (after a usage limit, or a scheduled one) changes nothing: it relaunches with the values the register records, and a scheduled `/spec-audit:start <document> --resume --account <email>` takes every other value from the register.
 
 ## Project architecture
 

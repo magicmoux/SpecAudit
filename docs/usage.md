@@ -27,7 +27,7 @@ The document's **normative dependencies** (the files whose definitions it uses) 
 | `--corpus <dir>` | the project's existing verification corpus, otherwise `spec-guards/` | where guards are written; the conventions of the existing corpus (headers, naming, runner) are followed |
 | `--max-passes N` | 5 | how many times the document is audited at most: each pass detects and fixes, and the next one audits the fixed document again; `--max-iter` is a deprecated alias |
 | `--auto` | no | also applies critical fixes (statement of a main result changed, result withdrawn) without waiting for your approval; they are flagged in the report |
-| `--resume` | no | resumes an interrupted or suspended audit from its register, in its existing worktree, from its last internal revision |
+| `--resume` | no | resumes an interrupted or suspended audit from its register, in its existing worktree, from its last internal revision, with the parameters the register records: options given with it change them where that is allowed (below) |
 | `--base <ref>` | `HEAD` | starting branch or commit of the worktree |
 | `--no-worktree` | no | works in the current directory, when it is already isolated for the audit |
 | `--in-session` | no | runs the orchestrator in your session; by default the audit runs in a session of its own, started in the worktree with the file tools, Bash, the two agents and the project's oracles, and nothing of your session |
@@ -374,7 +374,15 @@ The stop report also names the interrupted agent, if one was running, and its sc
   git merge audit/<stamp>
   ```
 
-- **Resume a suspended audit**: run the skill again with `--resume`.
+- **Resume a suspended audit**: run the skill again with `--resume`. The audit keeps the parameters its register records, and options given with `--resume` change them only where that does not change what is audited:
+
+  | Options | At a resume |
+  |---|---|
+  | `<document>`, `--corpus`, `--base`, `--no-worktree`, `--in-session`, `--fail-fast` | fixed: a different value stops the resume (a new audit, or "Run another check" at closing for a full audit after `--fail-fast`) |
+  | `--max-passes`, `--auto`, `--keep`, `--pause-at`, `--no-auto-resume`, `--account`, `--uniform-effort`, `--no-discharge` | the new value applies from this resume on |
+  | `--model`, `--model-version` | accepted and flagged: the report says which verdicts came from which model |
+
+  Every change is recorded in the register and listed in the report.
 - **Remove a kept branch** by hand, once you have merged it or decided not to:
 
   ```bash

@@ -120,7 +120,7 @@ or enable auto-update under `/plugin` → Marketplaces. A new copy is installed 
 | `--corpus <dir>` | global guard corpus (default: the project's verification corpus, otherwise `spec-guards/`) |
 | `--max-passes N` | how many times the document is audited at most: audited, fixed, then audited again as fixed (default: 5) |
 | `--auto` | also apply critical fixes without waiting for your approval |
-| `--resume` | resume an interrupted audit in its worktree |
+| `--resume` | resume an interrupted audit in its worktree, with its recorded parameters; `--max-passes`, `--auto`, `--pause-at`, the model and a few others may be changed, not what is audited ([usage](docs/usage.md)) |
 | `--base <ref>` | starting branch or commit of the worktree (default: `HEAD`) |
 | `--no-worktree` | work in place, without a worktree |
 | `--in-session` | run the orchestrator in your session instead of a session of its own |

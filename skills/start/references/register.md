@@ -16,7 +16,8 @@
 - Interpreter: <command> (the one phase 0, step 4, ran and saw print a Python 3 version: `python3`, or `python` where `python3` is missing or a stub; written `<python>` in the protocol and given to every agent); paths: native | POSIX (native on Windows: `C:/…`, from `cygpath -m`)
 - Preflight: passed, attempt <n> of 3 | failed (<tool>, <command form>, <refusal>), attempt <n> of 3 (the attempt is written in both cases: a pass at attempt 2 means the launch was fixed once)
 - Refusals: <n> (each in the agent table's row or the log: who, command, message, retried in which form, outcome)
-- Parameters: max-passes = N, auto = yes/no, fail-fast = yes/no, pause-at = <N | session=N,week=N | off>, auto-resume = yes/no, model = <family or id>, version = <v> | latest (passed: `--model <value>`)
+- Parameters: max-passes = N, auto = yes/no, fail-fast = yes/no, pause-at = <N | session=N,week=N | off>, auto-resume = yes/no, model = <family or id>, version = <v> | latest (passed: `--model <value>`); the values in force, the latest resume's changes included
+  - changed at resume <YYYY-MM-DD HH:MM> by <who>: <option> <old> → <new>[; …] (one line per resume that changed an option; a model change also says that the verdicts before it came from <old model>)
 - Version convention: fix in place | new revision <name>
 - Architecture: SPECAUDIT_ARCH.md, <commit | copied, sha256:…>; audited: <paths>, profile <name>; normative dependencies given: <paths | none>; warnings of `arch.py require` <or none>; artifacts that look like oracles but are not in it <or none>
 - Architecture refusals: <n> (each: path, role, the step and the error whose fix touched it, refused by the hook or by `arch.py check`, restored; an error of the audit, listed in the report)
