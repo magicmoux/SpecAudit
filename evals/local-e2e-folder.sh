@@ -15,8 +15,9 @@ command -v cygpath >/dev/null 2>&1 && TMP="$(cygpath -m "$TMP")"
 PY=python3; "$PY" -c "import sys; sys.exit(sys.version_info[0] != 3)" >/dev/null 2>&1 || PY=python
 WORK="$(mktemp -d "$TMP/sa-folder-XXXX")"
 cd "$WORK" && mkdir docs && cp "$PLUGIN/evals/_fixtures/selection.md" "$PLUGIN/evals/_fixtures/sums.md" docs/
+bash "$PLUGIN/evals/_fixtures/write-arch.sh" docs/ > SPECAUDIT_ARCH.md
 git init -q
-git -c user.name=eval -c user.email=eval@example.invalid add docs
+git -c user.name=eval -c user.email=eval@example.invalid add docs SPECAUDIT_ARCH.md
 git -c user.name=eval -c user.email=eval@example.invalid commit -qm "Demo specifications"
 echo "plugin $PLUGIN, model $MODEL, repo $WORK"
 

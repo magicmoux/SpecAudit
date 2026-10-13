@@ -20,7 +20,8 @@ run() {  # <name> <options>: a throwaway repository with a neutral identity, the
   local work
   work="$(mktemp -d "$TMP/sa-snap-$1-XXXX")"
   (cd "$work" && git init -q && git config user.name "SpecAudit demo" && git config user.email demo@example.invalid \
-    && cp "$PLUGIN/examples/demo/$DOC" . && git add "$DOC" && git commit -qm "Demo specification" \
+    && cp "$PLUGIN/examples/demo/$DOC" . && bash "$PLUGIN/evals/_fixtures/write-arch.sh" "$DOC" > SPECAUDIT_ARCH.md \
+    && git add "$DOC" SPECAUDIT_ARCH.md && git commit -qm "Demo specification" \
     && claude -p "/spec-audit:start $DOC $2 --keep --model $MODEL --account $ACCOUNT $SPECAUDIT_E2E_PAUSE" --plugin-dir "$PLUGIN" --model "$MODEL" \
       --output-format json --permission-mode dontAsk --allowedTools Read Write Edit Glob Grep Skill Agent Bash \
       > result.json 2> stderr.log)

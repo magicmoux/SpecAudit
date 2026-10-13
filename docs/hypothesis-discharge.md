@@ -41,7 +41,7 @@ A counterexample proves that a hypothesis is needed. The absence of a counterexa
 
 ## Cache across versions
 
-One entry per triple (P, N, H), stored in the corpus (`<corpus>/discharge.json`), so that it is merged with the document, outlives the audit and serves the next version. The corpus rather than the project configuration: reviewers never read it, and a project configured by `.specaudit.md` alone would otherwise need a `.specaudit/` folder too.
+One entry per triple (P, N, H), stored in the corpus (`<corpus>/discharge.json`), so that it travels with the document on the audit's branch, outlives the audit and serves the next version. The corpus rather than the project configuration: reviewers never read it, and a project configured by `.specaudit.md` alone would otherwise need a `.specaudit/` folder too.
 
 The key is a hash of the profile and of four texts, whitespace normalized: N's statement, H, P's statement, and the passage of P that applies N. The oracle is not in the key: the entry records the level searched, and `not_refuted` is reused only while the oracle table has nothing stronger. An entry is invalidated as soon as one of these changes, P's side included: rewording P can remove the guarantee of H even if N is untouched. An audit of a new version therefore reprobes only the edges that the diff touches.
 
@@ -56,9 +56,9 @@ The main cost is the number of edges times the number of hypotheses. Three filte
 ## Place in the protocol
 
 - Phase 0, step 7: with the inventory, `edges.json` records the hypotheses of each use and how P guarantees them, by exact quotes; `discharge.py select` refuses a quote not found in the document, so that keys are stable from one audit to the next.
-- Phase 1: probes alongside the reviewers' waves, by a fresh `spec-adjudicator` per use at `medium` effort; their red results are findings for phase 2, with origin `probe (E-…)`, or `probe (lifted from E-…)` for the results reached by lifting.
+- Phase 1: probes after the reviewers' waves, on the same revision, one at a time, by a fresh `spec-adjudicator` per use at `medium` effort; their red results are findings for phase 2, with origin `probe (E-…)`, or `probe (lifted from E-…)` for the results reached by lifting.
 - Phase 3: the cause graph takes the edges established by lifting.
-- Phases 4.3 and 4.4: a fix updates the quotes of its edges, and a scoping addition adds an edge for each use of the result.
+- Phases 4.3 and 4.4: a fix updates the quotes of its edges, and a scoping addition adds an edge for each use of the result; right after the fix's commit, before the next error is verified, `select` returns the edges whose texts changed, and they are probed at once, on that revision. `select` keeps the status of an edge already settled in the audit while its texts are unchanged, so a re-probe touches only what the fix changed.
 - Phase 6: `discharge.py record` writes the iteration's settled probes into the cache, committed with the iteration.
 
 ## Open questions

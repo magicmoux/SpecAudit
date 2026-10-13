@@ -3,6 +3,12 @@
 # which may not be the one of the session that starts the script. Refuses to go on unless SPECAUDIT_E2E_ACCOUNT names
 # that account's e-mail. To run on another account, log it in under its own configuration folder once
 # (CLAUDE_CONFIG_DIR="$HOME/.claude-perso" claude auth login), then pass the same CLAUDE_CONFIG_DIR to the script.
+# A script started from a Claude session (the desktop app, an Agent SDK host) inherits that session's credentials, which
+# win over CLAUDE_CONFIG_DIR: every run would be billed to the session's account while `claude auth status` names the
+# folder's. Remove them first, for this script and every claude it starts (skills/start/references/account.py clean-env).
+for _v in $(python3 "$(dirname "${BASH_SOURCE[0]}")/../../skills/start/references/account.py" clean-env 2>/dev/null             || python "$(dirname "${BASH_SOURCE[0]}")/../../skills/start/references/account.py" clean-env); do
+  [ "$_v" = -u ] || unset "$_v"
+done
 ACCOUNT="$(claude auth status 2>/dev/null | sed -n 's/.*"email": *"\([^"]*\)".*/\1/p' | head -1)"
 CONFIG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 if [ -z "$ACCOUNT" ] || [ "${SPECAUDIT_E2E_ACCOUNT:-}" != "$ACCOUNT" ]; then

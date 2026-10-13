@@ -18,13 +18,14 @@ claude
 
 (From a clone of the repository, replace `curl` with a copy of `examples/demo/bubble-sort.md`.)
 
-Then, in Claude Code:
+Then, in Claude Code, describe the project's architecture (accept the proposal: `bubble-sort.md` audited, with the `formal` profile, and let it commit the file), then audit:
 
 ```text
+/spec-audit:init
 /spec-audit:start bubble-sort.md --max-passes 2
 ```
 
-The worktree is created in `../spec-audit-demo-audit-bubble-sort`, on the branch `audit/bubble-sort`. The guards, in Python, are written to `spec-guards/`.
+The worktree is created in `../spec-audit-demo-audit-bubble-sort`, on the branch `audit/<stamp>`, named like the audit's results folder `SpecAudit-<stamp>/`; the audit never merges it. The guards, in Python, are written to `spec-guards/`.
 
 ## What the audit should find
 

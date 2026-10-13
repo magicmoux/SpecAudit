@@ -17,8 +17,8 @@ TMP="${TEMP:-${TMPDIR:-/tmp}}"
 command -v cygpath >/dev/null 2>&1 && TMP="$(cygpath -m "$TMP")"
 PY=python3; "$PY" -c "import sys; sys.exit(sys.version_info[0] != 3)" >/dev/null 2>&1 || PY=python
 WORK="$(mktemp -d "$TMP/sa-dis-XXXX")"
-cd "$WORK" && cp "$PLUGIN/examples/discharge/block-search.md" . && git init -q \
-  && git -c user.name=eval -c user.email=eval@example.invalid add block-search.md \
+cd "$WORK" && cp "$PLUGIN/examples/discharge/block-search.md" . && bash "$PLUGIN/evals/_fixtures/write-arch.sh" block-search.md > SPECAUDIT_ARCH.md \
+  && git init -q && git -c user.name=eval -c user.email=eval@example.invalid add block-search.md SPECAUDIT_ARCH.md \
   && git -c user.name=eval -c user.email=eval@example.invalid commit -qm "Example specification"
 
 AUDIT_OPTS=${3:---max-passes 1}
@@ -45,11 +45,19 @@ check "Theorem 6 a consequence in the cause graph" "grep -qE 'F-[0-9]+-[0-9]+ �
 check "Lemma 2 unchanged" "grep -qF '**Lemma 2.** For every sorted list L and every integer v, bsearch(L, v) = true if and only if v ∈ L.' '$AUDIT/block-search.md'"
 check "Proposition 4 unchanged" "grep -qF 'such that every element of A is at most every element of B, and every integer v, bsearch(A ++ B, v) = true if and only if v ∈ A or v ∈ B.' '$AUDIT/block-search.md'"
 check "Proposition 3 fixed" "! grep -qF '**Proposition 3.** For all sorted lists A and B and every integer v, bsearch(A ++ B, v) = true if and only if v ∈ A or v ∈ B.' '$AUDIT/block-search.md'"
-CORPUS="$(grep -oE '^- Corpus: [^,]+' "$REG" | sed 's/^- Corpus: //; s/`//g')"
+CORPUS="$(grep -oE '^- Corpus: `?[^ ,`]+' "$REG" | sed 's/^- Corpus: //; s/`//g; s:/$::')"  # the path only: a note may follow it
 # The cache may be empty: a probe whose edge the fix then changed describes texts that no longer exist.
 check "probe cache written in the corpus" "$PY -X utf8 -c \"import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))\" '$AUDIT/${CORPUS:-spec-guards}/discharge.json'"
 # A second audit would start with this selection: run it on a copy of the edges, from the audited worktree.
-cp "$DIR/edges.json" "$WORK/edges-again.json"
+# A new audit writes its edges.json without statuses: drop them, or select keeps this audit's own settled statuses
+# (discharge.py: an edge settled in the audit is kept while its texts are unchanged) instead of reading the cache.
+"$PY" -X utf8 -c "
+import json, sys
+d = json.load(open(sys.argv[1], encoding='utf-8'))
+for e in d['edges']:
+    for k in ('status', 'key', 'cached', 'oracle', 'level'):
+        e.pop(k, None)
+json.dump(d, open(sys.argv[2], 'w', encoding='utf-8'), ensure_ascii=False)" "$DIR/edges.json" "$WORK/edges-again.json"
 check "settled probes reused from the cache" "(cd '$AUDIT' && $PY -X utf8 '$PLUGIN/skills/start/references/discharge.py' select '$WORK/edges-again.json' '${CORPUS:-spec-guards}/discharge.json' --strongest ad-hoc | grep -qE 'from the cache: [1-9]')"
 check "cache committed" "[ -n \"\$(git -C '$AUDIT' log --oneline -- '${CORPUS:-spec-guards}/discharge.json')\" ]"
 check "report says what discharge did" "grep -qi 'discharge' '$DIR/report.md'"

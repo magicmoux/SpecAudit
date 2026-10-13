@@ -124,6 +124,16 @@ def main():
               file=sys.stderr)
         return 2
     ident = m_sec.group(1)
+    for p in a.add:
+        folder = repo / p
+        # The folder reserved at launch exists, so `cp -r <worktree>/<folder> <repo>/<folder>` nests the results one
+        # level down, where the index's link, the README's paths and replay.py no longer find them.
+        if folder.name.startswith("SpecAudit-") and folder.is_dir() and not (folder / "README.md").exists():
+            nested = folder / folder.name
+            hint = (f"; the results are nested in {p}/{folder.name}/: copy the folder's contents instead, "
+                    f"`cp -r <worktree>/{folder.name}/. <repo>/{folder.name}/`") if nested.is_dir() else ""
+            print(f"index: {p} has no README.md at its root{hint}; nothing written", file=sys.stderr)
+            return 2
     index, guard = repo / "SPECAUDITS.md", repo / "SPECAUDITS.md.lock"
     if not lock(guard):
         print(f"index: {guard} held for two minutes; nothing written", file=sys.stderr)

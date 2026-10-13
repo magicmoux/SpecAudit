@@ -23,6 +23,8 @@ A confirmed false positive, a fix that strengthens a statement, a reviewer that 
 | `skills/start/references/launch.md`, `report.md`, `corpus-errors.md`, `closing.md` | phase 0 steps 1 to 6, the report template, the procedure for a suspect guard, and phase 8 with the stop: each read when it comes; the audit session never loads the launch and the closing |
 | `skills/start/references/register.md` | formats of the register, its entries and the guards, loaded on demand |
 | `skills/start/profiles/*.md` | domain profiles: errors, evidence, guards, oracles, lint (`formal` today; design in `docs/profiles.md`) |
+| `skills/init/SKILL.md`, `skills/init/scan.py` | `/spec-audit:init`, user-only: proposes the project's architecture, `SPECAUDIT_ARCH.md`, and writes it once the user confirms |
+| `skills/start/references/arch.py` | reads `SPECAUDIT_ARCH.md`: the check that refuses an audit without it, the roles, what the audit may change (commit check and hook of the audit session) |
 | `skills/attest/SKILL.md`, `skills/attest/verify.py` | `/spec-audit:attest`, user-only: checks the signed tags `specaudit/<folder>` and records them in the index; never signs |
 | `skills/stop/SKILL.md` | `/spec-audit:stop`, user-only entry point that stops the audit running in the session |
 | `agents/spec-reviewer.md` | reviewer instructions and output format |

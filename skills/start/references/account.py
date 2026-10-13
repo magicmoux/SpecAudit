@@ -6,6 +6,15 @@
   python3 account.py remember <project> <dir>   make <dir> the project's default: env.CLAUDE_CONFIG_DIR in
                                                 <project>/.claude/settings.local.json, the rest of the file kept, and
                                                 the file kept out of git (.git/info/exclude) if nothing ignores it yet
+  python3 account.py clean-env                  the variables to remove from the environment of a `claude -p` so that
+                                                it runs on its CLAUDE_CONFIG_DIR's account, as `-u NAME` arguments of
+                                                `env` (nothing when there are none)
+
+A session started by another (the Claude desktop app, an Agent SDK host, a `claude` session) hands its children its own
+credentials: a local proxy (ANTHROPIC_BASE_URL, with CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH or CLAUDE_CODE_ACCOUNT_UUID),
+or a token (ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, CLAUDE_CODE_OAUTH_TOKEN). Any of them wins over CLAUDE_CONFIG_DIR,
+so a `claude -p` launched with them is billed to the parent's account whatever folder it is given, while
+`claude auth status` still names the folder's. `clean-env` lists them; the launcher removes them.
 
 The configuration folders are ~/.claude, the CLI's default, and every ~/.claude-* folder, where another account may
 be logged in (CLAUDE_CONFIG_DIR="$HOME/.claude-<name>" claude auth login). Nothing here logs in, logs out, or changes
@@ -18,8 +27,26 @@ import sys
 from pathlib import Path
 
 
+HOST_AUTH = ("CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH", "CLAUDE_CODE_ACCOUNT_UUID", "CLAUDE_CODE_ORGANIZATION_UUID",
+             "CLAUDE_CODE_USER_EMAIL", "CLAUDE_CODE_OAUTH_SCOPES")
+TOKENS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")
+
+
+def inherited_auth(environ=os.environ):
+    """The variables through which a parent session's credentials reach a child `claude`."""
+    names = [n for n in HOST_AUTH + TOKENS if n in environ]
+    # A base URL is the parent's proxy only when the parent says it holds the auth; set by the user, it is kept.
+    if "ANTHROPIC_BASE_URL" in environ and any(n in environ for n in HOST_AUTH):
+        names.append("ANTHROPIC_BASE_URL")
+    return names
+
+
+def clean_env(environ=os.environ):
+    return {k: v for k, v in environ.items() if k not in inherited_auth(environ)}
+
+
 def status(config):
-    env = dict(os.environ, CLAUDE_CONFIG_DIR=str(config))
+    env = dict(clean_env(), CLAUDE_CONFIG_DIR=str(config))
     try:
         r = subprocess.run(["claude", "auth", "status"], capture_output=True, text=True, env=env, timeout=60)
         return json.loads(r.stdout)
@@ -70,6 +97,9 @@ def remember(project, config):
 def main():
     if len(sys.argv) == 2 and sys.argv[1] == "list":
         return list_accounts()
+    if len(sys.argv) == 2 and sys.argv[1] == "clean-env":
+        print(" ".join(f"-u {n}" for n in inherited_auth()))
+        return 0
     if len(sys.argv) == 4 and sys.argv[1] == "remember":
         return remember(sys.argv[2], sys.argv[3])
     print(__doc__, file=sys.stderr)
