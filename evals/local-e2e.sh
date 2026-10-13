@@ -105,13 +105,7 @@ check "no runner cache in results" "[ -z \"\$(find '$RES' -name __pycache__ -o -
 [ "$MODE" = audit-session ] && check "launch files in the audit's own folder" "[ -f '$AUDIT-scratch/launch/protocol.md' ] && [ -f '$AUDIT-scratch/launch/agents.json' ]"
 check "preflight passed at the first attempt" "grep -qiE 'Preflight: *passed[^|]*attempt 1\\b' '$DIR/register.md'"
 # An agent relaunched by escalation is the protocol at work; only a relaunch of the audit session itself counts here.
-# Restarts at revisions are the protocol at work (SKILL.md, "Restart after each revision"): lines about them are left out.
-check "audit session launched once" "! grep -viE '^- (Restarts|Mode):|restart' '$DIR/register.md' | grep -qiE 'audit session[^|]*(relaunch|failed at start)|relaunch[^|]*audit session|allow list widened|audit session [2-9]'"
-if [ "$MODE" = audit-session ]; then
-  # The orchestrator ends after each internal revision and the launcher restarts it on the register: one stream per run.
-  check "orchestrator restarted at revisions, each run's stream kept" "[ \"\$(ls '$AUDIT-scratch/launch/'stream-*.jsonl 2>/dev/null | wc -l)\" -ge 1 ] && grep -qE '^- Restarts: *[1-9]' '$DIR/register.md'"
-  check "every fix has a rationale" "[ \"\$(grep -cE '^- \\*\\*Fix\\*\\*:.*Rationale' '$DIR/register.md')\" -ge 1 ]"
-fi
+check "audit session launched once" "! grep -qiE 'audit session[^|]*(relaunch|failed at start)|relaunch[^|]*audit session|allow list widened|audit session [2-9]' '$DIR/register.md'"
 PROJ="$HOME/.claude/projects/$(echo "$AUDIT" | sed 's|[^A-Za-z0-9]|-|g')"
 # A model may stray from the command forms now and then; the protocol's promise is that every refusal is caught,
 # retried in an allowed form and recorded, so the register's count must match what the transcripts show.

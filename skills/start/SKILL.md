@@ -116,24 +116,8 @@ A fresh review at every fix makes the audit trustworthy, and long: every agent s
 
 - **Each agent gets what its step needs, and nothing more**: a reviewer the document and its normative dependencies, an adjudicator one error or consequence with its passage (4.5, "Handover"), a guard review one guard with its passage. What an agent was not told cannot bias it, nor fill its context.
 - **You work from the chain digest**, not the whole register: once an error is FIXED or RESOLVED, write its one-line digest in the register (format in `references/register.md`): statement before and after, guards, open suspects. That line is what the rest of the chain needs; reread the full entry only when an agent's result concerns that error. After a compaction or at `--resume`, reread the header, the digest and the open entries, not every entry.
-- **A fresh context per item**, in the audit session: you end after each internal revision and the launcher restarts you on the register ("Restart after each revision").
 - **Few turns per item.** Every turn of yours rereads your whole context, so with one item at a time (phase 4) the number of your turns, not the agents', is what the audit's tokens grow with. Agents run one at a time; your own tool calls do not have to: put in one message every call of a step that does not wait on another's output, in the order they must run. A confirmed root then takes four turns after its adjudicator's result: (1) rerun its counterexample and write its guards, then run them red; (2) fix the document, run the corpus and the lint green; (3) every register, inventory and `edges.json` edit of the item, `git add` of its paths, `git commit` and `discharge.py select`, all in one message ("Internal revision", 4.3); (4) the next launch. The same holds for every other commit of the audit (end of detection, end of iteration, final commit): its edits, `git add` and `git commit` in one message, nothing in a turn of its own. A refuted item, or a reassessment, takes one turn of edits before the next launch.
 - **The protocol is loaded in parts**: phase 0's launch steps and phase 8's closing are in `references/`, read when they come; the audit session never loads them.
-
-## Restart after each revision
-
-In the audit session, you do not carry the audit from one item to the next: you end, and the launcher starts a fresh orchestrator on the register (`references/launch.md`, step 6, "Restarts"). Your context only grows within one item, instead of over the whole audit, and every turn rereads it: on the demo, a single session's context grew from 42k to 133k tokens. It also makes the orchestrator itself start each item from the committed state, as the agents do. With `--in-session` there is no launcher to restart you: go on in the same session.
-
-**When**: right after the commit that closes phase 3 (the cause graph of the iteration), and right after each internal revision of phase 4 (4.3). Not in the middle of an item, nor after a refuted or resolved item, which commits nothing of its own: carry on to the next item.
-
-**What the register must hold first**, since the next orchestrator knows only what it reads there, and in the same commit:
-- the error's complete entry (4.3), its `Fix` with a `Rationale`: why this fix, rather than another of the natures of 4.3, in one or two sentences;
-- the graph after the fix (4.4, "Causality": the new consequences and suspects, their edges, the cycle check);
-- the `Next` line of the header: what the next orchestrator does first, in order (re-probe the edges of `r<N>` that `select` returned, then the next item by its identifier), and any observation not yet an entry (a passage that looked doubtful, a sibling to check), as one line each. What is not in the register is lost.
-
-Then set the state to `running (restart after r<N>)`, include it in the same commit, and end your session with one line saying so: no other step, no agent launch.
-
-**When you start on a register in that state** (the launcher's prompt says `--resume`): reread its header, `Next`, the chain digest and the open entries, not every entry (the agent table settles nothing to relaunch, since you ended between agents); set the state back to `running`; do what `Next` says, in its order; and go on with the loop of phase 4.
 
 ## Effort per step
 

@@ -19,9 +19,7 @@
 - Parameters: max-passes = N, auto = yes/no, fail-fast = yes/no, pause-at = <N | session=N,week=N | off>, auto-resume = yes/no, model = <family or id>, version = <v> | latest (passed: `--model <value>`)
 - Version convention: fix in place | new revision <name>
 - Configuration: <.specaudit.md | .specaudit/config.md | none>, <commit | copied, sha256:…>; profile <name>; answer to the tracking question if one was asked
-- Session: <id>, state: running | running (restart after r<N>) | stopping | suspended | suspended (usage limit: session | week, resumes <time>) | closed
-- Next: what the next orchestrator does first, in order (re-probes of r<N>, then the next item by its identifier), and the observations not yet entries, one line each (`SKILL.md`, "Restart after each revision")
-- Restarts: <n> (the orchestrator ended at a revision and was started again on the register; not a failure)
+- Session: <id>, state: running | stopping | suspended | suspended (usage limit: session | week, resumes <time>) | closed
 - Resumes: <n> automatic resumes after a usage limit (at most 5), each with its window and time
 - Mode: audit session (pid <pid>, session <id>) | in-session
 - Account: <email> (<organization>), configuration folder <path>, settled by question | `--account`, remembered for the project yes | no; or this session's account (`--in-session`)
@@ -117,7 +115,7 @@ Probes of phase 1, then the re-probes after each fix (`references/discharge.md`,
 - **Verdicts**: every verdict on this entry, in order, each with the revision its agent was launched on: `` `<sha>` <CONFIRMED | REFUTED | UNDECIDED | RESOLVED (freshness) | user decision> (<agent name or "user">) ``, separated by semicolons (a first confirmation, an escalation, a reassessment, a user decision); every sha is a commit of `audit/<stamp>`
 - **Impact**: dependent results and passages (from the inventory)
 - **Guards**: paths in the corpus; red state before the fix, green after
-- **Fix**: nature (statement fix | scoping addition | proof completion); before → after; commit; **Rationale**: why this fix rather than another nature, in one or two sentences
+- **Fix**: nature (statement fix | scoping addition | proof completion); before → after; commit
 - **Links**: errors of the same class
 ```
 
