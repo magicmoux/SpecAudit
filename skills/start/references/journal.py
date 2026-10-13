@@ -119,16 +119,37 @@ ONE_AT_A_TIME = ("one agent at a time: {running} has not returned yet. Launch no
                  "(SKILL.md, \"One agent at a time\"); never launch two in one message, nor in the background.")
 
 
+def same(a, b):
+    import os
+    norm = lambda x: os.path.normcase(os.path.normpath(str(x)))
+    return a is not None and b is not None and norm(a) == norm(b)
+
+
 def take_lock(lock, scratch):
-    """None when the lock is taken for this agent; otherwise the scratch directory of the agent still running."""
+    """None when the lock is taken for this agent; otherwise the scratch directory of the agent still running.
+    Claude Code may run this hook twice for one launch, side by side (the matcher names the tool under both its
+    names): a second call for the same agent is the same launch, not another one, and a lock whose holder is not
+    written yet belongs to a call in progress, not to a dead one."""
     lock = Path(lock)
     for _ in range(2):
         try:
             lock.mkdir(parents=True)
         except FileExistsError:
             holder = lock / "scratch"
-            running = Path(holder.read_text(encoding="utf-8").strip()) if holder.exists() else None
-            if running is None or (running / "result.md").exists() or (running / "partial.md").exists():
+            for _ in range(40):  # the call that created the lock is writing its holder
+                if holder.exists() and holder.read_text(encoding="utf-8").strip():
+                    break
+                time.sleep(0.05)
+            text = holder.read_text(encoding="utf-8").strip() if holder.exists() else ""
+            running = Path(text) if text else None
+            if same(running, scratch):
+                return None
+            if running is None:
+                if time.time() - lock.stat().st_mtime < 10:
+                    return Path("an agent being launched")
+                shutil.rmtree(lock, ignore_errors=True)  # an empty lock left by a hook that died
+                continue
+            if (running / "result.md").exists() or (running / "partial.md").exists():
                 shutil.rmtree(lock, ignore_errors=True)  # stale: its agent ended without its release
                 continue
             return running

@@ -29,6 +29,14 @@ check "forced to the foreground" "$PY -c \"import json,sys; u=json.load(open(sys
 check "lock names the running agent" "grep -qF '$S/reviewer-a' '$LOCK/scratch'"
 check "its prompt kept" "[ -f '$S/reviewer-a/prompt.md' ]"
 
+hook "$(launch reviewer-a bg)"
+check "the same launch seen twice by the hook is allowed" "[ \"\$(code)\" = 0 ]"
+# The hook run twice side by side for one launch: both calls pass.
+launch reviewer-a > "$TMP/ev"; rm -rf "$LOCK"
+( "$PY" "$JOURNAL" --lock "$LOCK" < "$TMP/ev" > /dev/null 2>&1; echo $? > "$TMP/c1" ) &
+( "$PY" "$JOURNAL" --lock "$LOCK" < "$TMP/ev" > /dev/null 2>&1; echo $? > "$TMP/c2" ) &
+wait
+check "two concurrent calls for one launch both pass" "[ \"\$(cat '$TMP/c1')\" = 0 ] && [ \"\$(cat '$TMP/c2')\" = 0 ]"
 hook "$(launch reviewer-b)"
 check "second launch refused while the first runs" "[ \"\$(code)\" = 2 ] && grep -qi 'one agent at a time' '$TMP/err' && grep -qF 'reviewer-a' '$TMP/err'"
 check "refused launch leaves nothing in its scratch directory" "[ ! -e '$S/reviewer-b/prompt.md' ]"
