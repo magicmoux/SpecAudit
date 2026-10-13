@@ -35,7 +35,8 @@ def stream_overlaps(paths):
                 continue
             if e.get("parent_tool_use_id") is not None:
                 continue
-            content = (e.get("message") or {}).get("content") or []
+            message = e.get("message")
+            content = message.get("content") if isinstance(message, dict) else None
             if not isinstance(content, list):
                 continue
             for b in content:
