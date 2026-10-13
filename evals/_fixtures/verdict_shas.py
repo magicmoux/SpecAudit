@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 SHA = re.compile(r"`([0-9a-f]{7,40})`")
+BARE = re.compile(r"\b([0-9a-f]{7,40})\b")  # a Revision cell holds nothing else: backticks optional
 
 
 def main(path):
@@ -30,7 +31,7 @@ def main(path):
         col = header.index("revision") if "revision" in header else None
         for line in lines[2:]:
             cells = [c.strip() for c in line.strip("|").split("|")]
-            found = SHA.findall(cells[col]) if col is not None and col < len(cells) else []
+            found = BARE.findall(cells[col]) if col is not None and col < len(cells) else []
             if not found:
                 problems.append(f"agent row without a revision: {cells[0] if cells else line}")
             shas += found

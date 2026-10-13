@@ -8,7 +8,8 @@ Registered by the launcher (references/launch.md, step 6) for PreToolUse, PostTo
 and SessionEnd, it
 reads the hook's JSON on stdin and writes, in the scratch directory named in the agent's message ("Scratch directory: <path>"):
   prompt.md      the agent's message, word for word, when the orchestrator launches it (PreToolUse on Agent);
-  journal.jsonl  one line per tool call of the agent: the tool, its input and the start of its output (PostToolUse);
+  journal.jsonl  one line per tool call of the agent: the tool, its input and the start of its output (PostToolUse),
+                 after a launch line naming the revision (HEAD) it was launched on;
   result.md      the agent's final reply, when it ends (SubagentStop).
 An agent stopped or cut by a usage limit keeps its prompt and its journal up to its last tool call, and has no
 result.md: --resume relaunches exactly those agents, with their prompt, and the replacement finds the scripts and
@@ -136,6 +137,17 @@ def take_lock(lock, scratch):
     return Path("?")
 
 
+def revision(cwd):
+    """The commit the agent is launched on (HEAD of the worktree), for its journal: the ground truth of the agent table."""
+    import subprocess
+    try:
+        out = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=cwd or None, capture_output=True, text=True,
+                             timeout=10)
+        return out.stdout.strip() or None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
 def release_lock(lock):
     if lock:
         shutil.rmtree(lock, ignore_errors=True)
@@ -177,7 +189,8 @@ def handle(event, args):
                     f"{pause.get('resumeAtLocal')}. Launch no other agent: record the pause in the register and stop "
                     f"(SKILL.md, \"Agent journal\").")
         if scratch:
-            append(scratch, {"event": "launch", "description": tool_input.get("description")})
+            append(scratch, {"event": "launch", "description": tool_input.get("description"),
+                             "revision": revision(event.get("cwd"))})
         updated = {**tool_input, "prompt": sent}
         if args.lock:
             updated["run_in_background"] = False
