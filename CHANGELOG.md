@@ -4,6 +4,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two days in October 2026; a first 1.0.0-beta.1 was published under the EUPL-1.2 or the AGPL-3.0-or-later on 2026-10-11; history restarted at 1.0.0-beta.1 under CC BY-NC-SA 4.0 with additional permissions.
 
+## [Unreleased]
+
+### Audit
+
+- The launcher's account, to the end: an audit is billed to the account that launched it and to no other, whoever resumes it and whatever account the desktop app, their session or the CLI's default uses by then; another account may read its files (the index, a monitoring pane), never run it. Before every launch of the audit session after the first (a relaunch after a failed preflight, an automatic resume after a usage limit, a scheduled or manual `--resume`), the launcher runs `account.py check "<folder>" "<email>"` on the folder and e-mail the register records. A folder logged out or logged in to another account (a `claude auth login` while the audit waited) stops the resume, with the register `suspended (account: …)`, the index saying the audit waits for its account, and the command that logs it back in; the same account found in another folder is used and the change of folder recorded. An `--in-session` audit records its session's e-mail and is checked with `account.py check --session`. Until now, an automatic resume relaunched on whatever account its folder held.
+- `--account` is fixed at resume: given with `--resume`, it must be the e-mail the register records, or the resume stops.
+
+### Tests
+
+- `evals/account.sh` (no model): `account.py check` on simulated accounts.
+
 ## [1.0.0-beta.4] — 2026-10-13
 
 ### Project architecture

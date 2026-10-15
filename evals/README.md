@@ -44,7 +44,7 @@ Run the tier that covers what you changed, and the whole suite before a pull req
 | quick | `claude plugin eval . --tag quick …`, and `evals/arch.sh` | 1 to 2 min | any change to the agents or the protocol |
 | agents, attest | `--tag agents --tag attest` | about 3 min | a change to an agent, the preflight or `/spec-audit:attest` |
 | e2e | `--tag e2e`, then `evals/local-e2e.sh audit-session` | about 10 min | a change to the protocol, before a merge |
-| full | no tag, then `arch.sh`, `local-init.sh`, `journal.sh`, `local-e2e.sh`, `local-e2e-no-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
+| full | no tag, then `arch.sh`, `account.sh`, `local-init.sh`, `journal.sh`, `local-e2e.sh`, `local-e2e-no-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
 | parallel | `local-e2e-parallel.sh` | about 10 min | a change to the index (`SPECAUDITS.md`, `index.py`), the launch or the closing: two audits launched at the same moment are rare, so this run, about $1.60, is not part of the suite before every pull request |
 | measure | `--tag measure --runs 3` | about 2 min | to re-measure what justifies a lowered effort |
 
@@ -101,6 +101,10 @@ Every repository the cases and scripts build has a `SPECAUDIT_ARCH.md`, written 
 ## The hook: `journal.sh`
 
 `evals/journal.sh` tests `skills/start/references/journal.py` on synthetic hook events: every launch forced to the foreground, a second launch refused while the first agent has not returned (and nothing left in its scratch directory), the lock released when the Agent call returns or fails, a stale lock taken over once its agent has its result, a launch refused by a pause not holding the lock, and no change without `--lock`; and `_fixtures/serial_check.py`, which the end-to-end scripts run on an audit's journals to tell whether two agents overlapped. No model, no network; it runs in a second.
+
+## The launcher's account: `account.sh`
+
+`evals/account.sh` tests `account.py check` on simulated accounts: configuration folders under a throwaway home, each with a `fake-auth.json` standing for `claude auth status` there. The check passes only while the folder the register records is logged in to the e-mail it records, the e-mail compared without case; it refuses a folder logged in to another account (the `claude auth login` of someone else while the audit waits), logged out or gone, and names the other folders logged in to the recorded e-mail; the desktop app's own account does not decide; and `check --session` compares an `--in-session` audit's account with the session's, exit 3 when that is unknown. No model, no network, no real login read; it runs in a second.
 
 ## Consumption: `consumption.sh`
 

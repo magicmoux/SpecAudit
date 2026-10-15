@@ -35,7 +35,7 @@ The document's **normative dependencies** (the files whose definitions it uses) 
 | `--model-version <v>` | `latest` | version of that family, `5.5` for instance; `latest` passes the alias, a version passes `claude-<family>-<version>` (`claude-opus-5-5`); ignored when `--model` is a full id |
 | `--keep` | no | at closing, asks no question and keeps the worktree; the results folder and the index entry still come back to your branch |
 | `--uniform-effort` | launch every agent at its usual effort: no lowered effort for narrow steps, no escalation |
-| `--account <email>` | asked at launch | the account the audit session (`claude -p`) is billed to, as `claude auth status` names it. Without it, the launch shows the account the CLI uses and asks you to confirm it, use another, or run in your session; with it, the launch checks it and stops on a mismatch. Required in a non-interactive session. Launched from the desktop app, the audit session does not inherit the app's account: the launch removes the credentials the app hands to its children |
+| `--account <email>` | asked at launch | the account the audit session (`claude -p`) is billed to, as `claude auth status` names it. Without it, the launch shows the account the CLI uses and asks you to confirm it, use another, or run in your session; with it, the launch checks it and stops on a mismatch. Required in a non-interactive session. Launched from the desktop app, the audit session does not inherit the app's account: the launch removes the credentials the app hands to its children. Fixed for the whole audit: every resume checks it again |
 | `--pause-at <N \| session=N,week=N \| off>` | `session=75,week=50` | pauses the audit once the account's usage reaches N % of its five-hour session window or of its week, read from the audit session's stream; `session=80,week=70` sets each, `off` none. The orchestrator stops before launching the next agent, and the launcher resumes the audit when the window resets: automatically for the session window (up to five times), by a scheduled task you confirm, or by hand, for the week. Ignored with `--in-session` |
 | `--no-auto-resume` | no | on a pause, stops instead of waiting for the session window to reset, with the time and the command to resume |
 | `--fail-fast` | no | one reviewer and the hypothesis probes, then the candidates confirmed one at a time from the most upstream, and a stop at the first confirmed error, without fixing it; the report gives the proposed fix of the statement and every result it may affect. For a first look at a document, or a beta test |
@@ -378,11 +378,13 @@ The stop report also names the interrupted agent, if one was running, and its sc
 
   | Options | At a resume |
   |---|---|
-  | `<document>`, `--corpus`, `--base`, `--no-worktree`, `--in-session`, `--fail-fast` | fixed: a different value stops the resume (a new audit, or "Run another check" at closing for a full audit after `--fail-fast`) |
-  | `--max-passes`, `--auto`, `--keep`, `--pause-at`, `--no-auto-resume`, `--account`, `--uniform-effort`, `--no-discharge` | the new value applies from this resume on |
+  | `<document>`, `--corpus`, `--base`, `--no-worktree`, `--in-session`, `--fail-fast`, `--account` | fixed: a different value stops the resume (a new audit, or "Run another check" at closing for a full audit after `--fail-fast`) |
+  | `--max-passes`, `--auto`, `--keep`, `--pause-at`, `--no-auto-resume`, `--uniform-effort`, `--no-discharge` | the new value applies from this resume on |
   | `--model`, `--model-version` | accepted and flagged: the report says which verdicts came from which model |
 
   Every change is recorded in the register and listed in the report.
+
+  The audit stays on the account that launched it, whoever resumes it: before every resume, automatic or not, the launch checks that the configuration folder the register records is still logged in to that account. If it was logged out, or logged in to another account, the resume stops and says which command logs the account back in; it never goes on with another account. Another account may still read the audit's files (the index, a monitoring pane).
 - **Remove a kept branch** by hand, once you have merged it or decided not to:
 
   ```bash
