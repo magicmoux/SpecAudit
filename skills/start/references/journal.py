@@ -2,7 +2,7 @@
 """Hook of the audit session: keep each agent's journal in its scratch directory, whatever the agent does.
 
   python3 journal.py [--stream <stream.jsonl> --pause-at <threshold> --flag <pause-requested>] [--ended <file>]
-                     [--stop <stop-requested>] [--lock <agent-running>]
+                     [--stop <stop-requested>] [--lock <agent-running>] [--launcher <launcher transcript>]
 
 Registered by the launcher (references/launch.md, step 6) for PreToolUse, PostToolUse, PostToolUseFailure, SubagentStop
 and SessionEnd, it
@@ -26,6 +26,12 @@ an agent's next tool call is refused with the instruction to reply now with its 
 partial.md rather than result.md, so that the resume relaunches it, the replacement starting from that state; and the
 orchestrator's next launch is refused, so that it waits for its agents, records the stop and ends. Each level ends
 after the one below it has reported, instead of being cut in the middle of its reasoning.
+It writes that stop request itself when the session that launched the audit is deleted (--launcher, the path of that
+session's transcript, <config>/projects/<project>/<session>.jsonl): the desktop app, deleting a session, removes its
+transcript and leaves <session>.desktop-released.json beside it, with "reason": "delete". Only the launcher can stop the
+audit or decide how it ends (closing.md, 8.9), so without it the audit stops itself, the same way, and stays suspended
+for a --resume from another session. A session ended any other way (closed, the app restarted, a CLI session) leaves
+no such marker, and the audit goes on.
 And it holds the audit to one agent at a time (--lock, a folder in the scratch root; SKILL.md, "One agent at a time"):
 every launch runs in the foreground (run_in_background is set to false), and a launch while another agent of the audit
 has not returned is refused, so that no two agents ever read the document, run an oracle or write a file at once. The
@@ -97,6 +103,34 @@ def record_prompt(scratch, prompt):
     return prompt
 
 
+def launcher_deleted(args):
+    """Whether the desktop app deleted the session that launched the audit: its release marker, reason "delete"."""
+    if not args.launcher:
+        return False
+    marker = Path(args.launcher).with_suffix(".desktop-released.json")
+    try:
+        return json.loads(marker.read_text(encoding="utf-8")).get("reason") == "delete"
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def request_stop_if_orphaned(args):
+    """Writes the stop request once the launcher is deleted, saying why, unless a stop is already requested."""
+    if args.stop and not Path(args.stop).exists() and launcher_deleted(args):
+        Path(args.stop).write_text(json.dumps({"reason": "launcher session deleted", "launcher": args.launcher,
+                                               "t": time.strftime("%Y-%m-%dT%H:%M:%S")}) + "\n", encoding="utf-8")
+
+
+def stop_reason(args):
+    """The state the orchestrator records for the stop: the reason the request gives, else a stop on request."""
+    try:
+        if json.loads(Path(args.stop).read_text(encoding="utf-8")).get("reason") == "launcher session deleted":
+            return "suspended (launcher session deleted)"
+    except (OSError, ValueError, AttributeError):
+        pass
+    return "suspended (stopped on request)"
+
+
 def paused(args):
     """The pause request, written if a window reached its threshold: None while the audit may go on."""
     if not (args.stream and args.flag):
@@ -112,7 +146,7 @@ STOP_AGENT = ("stop requested: run nothing more. Reply now, and end, with your c
               "the findings or the verdict in progress with their evidence, and the scripts and outputs worth reusing. "
               "A fresh agent will resume from it.")
 STOP_ORCHESTRATOR = ("stop requested: launch no agent. Record the state of the last agent in the register, commit, set "
-                     "the state to suspended (stopped on request) and end.")
+                     "the state to {state} and end.")
 
 
 ONE_AT_A_TIME = ("one agent at a time: {running} has not returned yet. Launch no other agent until its result is in "
@@ -177,6 +211,8 @@ def release_lock(lock):
 def handle(event, args):
     """Returns the reason for refusing the tool call, the hook's output that rewrites it, or None."""
     name = event.get("hook_event_name")
+    if name == "PreToolUse":
+        request_stop_if_orphaned(args)
     stopping = bool(args.stop) and Path(args.stop).exists()
     if stopping and name == "PreToolUse":
         if event.get("agent_id"):
@@ -190,7 +226,7 @@ def handle(event, args):
             if scratch:
                 record_prompt(scratch, prompt)
                 append(scratch, {"event": "refused", "stop": True})
-            return STOP_ORCHESTRATOR
+            return STOP_ORCHESTRATOR.format(state=stop_reason(args))
     orchestrator_agent = event.get("tool_name") in ("Agent", "Task") and not event.get("agent_id")
     if name == "PreToolUse" and orchestrator_agent:
         tool_input = event.get("tool_input") or {}
@@ -245,6 +281,7 @@ if __name__ == "__main__":
     ap.add_argument("--ended")
     ap.add_argument("--stop")
     ap.add_argument("--lock")
+    ap.add_argument("--launcher")
     args = ap.parse_args()  # before stdin: --help must not wait for an event
     reason = None
     try:
