@@ -315,6 +315,15 @@ function windowsOf(snap: Snapshot) {
 const stageTone = (snap: Snapshot) =>
   snap.stage === 'Terminé' ? 'success' : snap.stage.startsWith('En ') || snap.stage === 'Suspendu' ? 'warning' : undefined
 
+/** The stage as one glyph and its colour, for the band's first line; the stage in words is the pane's. */
+function stageIcon(snap: Snapshot): { glyph: string; color?: string } {
+  if (snap.stage === 'Terminé') return { glyph: '✔', color: 'success' }
+  if (snap.stage === 'En attente de ta décision') return { glyph: '?', color: 'warning' }
+  if (snap.state?.startsWith('suspended')) return { glyph: '⏸', color: 'warning' }
+  if (snap.state?.startsWith('stopping')) return { glyph: '⏹', color: 'warning' }
+  return snap.isLive ? { glyph: '●', color: ICON_COLOR } : { glyph: '·' }
+}
+
 // A status as an icon, one cell wide on every surface, and its colour; a row's hover card says it in words.
 const STATUS_ICON: Record<string, { icon: string; label: string; color?: string }> = {
   DETECTED: { icon: '·', label: 'détectée' },
@@ -423,6 +432,7 @@ export const register: Register = on => {
     const { canPause, canStop, canResume } = controlsOf(snap)
     const isArmed = Date.now() - (await read($, armed)) <= CONFIRM_MS
     const isSuspended = !!snap.state?.startsWith('suspended')
+    const status = stageIcon(snap)
     // A control is a glyph alone, padded to twice its width: an easier target, the same size greyed or not. One that
     // cannot act now is drawn greyed, as text: no Button takes a disabled state. Its label names it for a screen reader.
     const control = (key: string, glyph: string, label: string, isActive: boolean, act: () => unknown, color?: string) =>
@@ -438,13 +448,18 @@ export const register: Register = on => {
 
     return (
       <Box flexDirection="column">
-        <Box flexDirection="row" gap={1}>
-          {icon}
-          <Text bold>SpecAudit</Text>
-          <Text wrap="truncate-end">{snap.document ?? snap.project}</Text>
-          <Text color={stageTone(snap)} dimColor={!stageTone(snap)} wrap="truncate-end">
-            {snap.stage}
-          </Text>
+        <Box flexDirection="row">
+          <Box flexDirection="row" gap={1} flexGrow={1} flexShrink={1} minWidth={0}>
+            {icon}
+            <Text bold>SpecAudit</Text>
+            <Text wrap="truncate-end">{snap.document ?? snap.project}</Text>
+            {/* The stage as its icon alone: the limit alerts below say in words what a pause is about. */}
+            <Text key="stage" color={status.color} dimColor={!status.color}>
+              {status.glyph}
+            </Text>
+          </Box>
+          {/* The detail, top right, as a maximize glyph: the pane is the band at full size. */}
+          <Box flexShrink={0}>{control('detail', '⤢', 'Détails', true, () => openPane($))}</Box>
         </Box>
         {/* The usage windows near their pause threshold, one line each, between the title and the progress. */}
         {limitAlerts(snap).map(a => (
@@ -481,7 +496,6 @@ export const register: Register = on => {
             {snap.isLive &&
               control('stop', '⏹', isArmed ? "Confirmer l'arrêt" : 'Arrêter', canStop, () => stop($, snap), isArmed ? 'error' : undefined)}
             {snap.isLive && control('resume', '▶', 'Reprendre', canResume, () => resume($, snap))}
-            {control('detail', '☰', 'Détails', true, () => openPane($))}
           </Box>
         </Box>
       </Box>

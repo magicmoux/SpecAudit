@@ -72,7 +72,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
   test(`band: a live audit's progress and margin (${surface})`, async ($, on) => {
     seed(on, LIVE)
     const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
-    expect(await ui.find({ type: 'Text', text: /Agent : adjudicator F-1-2/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^●$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Agent : adjudicator F-1-2/ })).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /3\/6/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Marge 5 h/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /^ · sem\. $/ })).toBeDefined()
@@ -115,7 +116,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
   test(`band: a finished audit waiting on a decision (${surface})`, async ($, on) => {
     seed(on, DONE)
     const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
-    expect(await ui.find({ type: 'Text', text: /En attente de ta décision/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^\?$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /En attente de ta décision/ })).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /6 erreurs confirmées · 5 corrigées · 4 garde-fous/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Marge/ })).toBeUndefined()
     await ui.unmount()
