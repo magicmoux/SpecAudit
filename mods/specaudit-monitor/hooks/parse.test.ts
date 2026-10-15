@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { auditWorktrees, bar, indexSection, isLive, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
+import { auditWorktrees, bar, controlsOf, deadOf, indexSection, isLive, limitAlerts, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
 
 const REGISTER = `# Audit register — selection.md
 
@@ -13,6 +13,7 @@ const REGISTER = `# Audit register — selection.md
 - Parameters: max-passes = 1, auto = no, fail-fast = no, pause-at = session=7,week=25, auto-resume = no, model = sonnet
 - Session: 705774c1, state: running
 - Resumes: 0
+- Mode: audit session (pid 1660, session 3b98458e)
 
 ## Agents
 
@@ -90,9 +91,58 @@ describe('register', () => {
       REGISTER.replace('state: running', 'state: suspended (usage limit: week, resumes 2026-10-18 01:05:00)'),
     )
     expect(stageOf(paused)).toBe("En pause, limite d'usage (reprise 2026-10-18 01:05:00)")
+    const orphaned = parseRegister(REGISTER.replace('state: running', 'state: suspended (launcher session deleted)'))
+    expect(stageOf(orphaned)).toBe('Suspendu, session de lancement supprimée')
     const closed = parseRegister(REGISTER.replace('state: running', 'state: closed'))
     expect(isLive(closed)).toBe(false)
     expect(stageOf(closed)).toBe('Terminé')
+  })
+
+  test('an audit stopped although its register says it goes on', async () => {
+    const running = parseRegister(REGISTER)
+    expect(running.pid).toBe(1660)
+    expect(running.auditSession).toBe('3b98458e')
+    expect(deadOf(running, undefined)).toBeUndefined()
+    expect(deadOf(running, ['1660 claude.exe -p'])).toBeUndefined()
+    expect(deadOf(running, ['42 claude.exe --session-id 3b98458e'])).toBeUndefined()
+    expect(deadOf(running, ['16600 other', '42 claude.exe'])).toBe("processus de l'audit terminé")
+    const suspended = parseRegister(REGISTER.replace('state: running', 'state: suspended (usage limit: week, resumes 2026-10-18 01:05:00)'))
+    expect(deadOf(suspended, ['7 claude.exe --resume=705774c1'])).toBeUndefined()
+    expect(deadOf(suspended, ['7 claude.exe --resume=0b28d4b2'])).toBe('session de lancement fermée')
+    expect(deadOf(suspended, ['9 bash -c "grep 705774c1 register.md"'])).toBe('session de lancement fermée')
+    const unrecorded = parseRegister(REGISTER.replace(/^- Mode: .*$/m, '- Mode: audit session (pid and session id to be recorded at launch)'))
+    expect(deadOf(unrecorded, ['7 claude.exe'])).toBeUndefined()
+    expect(deadOf(parseRegister(REGISTER.replace('state: running', 'state: closed')), [])).toBeUndefined()
+  })
+
+  test('the launcher, the mode, and the controls they allow', async () => {
+    const info = parseRegister(REGISTER)
+    expect(info.launcher).toBe('705774c1')
+    expect(info.inProcess).toBe(true)
+    const snap = (state: string, extra = {}) => ({
+      project: 'demo', stamp: 's', isLive: !state.startsWith('closed'), stage: '', state, updatedAt: 0,
+      scratch: 'C:/x-scratch', launcher: '705774c1', inProcess: true, ...extra,
+    })
+    expect(controlsOf(snap('running'))).toEqual({ canPause: true, canStop: true, canResume: false })
+    expect(controlsOf(snap('running', { stopRequested: true }))).toEqual({ canPause: false, canStop: false, canResume: false })
+    expect(controlsOf(snap('suspended (stopped on request)'))).toEqual({ canPause: false, canStop: false, canResume: true })
+    expect(controlsOf(snap('running', { inProcess: false }))).toEqual({ canPause: false, canStop: false, canResume: false })
+    expect(controlsOf(snap('closed'))).toEqual({ canPause: false, canStop: false, canResume: false })
+    const gone = { isLive: false, stopped: 'session de lancement fermée' }
+    expect(controlsOf(snap('suspended (usage limit: week, resumes 2026-10-18 01:05:00)', gone))).toEqual({ canPause: false, canStop: false, canResume: true })
+    expect(controlsOf(snap('running', { isLive: false, stopped: "processus de l'audit terminé" }))).toEqual({ canPause: false, canStop: false, canResume: false })
+    expect(parseRegister(REGISTER.replace(/^- Mode: .*$/m, '- Mode: in session')).inProcess).toBe(false)
+  })
+
+  test('limit alerts from 70 % of the margin, an error from 90 %', async () => {
+    const snap = (session: number, week: number, isLive = true) => ({
+      project: 'demo', isLive, stage: '', updatedAt: 0,
+      session: { start: 0.1, now: session, limit: 0.2 }, week: { start: 0.2, now: week, limit: 0.3 },
+    })
+    expect(limitAlerts(snap(0.15, 0.2))).toEqual([])
+    expect(limitAlerts(snap(0.18, 0.2)).map(a => [a.name, a.tone])).toEqual([['5 h', 'warning']])
+    expect(limitAlerts(snap(0.18, 0.3)).map(a => [a.name, a.tone])).toEqual([['5 h', 'warning'], ['semaine', 'error']])
+    expect(limitAlerts(snap(0.2, 0.3, false))).toEqual([])
   })
 
   test('each error with its id, title and status', async () => {

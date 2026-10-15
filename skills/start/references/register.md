@@ -22,7 +22,7 @@
 - Architecture: SPECAUDIT_ARCH.md, <commit | copied, sha256:…>; audited: <paths>, profile <name>; normative dependencies given: <paths | none>; warnings of `arch.py require` <or none>; artifacts that look like oracles but are not in it <or none>
 - Architecture refusals: <n> (each: path, role, the step and the error whose fix touched it, refused by the hook or by `arch.py check`, restored; an error of the audit, listed in the report)
 - Configuration: <.specaudit.md | .specaudit/config.md | none>, <commit | copied, sha256:…>; deprecated keys `profiles` / `normative` <used for: … | none>; answer to the tracking question if one was asked
-- Session: <id>, state: running | stopping | suspended | suspended (usage limit: session | week, resumes <time>) | suspended (account: <email> expected, <found or logged out> found) | closed
+- Session: <id>, state: running | stopping | suspended | suspended (launcher session deleted) | suspended (usage limit: session | week, resumes <time>) | suspended (account: <email> expected, <found or logged out> found) | closed
 - Resumes: <n> automatic resumes after a usage limit (at most 5), each with its window and time
 - Mode: audit session (pid <pid>, session <id>) | in-session
 - Account: <email> (<organization>), configuration folder <path>, settled by question | `--account`, remembered for the project yes | no; or this session's account, <email> (`CLAUDE_CODE_USER_EMAIL`) or unknown (`--in-session`). Fixed for the whole audit: every resume and relaunch checks it (`account.py check`); a folder changed for the same account is recorded after it, `folder <old> → <new> (<date>)`

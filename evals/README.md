@@ -100,7 +100,7 @@ Every repository the cases and scripts build has a `SPECAUDIT_ARCH.md`, written 
 
 ## The hook: `journal.sh`
 
-`evals/journal.sh` tests `skills/start/references/journal.py` on synthetic hook events: every launch forced to the foreground, a second launch refused while the first agent has not returned (and nothing left in its scratch directory), the lock released when the Agent call returns or fails, a stale lock taken over once its agent has its result, a launch refused by a pause not holding the lock, and no change without `--lock`; and `_fixtures/serial_check.py`, which the end-to-end scripts run on an audit's journals to tell whether two agents overlapped. No model, no network; it runs in a second.
+`evals/journal.sh` tests `skills/start/references/journal.py` on synthetic hook events: every launch forced to the foreground, a second launch refused while the first agent has not returned (and nothing left in its scratch directory), the lock released when the Agent call returns or fails, a stale lock taken over once its agent has its result, a launch refused by a pause not holding the lock, a deleted launcher session (`--launcher`) stopping the audit with its own state, and no change without `--lock`; and `_fixtures/serial_check.py`, which the end-to-end scripts run on an audit's journals to tell whether two agents overlapped. No model, no network; it runs in a second.
 
 ## The launcher's account: `account.sh`
 

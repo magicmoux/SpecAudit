@@ -9,7 +9,7 @@
     {
       "name": "specaudit-monitor",
       "source": "./",
-      "description": "A SpecAudit pane: progress and usage margin of the running audit, its final figures kept until the next one."
+      "description": "A SpecAudit pane: progress and usage margin of the running audit, its final figures kept until the next one, with pause, stop and resume buttons in its band."
     }
   ]
 }

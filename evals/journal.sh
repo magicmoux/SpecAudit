@@ -2,7 +2,7 @@
 # Test of the audit session's hook, skills/start/references/journal.py, on synthetic hook events: one agent at a time
 # (--lock): a launch is forced to the foreground, a second launch while the first has not returned is refused and leaves
 # nothing in its scratch directory, the return releases the lock, a lock whose agent ended without its release is
-# stale, and a launch refused by a pause releases it; and of evals/_fixtures/serial_check.py, which reads the journals
+# stale, and a launch refused by a pause releases it; a deleted launcher session (--launcher) stops the audit; and of evals/_fixtures/serial_check.py, which reads the journals
 # an audit leaves to tell whether two agents overlapped. No model, no network. Usage: evals/journal.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -58,6 +58,30 @@ hook "$(launch adjudicator-F-1-2)" --stream "$TMP/none.jsonl" --flag "$S/pause-r
 check "launch refused by a pause" "[ \"\$(code)\" = 2 ] && grep -q '^paused: usage limit' '$TMP/err'"
 check "the refused launch does not hold the lock" "[ ! -e '$LOCK' ]"
 rm -f "$S/pause-requested"
+
+# The launcher's session deleted by the desktop app: its transcript gone, a release marker with reason "delete" beside it.
+L="$TMP/projects/p/launcher.jsonl"; MARK="$TMP/projects/p/launcher.desktop-released.json"; STOP="$S/stop-requested"
+mkdir -p "$TMP/projects/p"; echo '{}' > "$L"; rm -rf "$LOCK"
+hook "$(launch adjudicator-F-1-3)" --stop "$STOP" --launcher "$L"
+check "a launcher still there stops nothing" "[ \"\$(code)\" = 0 ] && [ ! -e '$STOP' ]"
+hook "$(returned)"
+echo '{"v": 1, "releasedAt": "2026-10-15T21:23:31.884Z", "reason": "archive"}' > "$MARK"
+hook "$(launch adjudicator-F-1-4)" --stop "$STOP" --launcher "$L"
+check "a release for another reason stops nothing" "[ \"\$(code)\" = 0 ] && [ ! -e '$STOP' ]"
+hook "$(returned)"
+rm -f "$L"; echo '{"v": 1, "releasedAt": "2026-10-15T21:23:31.884Z", "reason": "delete"}' > "$MARK"
+hook "$(launch adjudicator-F-1-5)" --stop "$STOP" --launcher "$L"
+check "launcher deleted: the stop is requested, with its reason" "grep -q 'launcher session deleted' '$STOP'"
+check "launcher deleted: the launch is refused, naming the state to record" "[ \"\$(code)\" = 2 ] && grep -qF 'suspended (launcher session deleted)' '$TMP/err'"
+printf '{"message": {"content": "Check it. Scratch directory: %s/adjudicator-F-1-5"}}
+' "$S" > "$TMP/agent.jsonl"
+printf '{"hook_event_name": "PreToolUse", "tool_name": "Bash", "agent_id": "a1", "agent_transcript_path": "%s/agent.jsonl", "tool_input": {}}' "$TMP" > "$TMP/ev"
+"$PY" "$JOURNAL" --stop "$STOP" --launcher "$L" < "$TMP/ev" > /dev/null 2> "$TMP/err"; echo $? > "$TMP/code"
+check "launcher deleted: an agent's next tool call is refused" "[ \"\$(code)\" = 2 ] && grep -q '^stop requested' '$TMP/err'"
+rm -f "$MARK"; : > "$STOP"; rm -rf "$LOCK"
+hook "$(launch adjudicator-F-1-6)" --stop "$STOP" --launcher "$L"
+check "a stop on request keeps its own state" "[ \"\$(code)\" = 2 ] && grep -qF 'suspended (stopped on request)' '$TMP/err'"
+rm -f "$STOP"; rm -rf "$LOCK"
 
 printf '{"hook_event_name": "PreToolUse", "tool_name": "Agent", "tool_input": {"prompt": "Scratch directory: %s/x"}}' "$S" \
   | "$PY" "$JOURNAL" > "$TMP/out" 2>&1

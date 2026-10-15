@@ -72,17 +72,71 @@ for (const surface of ['terminal', 'desktop'] as const) {
   test(`band: a live audit's progress and margin (${surface})`, async ($, on) => {
     seed(on, LIVE)
     const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
-    expect(await ui.find({ type: 'Text', text: /Agent : adjudicator F-1-2/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^●$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Agent : adjudicator F-1-2/ })).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /3\/6/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Marge 5 h/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^ · sem\. $/ })).toBeDefined()
     expect(await ui.find({ key: 'detail' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /[█░▏▎▍▌▋▊▉]/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test(`band: pause and stop while it runs, resume hidden (${surface})`, async ($, on) => {
+    seed(on, { ...LIVE, state: 'running', scratch: 'C:/x-scratch', launcher: '705774c1', inProcess: true })
+    const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
+    expect(await ui.find({ type: 'Button', key: 'pause' })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'stop' })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'resume' })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /^ ▶ $/ })).toBeUndefined()
+    await ui.press({ key: 'stop' })
+    expect(await ui.find({ type: 'Button', key: 'stop', label: "Confirmer l'arrêt" })).toBeDefined()
+    await ui.unmount()
+  })
+
+  test(`band: a suspended audit offers resume alone (${surface})`, async ($, on) => {
+    seed(on, { ...LIVE, state: 'suspended (stopped on request)', stage: 'Suspendu', scratch: 'C:/x-scratch', launcher: '705774c1', inProcess: true })
+    const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
+    expect(await ui.find({ type: 'Button', key: 'resume' })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'pause' })).toBeUndefined()
+    expect(await ui.find({ type: 'Button', key: 'stop' })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /^ ⏸ $/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test(`band: a paused audit whose launcher has gone is stopped, resume alone (${surface})`, async ($, on) => {
+    seed(on, {
+      ...LIVE,
+      isLive: false,
+      state: 'suspended (usage limit: week, resumes 2026-10-18 01:05:00)',
+      stage: 'Arrêté : session de lancement fermée',
+      stopped: 'session de lancement fermée',
+      scratch: 'C:/x-scratch',
+      launcher: 'f098359c',
+      inProcess: true,
+    })
+    const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
+    expect(await ui.find({ type: 'Text', text: /^⏹$/ })).toBeDefined()
+    for (const key of ['pause', 'stop']) expect(await ui.find({ type: 'Button', key })).toBeUndefined()
+    expect(await ui.find({ type: 'Button', key: 'resume' })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'detail' })).toBeDefined()
+    await ui.unmount()
+  })
+
+  test(`band: a limit alert between the title and the progress (${surface})`, async ($, on) => {
+    seed(on, { ...LIVE, session: { start: 0.02, now: 0.065, limit: 0.07 } })
+    const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
+    expect(await ui.find({ type: 'Text', text: /^⚠ Limite 5 h : 90 % de la marge utilisée \(compte à 7 %, pause à 7 %\)$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Limite semaine/ })).toBeUndefined()
     await ui.unmount()
   })
 
   test(`band: a finished audit waiting on a decision (${surface})`, async ($, on) => {
     seed(on, DONE)
     const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
-    expect(await ui.find({ type: 'Text', text: /En attente de ta décision/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^\?$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /En attente de ta décision/ })).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /6 erreurs confirmées · 5 corrigées · 4 garde-fous/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Marge/ })).toBeUndefined()
     await ui.unmount()
