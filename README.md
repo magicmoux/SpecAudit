@@ -162,6 +162,19 @@ SpecAudit-20261010_210233/
 
 `SPECAUDITS.md`, at the root, has an entry for every audit launched, newest first: a summary table (date, audited object, launched by, result: `RUNNING`, `FINISHED`, `INTERRUPTED` or `FAILED` with its detail), linked to one section per audit with its summary, details (its consumption among them) and results folder. To attest a result, sign a git tag on your own machine after reading the report; `/spec-audit:attest` checks it.
 
+## Audit monitor (optional)
+
+`specaudit-monitor` is a separate, optional plugin of the same marketplace: a band above the prompt and a detail pane that follow the audit of the current project.
+
+```text
+/plugin install specaudit-monitor@spec-audit
+```
+
+- The band: the audited document, the audit's stage, a progress bar (errors evaluated out of those detected) and how much of the usage margin, from the launch to the pause threshold, the audit has used, for the session and week windows in turn; once the audit has ended, its final figures (confirmed and fixed errors, guards, result), kept until the next one. Its `détails ▸` button, or `/specaudit-pane`, opens the pane.
+- The pane: consumption first (tokens, cost, session and week windows), then sections folded by default: progress, errors (a table with each error's status and notes, a row opening its card), evidence, and technical details.
+
+It reads files only: the audit's register, `SPECAUDITS.md`, git and the audit session's stream. It never calls a model and costs no tokens. It relies on Claude Code's mod API, which may change between Claude Code versions; if it does, only the monitor stops loading, never `spec-audit`. Its sources and tests are in [`mods/specaudit-monitor/`](mods/specaudit-monitor/); its interface is in French for now.
+
 ## Requirements
 
 - Claude Code with plugin support;
@@ -241,6 +254,8 @@ SpecAudit/
 ├── docs/                      installation, usage, how it works
 ├── examples/                  demo specification
 ├── evals/                     eval suite and end-to-end scripts (see evals/README.md)
+├── mods/
+│   └── specaudit-monitor/     optional plugin: the band and pane that follow an audit (reads files only)
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 └── LICENSE                    CC BY-NC-SA 4.0, with additional permissions
