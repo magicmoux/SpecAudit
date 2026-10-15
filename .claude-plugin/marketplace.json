@@ -11,6 +11,12 @@
       "source": "./",
       "description": "Catch the errors in your specs before your readers do. SpecAudit reviews them like a skeptic, and confirms an error only with evidence you can rerun. Formal documents today, extensible to every kind of spec tomorrow.",
       "category": "productivity"
+    },
+    {
+      "name": "specaudit-monitor",
+      "source": "./mods/specaudit-monitor",
+      "description": "A SpecAudit pane: progress and usage margin of the running audit, its final figures kept until the next one. Reads files only, never calls a model.",
+      "category": "productivity"
     }
   ]
 }

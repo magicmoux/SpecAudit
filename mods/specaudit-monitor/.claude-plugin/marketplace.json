@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "specaudit-monitor",
+  "owner": { "name": "Max Brönnimann" },
+  "metadata": {
+    "description": "The SpecAudit monitor alone, for installing it from a local copy of this folder."
+  },
+  "plugins": [
+    {
+      "name": "specaudit-monitor",
+      "source": "./",
+      "description": "A SpecAudit pane: progress and usage margin of the running audit, its final figures kept until the next one."
+    }
+  ]
+}
