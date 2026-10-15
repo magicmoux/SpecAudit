@@ -421,15 +421,17 @@ export const register: Register = on => {
     const { shown, used, tone } = windowsOf(snap, t)
     const { canPause, canStop, canResume } = controlsOf(snap)
     const isArmed = Date.now() - (await read($, armed)) <= CONFIRM_MS
-    // A control that cannot act now is drawn greyed, as text: no Button takes a disabled state.
-    const control = (key: string, label: string, isActive: boolean, act: () => Promise<void>) =>
+    const isSuspended = !!snap.state?.startsWith('suspended')
+    // A control is a glyph alone, padded to twice its width: an easier target, the same size greyed or not. One that
+    // cannot act now is drawn greyed, as text: no Button takes a disabled state. Its label names it for a screen reader.
+    const control = (key: string, glyph: string, label: string, isActive: boolean, act: () => unknown, color?: string) =>
       isActive ? (
-        <Button key={key} plain onPress={() => void act()}>
-          {label}
+        <Button key={key} label={label} plain onPress={() => void act()}>
+          <Text color={color}>{` ${glyph} `}</Text>
         </Button>
       ) : (
         <Text key={key} dimColor>
-          {label}
+          {` ${glyph} `}
         </Text>
       )
 
@@ -437,46 +439,43 @@ export const register: Register = on => {
       <Box flexDirection="column">
         <Box flexDirection="row" gap={1}>
           {icon}
-          <Text bold wrap="truncate-end">
-            SpecAudit · {snap.document ?? snap.project}
-          </Text>
+          <Text bold>SpecAudit</Text>
+          <Text wrap="truncate-end">{snap.document ?? snap.project}</Text>
           <Text color={stageTone(snap)} dimColor={!stageTone(snap)} wrap="truncate-end">
             {snap.stage}
           </Text>
-          <Button key="detail" plain dimColor onPress={() => openPane($)}>
-            détails ▸
-          </Button>
         </Box>
-        {snap.isLive && (
-          <Box flexDirection="row" gap={2}>
-            {control('pause', '⏸ pause', canPause, () => pause($, snap))}
-            {control('stop', isArmed && canStop ? '⏹ confirmer ?' : '⏹ stop', canStop, () => stop($, snap))}
-            {control('resume', '▶ reprendre', canResume, () => resume($, snap))}
-            {snap.stopRequested && !snap.state?.startsWith('suspended') && <Text dimColor>arrêt demandé…</Text>}
-          </Box>
-        )}
-        {snap.isLive ? (
-          // No bar in the band: a spinner says the audit is working (⏸ once it is suspended), the figures say how far.
-          <Text>
-            <Text color={snap.state?.startsWith('suspended') ? 'warning' : ICON_COLOR}>
-              {snap.state?.startsWith('suspended') ? '⏸' : SPINNER[t % SPINNER.length]}
-            </Text>
-            <Text dimColor> Avancement </Text>
-            {c ? `${c.evaluated}/${c.total}` : '…'}
-            {shown && (
-              <Text>
-                <Text dimColor>{`   Marge ${shown.name} `}</Text>
-                <Text color={tone}>{pct(used)}</Text>
+        <Box flexDirection="row">
+          <Box flexGrow={1} flexShrink={1} minWidth={0}>
+            {snap.isLive ? (
+              // No bar in the band: a spinner says the audit is working (⏸ once it is suspended), the figures say how far.
+              <Text wrap="truncate-end">
+                <Text color={isSuspended ? 'warning' : ICON_COLOR}>{isSuspended ? '⏸' : SPINNER[t % SPINNER.length]}</Text>
+                <Text dimColor> Avancement </Text>
+                {c ? `${c.evaluated}/${c.total}` : '…'}
+                {shown && (
+                  <Text>
+                    <Text dimColor>{`   Marge ${shown.name} `}</Text>
+                    <Text color={tone}>{pct(used)}</Text>
+                  </Text>
+                )}
+              </Text>
+            ) : (
+              <Text dimColor wrap="truncate-end">
+                {c ? `${c.confirmed} erreurs confirmées · ${c.fixed} corrigées` : ''}
+                {snap.guards !== undefined ? ` · ${snap.guards} garde-fous` : ''}
+                {snap.result ? ` · ${snap.result}` : ''}
               </Text>
             )}
-          </Text>
-        ) : (
-          <Text dimColor>
-            {c ? `${c.confirmed} erreurs confirmées · ${c.fixed} corrigées` : ''}
-            {snap.guards !== undefined ? ` · ${snap.guards} garde-fous` : ''}
-            {snap.result ? ` · ${snap.result}` : ''}
-          </Text>
-        )}
+          </Box>
+          <Box flexDirection="row" flexShrink={0}>
+            {snap.isLive && control('pause', '⏸', 'Mettre en pause', canPause, () => pause($, snap))}
+            {snap.isLive &&
+              control('stop', '⏹', isArmed ? "Confirmer l'arrêt" : 'Arrêter', canStop, () => stop($, snap), isArmed ? 'error' : undefined)}
+            {snap.isLive && control('resume', '▶', 'Reprendre', canResume, () => resume($, snap))}
+            {control('detail', '☰', 'Détails', true, () => openPane($))}
+          </Box>
+        </Box>
       </Box>
     )
   })

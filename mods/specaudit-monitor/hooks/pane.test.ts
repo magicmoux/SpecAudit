@@ -87,9 +87,9 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(await ui.find({ type: 'Button', key: 'pause' })).toBeDefined()
     expect(await ui.find({ type: 'Button', key: 'stop' })).toBeDefined()
     expect(await ui.find({ type: 'Button', key: 'resume' })).toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: /▶ reprendre/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^ ▶ $/ })).toBeDefined()
     await ui.press({ key: 'stop' })
-    expect(await ui.find({ type: 'Button', key: 'stop', text: /confirmer/ })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'stop', label: "Confirmer l'arrêt" })).toBeDefined()
     await ui.unmount()
   })
 
@@ -99,7 +99,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(await ui.find({ type: 'Button', key: 'resume' })).toBeDefined()
     expect(await ui.find({ type: 'Button', key: 'pause' })).toBeUndefined()
     expect(await ui.find({ type: 'Button', key: 'stop' })).toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: /⏸ pause/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^ ⏸ $/ })).toBeDefined()
     await ui.unmount()
   })
 
