@@ -174,11 +174,14 @@ export function stageOf(info: RegisterInfo): string {
  * resumes it on its own or decides how it ends. A session is alive while a process runs it, its id after `--resume` or
  * `--session-id`: a command that merely names the id (a grep, a script) does not count.
  */
+/** The reason deadOf gives for a suspended audit whose launcher is gone: still resumable, from another session. */
+export const LAUNCHER_GONE = 'session de lancement fermée'
+
 export function deadOf(info: RegisterInfo, processes: string[] | undefined): string | undefined {
   const state = info.state ?? ''
   if (!processes || !isLive(info)) return undefined
   const carries = (id?: string) => !!id && processes.some(line => new RegExp(`--(?:resume|session-id)[= ]"?${id}`).test(line))
-  if (state.startsWith('suspended') || !info.inProcess) return carries(info.launcher) ? undefined : 'session de lancement fermée'
+  if (state.startsWith('suspended') || !info.inProcess) return carries(info.launcher) ? undefined : LAUNCHER_GONE
   if (!info.pid && !info.auditSession) return undefined
   const alive = (!!info.pid && processes.some(line => line.trimStart().startsWith(`${info.pid} `))) || carries(info.auditSession)
   return alive ? undefined : "processus de l'audit terminé"
@@ -224,12 +227,15 @@ export const bar = (fraction: number, width: number) => {
 export const compact = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(2)} M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)} k` : String(n)
 
-/** What the band's controls may do now: pause and stop while it runs, resume once it is suspended. */
+/**
+ * What the band's controls may do now: pause and stop while it runs, resume once it is suspended, also when its launcher
+ * has gone, since `/spec-audit:start --resume` takes over from another session.
+ */
 export function controlsOf(snap: Snapshot) {
   const state = snap.state ?? ''
   const isSuspended = state.startsWith('suspended')
   const isRunning = snap.isLive && !!snap.inProcess && !!snap.scratch && !isSuspended && !state.startsWith('stopping') && !snap.stopRequested
-  return { canPause: isRunning, canStop: isRunning, canResume: snap.isLive && isSuspended }
+  return { canPause: isRunning, canStop: isRunning, canResume: isSuspended && (snap.isLive || snap.stopped === LAUNCHER_GONE) }
 }
 
 /** The usage windows near their pause threshold, for the band's alerts: from 70 % of the margin used, at 90 % an error. */

@@ -128,6 +128,9 @@ describe('register', () => {
     expect(controlsOf(snap('suspended (stopped on request)'))).toEqual({ canPause: false, canStop: false, canResume: true })
     expect(controlsOf(snap('running', { inProcess: false }))).toEqual({ canPause: false, canStop: false, canResume: false })
     expect(controlsOf(snap('closed'))).toEqual({ canPause: false, canStop: false, canResume: false })
+    const gone = { isLive: false, stopped: 'session de lancement fermée' }
+    expect(controlsOf(snap('suspended (usage limit: week, resumes 2026-10-18 01:05:00)', gone))).toEqual({ canPause: false, canStop: false, canResume: true })
+    expect(controlsOf(snap('running', { isLive: false, stopped: "processus de l'audit terminé" }))).toEqual({ canPause: false, canStop: false, canResume: false })
     expect(parseRegister(REGISTER.replace(/^- Mode: .*$/m, '- Mode: in session')).inProcess).toBe(false)
   })
 

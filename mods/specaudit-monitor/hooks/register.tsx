@@ -319,10 +319,37 @@ async function stop($: EngineInterface, snap: Snapshot) {
   )
 }
 
+// The start skill's command: `spec-audit:start` from the plugin, `spec-audit-start` copied by hand (docs/installation.md).
+const START_COMMANDS = ['spec-audit:start', 'spec-audit-start']
+
+/**
+ * Resumes the audit: its launcher does it while it runs; once it has gone, this session does, as
+ * `/spec-audit:start <document> --resume` typed here would, and so becomes the audit's launcher. That takes a session
+ * opened in the audit's repository (the skill resumes the audit of its own) and the start skill installed in it.
+ */
 async function resume($: EngineInterface, snap: Snapshot) {
-  const command = `/spec-audit:start ${snap.document} --resume`
-  const told = await tellLauncher($, snap, `Reprise de ${auditName(snap)} demandée depuis le bloc specaudit-monitor : exécute ${command} dans ${cwd}.`)
-  $.ui.toast(told ? "Reprise demandée à la session de lancement de l'audit." : `Session de lancement injoignable : lance ${command} dans ${cwd}.`)
+  const args = `${snap.document} --resume`
+  if (!snap.stopped) {
+    const told = await tellLauncher($, snap, `Reprise de ${auditName(snap)} demandée depuis le bloc specaudit-monitor : exécute /spec-audit:start ${args} dans ${cwd}.`)
+    if (told) {
+      $.ui.toast("Reprise demandée à la session de lancement de l'audit.")
+      return
+    }
+  }
+  const here = await $.session.cwd()
+  const root = slash((await run($, ['git', 'rev-parse', '--show-toplevel'], here))?.trim() || here)
+  const names = (await $.command.list().catch(() => [])).map(c => c.name)
+  const command = START_COMMANDS.find(name => names.includes(name))
+  if (!command) {
+    $.ui.toast(`Le skill spec-audit n'est pas installé dans cette session : lance /spec-audit:start ${args} depuis une session ouverte dans ${cwd}.`)
+    return
+  }
+  if (root.toLowerCase() !== cwd.toLowerCase()) {
+    $.ui.toast(`Cette session est ouverte dans ${baseName(root)}, pas dans le dépôt de l'audit : lance /${command} ${args} depuis une session ouverte dans ${cwd}.`)
+    return
+  }
+  await $.command.run({ command, args })
+  $.ui.toast("Reprise lancée dans cette session, qui devient la session de lancement de l'audit.")
 }
 
 /** A text cut to `n` cells, an ellipsis in its last one. */

@@ -105,7 +105,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await ui.unmount()
   })
 
-  test(`band: an audit whose launcher has gone is stopped, without controls (${surface})`, async ($, on) => {
+  test(`band: a paused audit whose launcher has gone is stopped, resume alone (${surface})`, async ($, on) => {
     seed(on, {
       ...LIVE,
       isLive: false,
@@ -118,7 +118,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
     })
     const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
     expect(await ui.find({ type: 'Text', text: /^⏹$/ })).toBeDefined()
-    for (const key of ['pause', 'stop', 'resume']) expect(await ui.find({ type: 'Button', key })).toBeUndefined()
+    for (const key of ['pause', 'stop']) expect(await ui.find({ type: 'Button', key })).toBeUndefined()
+    expect(await ui.find({ type: 'Button', key: 'resume' })).toBeDefined()
     expect(await ui.find({ type: 'Button', key: 'detail' })).toBeDefined()
     await ui.unmount()
   })
