@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { auditWorktrees, bar, controlsOf, indexSection, isLive, limitAlerts, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
+import { auditWorktrees, bar, controlsOf, deadOf, indexSection, isLive, limitAlerts, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
 
 const REGISTER = `# Audit register — selection.md
 
@@ -96,6 +96,23 @@ describe('register', () => {
     const closed = parseRegister(REGISTER.replace('state: running', 'state: closed'))
     expect(isLive(closed)).toBe(false)
     expect(stageOf(closed)).toBe('Terminé')
+  })
+
+  test('an audit stopped although its register says it goes on', async () => {
+    const running = parseRegister(REGISTER)
+    expect(running.pid).toBe(1660)
+    expect(running.auditSession).toBe('3b98458e')
+    expect(deadOf(running, undefined)).toBeUndefined()
+    expect(deadOf(running, ['1660 claude.exe -p'])).toBeUndefined()
+    expect(deadOf(running, ['42 claude.exe --session-id 3b98458e'])).toBeUndefined()
+    expect(deadOf(running, ['16600 other', '42 claude.exe'])).toBe("processus de l'audit terminé")
+    const suspended = parseRegister(REGISTER.replace('state: running', 'state: suspended (usage limit: week, resumes 2026-10-18 01:05:00)'))
+    expect(deadOf(suspended, ['7 claude.exe --resume=705774c1'])).toBeUndefined()
+    expect(deadOf(suspended, ['7 claude.exe --resume=0b28d4b2'])).toBe('session de lancement fermée')
+    expect(deadOf(suspended, ['9 bash -c "grep 705774c1 register.md"'])).toBe('session de lancement fermée')
+    const unrecorded = parseRegister(REGISTER.replace(/^- Mode: .*$/m, '- Mode: audit session (pid and session id to be recorded at launch)'))
+    expect(deadOf(unrecorded, ['7 claude.exe'])).toBeUndefined()
+    expect(deadOf(parseRegister(REGISTER.replace('state: running', 'state: closed')), [])).toBeUndefined()
   })
 
   test('the launcher, the mode, and the controls they allow', async () => {

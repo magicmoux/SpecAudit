@@ -7,6 +7,7 @@ import {
   bar,
   compact,
   controlsOf,
+  deadOf,
   indexSection,
   isLive,
   limitAlerts,
@@ -116,14 +117,43 @@ async function beaconRepo($: EngineInterface, dir: string, audit?: { stamp: stri
   return undefined
 }
 
-type Found = { repo: string; stamp: string; path: string; text: string; live: boolean; interpreter?: string }
+// The processes running, `<pid> <command line>` per line, read at most every 10 s, the pace of a live audit's refresh:
+// whether an audit's process, or its launcher's, still runs. Undefined when they cannot be listed: the register's state is then taken as it is.
+const PROCESSES_MS = 10000
+let processCache: { at: number; lines: string[] | undefined } | undefined
+
+async function processes($: EngineInterface) {
+  if (processCache && Date.now() - processCache.at < PROCESSES_MS) return processCache.lines
+  const windows = [
+    'powershell',
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    'Get-CimInstance Win32_Process | ForEach-Object { "$($_.ProcessId) $($_.CommandLine)" }',
+  ]
+  const posix = ['ps', '-eo', 'pid=,args=']
+  const order = /^[A-Za-z]:/.test(cwd) ? [windows, posix] : [posix, windows]
+  let lines: string[] | undefined
+  for (const argv of order) {
+    const out = await run($, argv)
+    if (out) {
+      lines = out.split(/\r?\n/).filter(Boolean)
+      break
+    }
+  }
+  processCache = { at: Date.now(), lines }
+  return lines
+}
+
+type Found = { repo: string; stamp: string; path: string; text: string; live: boolean; stopped?: string; interpreter?: string }
 
 async function audit($: EngineInterface, repo: string): Promise<Found | undefined> {
   const newest = await newestRegister($, repo)
   if (!newest) return undefined
   const text = (await readText($, newest.path)) ?? ''
   const info = parseRegister(text)
-  return { repo, ...newest, text, live: isLive(info), interpreter: info.interpreter }
+  const stopped = isLive(info) ? deadOf(info, await processes($)) : undefined
+  return { repo, ...newest, text, live: isLive(info) && !stopped, stopped, interpreter: info.interpreter }
 }
 
 /**
@@ -159,7 +189,8 @@ async function refresh($: EngineInterface) {
     stamp: newest.stamp,
     document: info.document,
     isLive: live,
-    stage: stageOf(info),
+    stage: best.stopped ? `Arrêté : ${best.stopped}` : stageOf(info),
+    stopped: best.stopped,
     state: info.state,
     branch: info.branch,
     scratch: info.scratch,
@@ -204,7 +235,7 @@ async function refresh($: EngineInterface) {
     }
   }
 
-  if (!live) {
+  if (!live && !best.stopped) {
     const index = indexSection((await readText($, `${slash(cwd)}/SPECAUDITS.md`)) ?? '', newest.stamp)
     snap.result = index['Result']
     // An audit that ended with a fix or a choice left to the person waits on them, not on the audit.
@@ -318,6 +349,7 @@ const stageTone = (snap: Snapshot) =>
 /** The stage as one glyph and its colour, for the band's first line; the stage in words is the pane's. */
 function stageIcon(snap: Snapshot): { glyph: string; color?: string } {
   if (snap.stage === 'Terminé') return { glyph: '✔', color: 'success' }
+  if (snap.stopped) return { glyph: '⏹' }
   if (snap.stage === 'En attente de ta décision') return { glyph: '?', color: 'warning' }
   if (snap.state?.startsWith('suspended')) return { glyph: '⏸', color: 'warning' }
   if (snap.state?.startsWith('stopping')) return { glyph: '⏹', color: 'warning' }
@@ -433,18 +465,14 @@ export const register: Register = on => {
     const isArmed = Date.now() - (await read($, armed)) <= CONFIRM_MS
     const isSuspended = !!snap.state?.startsWith('suspended')
     const status = stageIcon(snap)
-    // A control is a glyph alone, padded to twice its width: an easier target, the same size greyed or not. One that
-    // cannot act now is drawn greyed, as text: no Button takes a disabled state. Its label names it for a screen reader.
-    const control = (key: string, glyph: string, label: string, isActive: boolean, act: () => unknown, color?: string) =>
-      isActive ? (
-        <Button key={key} label={label} plain onPress={() => void act()}>
-          <Text color={color}>{` ${glyph} `}</Text>
-        </Button>
-      ) : (
-        <Text key={key} dimColor>
-          {` ${glyph} `}
-        </Text>
-      )
+    // A control is a glyph alone, padded to twice its width: an easier target. Only the controls the audit's state
+    // allows are drawn (controlsOf): pause and stop while it runs, resume once it is suspended, none once it has
+    // stopped or ended. Its label names it for a screen reader.
+    const control = (key: string, glyph: string, label: string, act: () => unknown, color?: string) => (
+      <Button key={key} label={label} plain onPress={() => void act()}>
+        <Text color={color}>{` ${glyph} `}</Text>
+      </Button>
+    )
 
     return (
       <Box flexDirection="column">
@@ -459,7 +487,7 @@ export const register: Register = on => {
             </Text>
           </Box>
           {/* The detail, top right, as a maximize glyph: the pane is the band at full size. */}
-          <Box flexShrink={0}>{control('detail', '⤢', 'Détails', true, () => openPane($))}</Box>
+          <Box flexShrink={0}>{control('detail', '⤢', 'Détails', () => openPane($))}</Box>
         </Box>
         {/* The usage windows near their pause threshold, one line each, between the title and the progress. */}
         {limitAlerts(snap).map(a => (
@@ -492,10 +520,9 @@ export const register: Register = on => {
             )}
           </Box>
           <Box flexDirection="row" flexShrink={0}>
-            {snap.isLive && control('pause', '⏸', 'Mettre en pause', canPause, () => pause($, snap))}
-            {snap.isLive &&
-              control('stop', '⏹', isArmed ? "Confirmer l'arrêt" : 'Arrêter', canStop, () => stop($, snap), isArmed ? 'error' : undefined)}
-            {snap.isLive && control('resume', '▶', 'Reprendre', canResume, () => resume($, snap))}
+            {canPause && control('pause', '⏸', 'Mettre en pause', () => pause($, snap))}
+            {canStop && control('stop', '⏹', isArmed ? "Confirmer l'arrêt" : 'Arrêter', () => stop($, snap), isArmed ? 'error' : undefined)}
+            {canResume && control('resume', '▶', 'Reprendre', () => resume($, snap))}
           </Box>
         </Box>
       </Box>

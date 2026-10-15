@@ -43,6 +43,8 @@ export type Snapshot = {
   inProcess?: boolean
   /** True once stop-requested is in the scratch root: the audit is winding down. */
   stopRequested?: boolean
+  /** Why the audit stopped although its register says it goes on: its process, or its launcher, has ended. */
+  stopped?: string
   counts?: Counts
   errors?: ErrorRow[]
   agent?: string

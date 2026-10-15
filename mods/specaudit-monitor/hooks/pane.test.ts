@@ -83,13 +83,13 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await ui.unmount()
   })
 
-  test(`band: pause and stop while it runs, resume greyed (${surface})`, async ($, on) => {
+  test(`band: pause and stop while it runs, resume hidden (${surface})`, async ($, on) => {
     seed(on, { ...LIVE, state: 'running', scratch: 'C:/x-scratch', launcher: '705774c1', inProcess: true })
     const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
     expect(await ui.find({ type: 'Button', key: 'pause' })).toBeDefined()
     expect(await ui.find({ type: 'Button', key: 'stop' })).toBeDefined()
     expect(await ui.find({ type: 'Button', key: 'resume' })).toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: /^ ▶ $/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^ ▶ $/ })).toBeUndefined()
     await ui.press({ key: 'stop' })
     expect(await ui.find({ type: 'Button', key: 'stop', label: "Confirmer l'arrêt" })).toBeDefined()
     await ui.unmount()
@@ -101,7 +101,25 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(await ui.find({ type: 'Button', key: 'resume' })).toBeDefined()
     expect(await ui.find({ type: 'Button', key: 'pause' })).toBeUndefined()
     expect(await ui.find({ type: 'Button', key: 'stop' })).toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: /^ ⏸ $/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^ ⏸ $/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test(`band: an audit whose launcher has gone is stopped, without controls (${surface})`, async ($, on) => {
+    seed(on, {
+      ...LIVE,
+      isLive: false,
+      state: 'suspended (usage limit: week, resumes 2026-10-18 01:05:00)',
+      stage: 'Arrêté : session de lancement fermée',
+      stopped: 'session de lancement fermée',
+      scratch: 'C:/x-scratch',
+      launcher: 'f098359c',
+      inProcess: true,
+    })
+    const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
+    expect(await ui.find({ type: 'Text', text: /^⏹$/ })).toBeDefined()
+    for (const key of ['pause', 'stop', 'resume']) expect(await ui.find({ type: 'Button', key })).toBeUndefined()
+    expect(await ui.find({ type: 'Button', key: 'detail' })).toBeDefined()
     await ui.unmount()
   })
 
