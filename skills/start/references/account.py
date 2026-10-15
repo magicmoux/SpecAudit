@@ -9,6 +9,16 @@
   python3 account.py clean-env                  the variables to remove from the environment of a `claude -p` so that
                                                 it runs on its CLAUDE_CONFIG_DIR's account, as `-u NAME` arguments of
                                                 `env` (nothing when there are none)
+  python3 account.py check <dir> <email>        before every resume or relaunch: whether <dir> is still logged in as
+                                                <email>, the account the register records. Exit 0 if so; 1 if not,
+                                                with one JSON line: expected, found, loggedIn, and `elsewhere`, the
+                                                other folders logged in as <email>
+  python3 account.py check --session <email>    the same for an `--in-session` audit, against the account of the
+                                                session that runs this (CLAUDE_CODE_USER_EMAIL): 0 the same, 1 another,
+                                                3 unknown (no such variable: the check cannot be made)
+
+An audit is billed to the account that launched it, and to no other: a resume, automatic, scheduled or by hand, goes on
+only on that account. `check` is how the launcher holds it, since a folder's login may change while an audit waits.
 
 A session started by another (the Claude desktop app, an Agent SDK host, a `claude` session) hands its children its own
 credentials: a local proxy (ANTHROPIC_BASE_URL, with CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH or CLAUDE_CODE_ACCOUNT_UUID),
@@ -58,12 +68,44 @@ def norm(path):
     return os.path.normcase(os.path.abspath(os.path.expanduser(str(path))))
 
 
-def list_accounts():
+def folders():
+    """~/.claude, every ~/.claude-* folder, and the current one first if it is neither."""
     home = Path.home()
     current = norm(os.environ.get("CLAUDE_CONFIG_DIR") or home / ".claude")
     dirs = [home / ".claude"] + sorted(p for p in home.glob(".claude-*") if p.is_dir())
     if current not in {norm(d) for d in dirs}:
         dirs.insert(0, Path(current))
+    return dirs, current
+
+
+def same(a, b):
+    return bool(a) and bool(b) and a.strip().lower() == b.strip().lower()
+
+
+def check(config, email):
+    s = status(Path(os.path.expanduser(config)))
+    if s.get("loggedIn") and same(s.get("email"), email):
+        return 0
+    elsewhere = [Path(d).as_posix() for d in folders()[0]
+                 if norm(d) != norm(config) and same(status(d).get("email"), email)]
+    print(json.dumps({"dir": Path(config).as_posix(), "expected": email, "found": s.get("email"),
+                      "loggedIn": bool(s.get("loggedIn")), "elsewhere": elsewhere}, ensure_ascii=False))
+    return 1
+
+
+def check_session(email, environ=os.environ):
+    found = environ.get("CLAUDE_CODE_USER_EMAIL")
+    if not found:
+        print(json.dumps({"expected": email, "found": None}))
+        return 3
+    if same(found, email):
+        return 0
+    print(json.dumps({"expected": email, "found": found}, ensure_ascii=False))
+    return 1
+
+
+def list_accounts():
+    dirs, current = folders()
     for d in dirs:
         s = status(d)
         print(json.dumps({"dir": Path(d).as_posix(), "loggedIn": bool(s.get("loggedIn")), "email": s.get("email"),
@@ -102,6 +144,8 @@ def main():
         return 0
     if len(sys.argv) == 4 and sys.argv[1] == "remember":
         return remember(sys.argv[2], sys.argv[3])
+    if len(sys.argv) == 4 and sys.argv[1] == "check":
+        return check_session(sys.argv[3]) if sys.argv[2] == "--session" else check(sys.argv[2], sys.argv[3])
     print(__doc__, file=sys.stderr)
     return 2
 
