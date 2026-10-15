@@ -75,6 +75,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(await ui.find({ type: 'Text', text: /Agent : adjudicator F-1-2/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /3\/6/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /Marge 5 h/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^ · sem\. $/ })).toBeDefined()
     expect(await ui.find({ key: 'detail' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]$/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /[█░▏▎▍▌▋▊▉]/ })).toBeUndefined()

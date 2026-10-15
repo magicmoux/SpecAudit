@@ -23,13 +23,12 @@ const unfolded = atom({ plugin: 'specaudit-monitor', key: 'unfolded' } as const,
 const opened = atom({ plugin: 'specaudit-monitor', key: 'opened' } as const, [])
 const armed = atom({ plugin: 'specaudit-monitor', key: 'armed' } as const, 0)
 
-// One tick a second turns the band's spinner, and every 5 s alternates the usage window it shows; a live audit is
+// One tick a second turns the band's spinner; a live audit is
 // read every 10 s, otherwise every 20 s, so that an
 // audit launched meanwhile, or a change of folder, shows soon.
 const TICK_MS = 1000
 const LIVE_EVERY = 10
 const IDLE_EVERY = 20
-const ALTERNATE_EVERY = 5
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
 type Probe = {
@@ -300,16 +299,17 @@ const cut = (text: string, n: number) => (text.length <= n ? text : `${text.slic
 
 const pct = (x: number) => `${Math.round(x * 100)} %`
 
-/** The usage windows the audit has, and the one shown at this tick: they alternate every 5 s. */
-function windowsOf(snap: Snapshot, t: number) {
-  const windows = [
+/** The usage windows the audit has, each with the share of its margin used and its tone: shown side by side. */
+function windowsOf(snap: Snapshot) {
+  return [
     snap.session && { name: '5 h', w: snap.session },
     snap.week && { name: 'sem.', w: snap.week },
-  ].filter((x): x is { name: string; w: Window } => !!x)
-  const shown = windows.length > 0 ? windows[Math.floor(t / ALTERNATE_EVERY) % windows.length] : undefined
-  const used = shown ? marginUsed(shown.w) : 0
-  const tone = used >= 0.9 ? 'error' : used >= 0.7 ? 'warning' : 'success'
-  return { windows, shown, used, tone } as const
+  ]
+    .filter((x): x is { name: string; w: Window } => !!x)
+    .map(({ name, w }) => {
+      const used = marginUsed(w)
+      return { name, used, tone: used >= 0.9 ? 'error' : used >= 0.7 ? 'warning' : 'success' } as const
+    })
 }
 
 const stageTone = (snap: Snapshot) =>
@@ -419,7 +419,7 @@ export const register: Register = on => {
       'Svg' in els ? <els.Svg source={ICON} alt="SpecAudit" width={14} height={14} /> : <Text color={ICON_COLOR}>∎</Text>
     const t = await read($, tick)
     const c = snap.counts
-    const { shown, used, tone } = windowsOf(snap, t)
+    const windows = windowsOf(snap)
     const { canPause, canStop, canResume } = controlsOf(snap)
     const isArmed = Date.now() - (await read($, armed)) <= CONFIRM_MS
     const isSuspended = !!snap.state?.startsWith('suspended')
@@ -460,12 +460,13 @@ export const register: Register = on => {
                 <Text color={isSuspended ? 'warning' : ICON_COLOR}>{isSuspended ? '⏸' : SPINNER[t % SPINNER.length]}</Text>
                 <Text dimColor> Avancement </Text>
                 {c ? `${c.evaluated}/${c.total}` : '…'}
-                {shown && (
-                  <Text>
-                    <Text dimColor>{`   Marge ${shown.name} `}</Text>
-                    <Text color={tone}>{pct(used)}</Text>
+                {windows.length > 0 && <Text dimColor>   Marge</Text>}
+                {windows.map((w, i) => (
+                  <Text key={`margin-${w.name}`}>
+                    <Text dimColor>{`${i > 0 ? ' ·' : ''} ${w.name} `}</Text>
+                    <Text color={w.tone}>{pct(w.used)}</Text>
                   </Text>
-                )}
+                ))}
               </Text>
             ) : (
               <Text dimColor wrap="truncate-end">
