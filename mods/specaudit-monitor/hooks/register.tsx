@@ -42,7 +42,8 @@ const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width=
 const slash = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '')
 const baseName = (p: string) => slash(p).split('/').pop() ?? p
 
-// The root of the repository the session works in (its cwd's top level).
+// The root of the repository shown: the session's (its cwd's top level), or the one the beacon names when its audit
+// is the livelier or the newer.
 let cwd = ''
 
 async function run($: EngineInterface, argv: string[], dir = cwd) {
@@ -62,10 +63,10 @@ async function readText($: EngineInterface, path: string) {
   }
 }
 
-/** The newest audit of the project: its live register in the worktree when there is one, else its results folder. */
-async function newestRegister($: EngineInterface) {
+/** The newest audit of a repository: its live register in the worktree when there is one, else its results folder. */
+async function newestRegister($: EngineInterface, repo: string) {
   const found: { stamp: string; path: string }[] = []
-  for (const wt of auditWorktrees((await run($, ['git', 'worktree', 'list', '--porcelain'])) ?? '')) {
+  for (const wt of auditWorktrees((await run($, ['git', 'worktree', 'list', '--porcelain'], repo)) ?? '')) {
     const dir = `${slash(wt.path)}/spec-audit`
     const docs = await $.fs.list(dir).catch(() => [])
     for (const doc of docs) {
@@ -74,26 +75,80 @@ async function newestRegister($: EngineInterface) {
       }
     }
   }
-  for (const entry of await $.fs.list(cwd).catch(() => [])) {
+  for (const entry of await $.fs.list(repo).catch(() => [])) {
     const stamp = /^SpecAudit-(\d{8}_\d{6})$/.exec(entry.name)?.[1]
-    const path = `${slash(cwd)}/${entry.name}/register.md`
+    const path = `${slash(repo)}/${entry.name}/register.md`
     if (stamp && !found.some(f => f.stamp === stamp) && (await $.fs.exists(path))) found.push({ stamp, path })
   }
   return found.sort((a, b) => b.stamp.localeCompare(a.stamp))[0]
 }
 
-async function refresh($: EngineInterface) {
+// The interpreter that ran beacon.py, found once: `python3` is a stub on Windows, and trying it again at every poll
+// would change nothing. When none runs, the search waits for a day, or for a new audit of the session's repository,
+// whose register names an interpreter that works.
+const RETRY_MS = 24 * 3600 * 1000
+let python: string | undefined
+let failed: { at: number; stamp?: string } | undefined
+
+/** The repository the beacon names (index.py writes it at each write of an index), if any. */
+async function beaconRepo($: EngineInterface, dir: string, audit?: { stamp: string; interpreter?: string }) {
+  if (failed && failed.stamp === audit?.stamp && Date.now() - failed.at < RETRY_MS) return undefined
+  const candidates = python ? [python] : [...new Set([audit?.interpreter, 'python3', 'python'].filter((c): c is string => !!c))]
+  for (const candidate of candidates) {
+    const out = await run($, [candidate, '-I', `${$.plugin.root}/hooks/beacon.py`], dir)
+    if (out === undefined) continue
+    python = candidate
+    failed = undefined
+    try {
+      const repo = (JSON.parse(out) as { repo?: unknown }).repo
+      return typeof repo === 'string' && repo ? slash(repo) : undefined
+    } catch {
+      return undefined
+    }
+  }
+  python = undefined
+  failed = { at: Date.now(), stamp: audit?.stamp }
+  return undefined
+}
+
+type Found = { repo: string; stamp: string; path: string; text: string; live: boolean; interpreter?: string }
+
+async function audit($: EngineInterface, repo: string): Promise<Found | undefined> {
+  const newest = await newestRegister($, repo)
+  if (!newest) return undefined
+  const text = (await readText($, newest.path)) ?? ''
+  const info = parseRegister(text)
+  return { repo, ...newest, text, live: isLive(info), interpreter: info.interpreter }
+}
+
+/**
+ * The audit to show: the newest of the session's repository and of the one the beacon names, a live one before one that
+ * has ended, so that an audit launched elsewhere (a test's throwaway repository) shows without changing folder.
+ */
+async function pick($: EngineInterface) {
   const here = await $.session.cwd()
-  cwd = (await run($, ['git', 'rev-parse', '--show-toplevel'], here))?.trim() || here
+  const own = slash((await run($, ['git', 'rev-parse', '--show-toplevel'], here))?.trim() || here)
+  let best = await audit($, own)
+  const other = await beaconRepo($, here, best)
+  if (other && other.toLowerCase() !== own.toLowerCase()) {
+    const found = await audit($, other)
+    if (found && (!best || (found.live && !best.live) || (found.live === best.live && found.stamp > best.stamp))) best = found
+  }
+  return { own, best }
+}
+
+async function refresh($: EngineInterface) {
+  const { own, best } = await pick($)
+  cwd = best?.repo ?? own
   const project = baseName(cwd)
-  const newest = await newestRegister($)
-  if (!newest) {
+  if (!best) {
     await update($, snapshot, () => ({ project, isLive: false, stage: 'Aucun audit', updatedAt: Date.now() }))
     return false
   }
-  const text = (await readText($, newest.path)) ?? ''
+  const newest = best
+  const text = best.text
   const info = parseRegister(text)
-  const live = isLive(info)
+  const live = best.live
   const snap: Snapshot = {
     project,
     stamp: newest.stamp,

@@ -171,6 +171,7 @@ SpecAudit-20261010_210233/
 ```
 
 - The band: the audited document, the audit's stage, a progress bar (errors evaluated out of those detected) and how much of the usage margin, from the launch to the pause threshold, the audit has used, for the session and week windows in turn; once the audit has ended, its final figures (confirmed and fixed errors, guards, result), kept until the next one. Its `détails ▸` button, or `/specaudit-pane`, opens the pane.
+- Another repository: each write of an index (`index.py`) leaves a beacon, `~/.specaudit/beacon.json`, naming its repository, and the monitor follows that repository's audit when it is live, or newer than the current project's, so that an audit launched elsewhere (an end-to-end test's throwaway repository) shows without changing folder. Without the monitor, nothing reads the beacon, and a beacon that cannot be written changes nothing.
 - The pane: consumption first (tokens, cost, session and week windows), then sections folded by default: progress, errors (a table with each error's status and notes, a row opening its card), evidence, and technical details.
 
 It reads files only: the audit's register, `SPECAUDITS.md`, git and the audit session's stream. It never calls a model and costs no tokens. It relies on Claude Code's mod API, which may change between Claude Code versions; if it does, only the monitor stops loading, never `spec-audit`. Its sources and tests are in [`mods/specaudit-monitor/`](mods/specaudit-monitor/); its interface is in French for now.
