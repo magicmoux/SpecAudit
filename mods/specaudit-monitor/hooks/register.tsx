@@ -9,6 +9,7 @@ import {
   controlsOf,
   indexSection,
   isLive,
+  limitAlerts,
   listErrors,
   marginUsed,
   parseRegister,
@@ -445,6 +446,12 @@ export const register: Register = on => {
             {snap.stage}
           </Text>
         </Box>
+        {/* The usage windows near their pause threshold, one line each, between the title and the progress. */}
+        {limitAlerts(snap).map(a => (
+          <Text key={`limit-${a.name}`} color={a.tone} wrap="truncate-end">
+            {`⚠ Limite ${a.name} : ${pct(a.used)} de la marge utilisée (compte à ${pct(a.now)}, pause à ${pct(a.limit)})`}
+          </Text>
+        ))}
         <Box flexDirection="row">
           <Box flexGrow={1} flexShrink={1} minWidth={0}>
             {snap.isLive ? (

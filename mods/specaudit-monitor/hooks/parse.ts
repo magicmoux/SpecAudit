@@ -1,4 +1,4 @@
-import type { Counts, ErrorRow, Snapshot } from '../types'
+import type { Counts, ErrorRow, Snapshot, Window } from '../types'
 
 // Reads SpecAudit's own files (skills/start/references/register.md gives their format). Pure functions: no `$`.
 
@@ -208,4 +208,17 @@ export function controlsOf(snap: Snapshot) {
   const isSuspended = state.startsWith('suspended')
   const isRunning = snap.isLive && !!snap.inProcess && !!snap.scratch && !isSuspended && !state.startsWith('stopping') && !snap.stopRequested
   return { canPause: isRunning, canStop: isRunning, canResume: snap.isLive && isSuspended }
+}
+
+/** The usage windows near their pause threshold, for the band's alerts: from 70 % of the margin used, at 90 % an error. */
+export function limitAlerts(snap: Snapshot): { name: string; used: number; now: number; limit: number; tone: 'warning' | 'error' }[] {
+  if (!snap.isLive) return []
+  return [
+    snap.session && { name: '5 h', w: snap.session },
+    snap.week && { name: 'semaine', w: snap.week },
+  ]
+    .filter((x): x is { name: string; w: Window } => !!x)
+    .map(({ name, w }) => ({ name, used: marginUsed(w), now: w.now, limit: w.limit }))
+    .filter(a => a.used >= 0.7)
+    .map(a => ({ ...a, tone: a.used >= 0.9 ? ('error' as const) : ('warning' as const) }))
 }

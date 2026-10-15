@@ -103,6 +103,14 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await ui.unmount()
   })
 
+  test(`band: a limit alert between the title and the progress (${surface})`, async ($, on) => {
+    seed(on, { ...LIVE, session: { start: 0.02, now: 0.065, limit: 0.07 } })
+    const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
+    expect(await ui.find({ type: 'Text', text: /^⚠ Limite 5 h : 90 % de la marge utilisée \(compte à 7 %, pause à 7 %\)$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Limite semaine/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
   test(`band: a finished audit waiting on a decision (${surface})`, async ($, on) => {
     seed(on, DONE)
     const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })

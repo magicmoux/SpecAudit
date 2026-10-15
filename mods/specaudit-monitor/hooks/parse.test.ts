@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { auditWorktrees, bar, controlsOf, indexSection, isLive, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
+import { auditWorktrees, bar, controlsOf, indexSection, isLive, limitAlerts, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
 
 const REGISTER = `# Audit register — selection.md
 
@@ -112,6 +112,17 @@ describe('register', () => {
     expect(controlsOf(snap('running', { inProcess: false }))).toEqual({ canPause: false, canStop: false, canResume: false })
     expect(controlsOf(snap('closed'))).toEqual({ canPause: false, canStop: false, canResume: false })
     expect(parseRegister(REGISTER.replace(/^- Mode: .*$/m, '- Mode: in session')).inProcess).toBe(false)
+  })
+
+  test('limit alerts from 70 % of the margin, an error from 90 %', async () => {
+    const snap = (session: number, week: number, isLive = true) => ({
+      project: 'demo', isLive, stage: '', updatedAt: 0,
+      session: { start: 0.1, now: session, limit: 0.2 }, week: { start: 0.2, now: week, limit: 0.3 },
+    })
+    expect(limitAlerts(snap(0.15, 0.2))).toEqual([])
+    expect(limitAlerts(snap(0.18, 0.2)).map(a => [a.name, a.tone])).toEqual([['5 h', 'warning']])
+    expect(limitAlerts(snap(0.18, 0.3)).map(a => [a.name, a.tone])).toEqual([['5 h', 'warning'], ['semaine', 'error']])
+    expect(limitAlerts(snap(0.2, 0.3, false))).toEqual([])
   })
 
   test('each error with its id, title and status', async () => {
