@@ -19,8 +19,14 @@ erase another's entry:
   6. unlock, whatever happened.
 Exit code 0 when the entry is written (and committed), 1 when the lock or the commit could not be had, 2 on a malformed
 entry or a check that failed (nothing is written then).
+
+Each entry written also leaves a beacon, ~/.specaudit/beacon.json (the repository, the audit's identifier, the time),
+so that a monitor watching another folder, such as the optional specaudit-monitor mod, finds an audit launched in a
+repository it was not looking at. It is best effort: without the mod nothing reads it, and a beacon that cannot be
+written changes nothing to the index or to the exit code.
 """
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -107,6 +113,19 @@ def git(repo, *args):
     return r
 
 
+def beacon(repo, ident):
+    """Names the repository whose index was just written, for a monitor; any failure is ignored."""
+    try:
+        path = Path.home() / ".specaudit" / "beacon.json"
+        path.parent.mkdir(exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"repo": repo.resolve().as_posix(), "id": ident, "at": int(time.time())}),
+                       encoding="utf-8")
+        os.replace(tmp, path)
+    except Exception:
+        pass
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("repo")
@@ -148,6 +167,7 @@ def main():
             return 2
         index.write_text(after, encoding="utf-8", newline="\n")
         print(f"index: {ident} written; {len(others_after)} other entries kept")
+        beacon(repo, ident)
         if a.no_commit:
             return 0
         paths = ["SPECAUDITS.md", *a.add]

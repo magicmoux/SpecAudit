@@ -18,6 +18,7 @@ Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two d
 ### Monitor
 
 - `specaudit-monitor` (0.11.0), an optional plugin in `mods/specaudit-monitor/`, listed as a second plugin of the repository's marketplace (`/plugin install specaudit-monitor@spec-audit`): a band above the prompt (stage, progress, usage margin, the final figures once the audit has ended) and a detail pane (consumption, then progress, errors, evidence and technical details, folded by default). It reads the register, `SPECAUDITS.md`, git and the audit session's stream (`hooks/probe.py`), and never calls a model. It relies on Claude Code's mod API; `spec-audit` does not depend on it. Its tests: `claude plugin test mods/specaudit-monitor`.
+- `specaudit-monitor` 0.12.0 follows an audit launched in another repository: `index.py` leaves a beacon, `~/.specaudit/beacon.json`, at each write of an index (best effort: a beacon that cannot be written changes neither the index nor the exit code, and without the monitor nothing reads it), and the monitor shows the beacon's repository when its audit is live, or newer than the current project's. Until now, an audit launched elsewhere, such as an end-to-end test's throwaway repository, did not show until the session changed folder.
 
 ## [1.0.0-beta.4] — 2026-10-13
 
