@@ -152,6 +152,7 @@ export function stageOf(info: RegisterInfo): string {
     const until = /resumes ([^)]+)\)/.exec(state)?.[1]
     return `En pause, limite d'usage${until ? ` (reprise ${until})` : ''}`
   }
+  if (state.startsWith('suspended (launcher session deleted')) return 'Suspendu, session de lancement supprimée'
   if (state.startsWith('suspended')) return 'Suspendu'
   if (state.startsWith('stopping')) return 'Arrêt en cours'
   if (info.hasClosing) return 'Clôture'

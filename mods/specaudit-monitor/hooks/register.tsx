@@ -22,11 +22,14 @@ const unfolded = atom({ plugin: 'specaudit-monitor', key: 'unfolded' } as const,
 const opened = atom({ plugin: 'specaudit-monitor', key: 'opened' } as const, [])
 const armed = atom({ plugin: 'specaudit-monitor', key: 'armed' } as const, 0)
 
-// One tick every 5 s alternates the usage bar; a live audit is read every 10 s, otherwise every 20 s, so that an
+// One tick a second turns the band's spinner, and every 5 s alternates the usage window it shows; a live audit is
+// read every 10 s, otherwise every 20 s, so that an
 // audit launched meanwhile, or a change of folder, shows soon.
-const TICK_MS = 5000
-const LIVE_EVERY = 2
-const IDLE_EVERY = 4
+const TICK_MS = 1000
+const LIVE_EVERY = 10
+const IDLE_EVERY = 20
+const ALTERNATE_EVERY = 5
+const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
 type Probe = {
   session: { start: number; now: number; resetsAt?: number } | null
@@ -302,7 +305,7 @@ function windowsOf(snap: Snapshot, t: number) {
     snap.session && { name: '5 h', w: snap.session },
     snap.week && { name: 'sem.', w: snap.week },
   ].filter((x): x is { name: string; w: Window } => !!x)
-  const shown = windows.length > 0 ? windows[t % windows.length] : undefined
+  const shown = windows.length > 0 ? windows[Math.floor(t / ALTERNATE_EVERY) % windows.length] : undefined
   const used = shown ? marginUsed(shown.w) : 0
   const tone = used >= 0.9 ? 'error' : used >= 0.7 ? 'warning' : 'success'
   return { windows, shown, used, tone } as const
@@ -414,7 +417,6 @@ export const register: Register = on => {
     const icon =
       'Svg' in els ? <els.Svg source={ICON} alt="SpecAudit" width={14} height={14} /> : <Text color={ICON_COLOR}>∎</Text>
     const t = await read($, tick)
-    const width = Math.max(8, Math.min(24, Math.floor(((e.props.bodyColumns ?? 60) - 30) / 2)))
     const c = snap.counts
     const { shown, used, tone } = windowsOf(snap, t)
     const { canPause, canStop, canResume } = controlsOf(snap)
@@ -454,13 +456,17 @@ export const register: Register = on => {
           </Box>
         )}
         {snap.isLive ? (
+          // No bar in the band: a spinner says the audit is working (⏸ once it is suspended), the figures say how far.
           <Text>
-            <Text dimColor>Avancement </Text>
-            {bar(c && c.total > 0 ? c.evaluated / c.total : 0, width)} {c ? `${c.evaluated}/${c.total}` : '…'}
+            <Text color={snap.state?.startsWith('suspended') ? 'warning' : ICON_COLOR}>
+              {snap.state?.startsWith('suspended') ? '⏸' : SPINNER[t % SPINNER.length]}
+            </Text>
+            <Text dimColor> Avancement </Text>
+            {c ? `${c.evaluated}/${c.total}` : '…'}
             {shown && (
               <Text>
                 <Text dimColor>{`   Marge ${shown.name} `}</Text>
-                <Text color={tone}>{bar(used, width)}</Text> {pct(used)}
+                <Text color={tone}>{pct(used)}</Text>
               </Text>
             )}
           </Text>

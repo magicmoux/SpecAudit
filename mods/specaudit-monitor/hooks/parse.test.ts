@@ -91,6 +91,8 @@ describe('register', () => {
       REGISTER.replace('state: running', 'state: suspended (usage limit: week, resumes 2026-10-18 01:05:00)'),
     )
     expect(stageOf(paused)).toBe("En pause, limite d'usage (reprise 2026-10-18 01:05:00)")
+    const orphaned = parseRegister(REGISTER.replace('state: running', 'state: suspended (launcher session deleted)'))
+    expect(stageOf(orphaned)).toBe('Suspendu, session de lancement supprimée')
     const closed = parseRegister(REGISTER.replace('state: running', 'state: closed'))
     expect(isLive(closed)).toBe(false)
     expect(stageOf(closed)).toBe('Terminé')
