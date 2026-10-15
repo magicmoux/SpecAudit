@@ -35,6 +35,14 @@ export type Snapshot = {
   stage: string
   state?: string
   branch?: string
+  /** The audit's scratch root, where the band's buttons write stop-requested. */
+  scratch?: string
+  /** The id of the session that launched the audit, which decides how a stop ends. */
+  launcher?: string
+  /** True when the audit runs in a process of its own: only then can the band pause or stop it. */
+  inProcess?: boolean
+  /** True once stop-requested is in the scratch root: the audit is winding down. */
+  stopRequested?: boolean
   counts?: Counts
   errors?: ErrorRow[]
   agent?: string
@@ -64,6 +72,8 @@ declare module 'claude-code' {
       unfolded: string[]
       /** The error whose detail the person unfolded, by id (one at most). */
       opened: string[]
+      /** When the band's stop button was first pressed (ms), 0 otherwise: a second press within 10 s confirms. */
+      armed: number
     }
   }
 }

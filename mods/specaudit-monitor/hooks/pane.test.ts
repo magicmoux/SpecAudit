@@ -79,6 +79,28 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await ui.unmount()
   })
 
+  test(`band: pause and stop while it runs, resume greyed (${surface})`, async ($, on) => {
+    seed(on, { ...LIVE, state: 'running', scratch: 'C:/x-scratch', launcher: '705774c1', inProcess: true })
+    const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
+    expect(await ui.find({ type: 'Button', key: 'pause' })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'stop' })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'resume' })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /▶ reprendre/ })).toBeDefined()
+    await ui.press({ key: 'stop' })
+    expect(await ui.find({ type: 'Button', key: 'stop', text: /confirmer/ })).toBeDefined()
+    await ui.unmount()
+  })
+
+  test(`band: a suspended audit offers resume alone (${surface})`, async ($, on) => {
+    seed(on, { ...LIVE, state: 'suspended (stopped on request)', stage: 'Suspendu', scratch: 'C:/x-scratch', launcher: '705774c1', inProcess: true })
+    const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })
+    expect(await ui.find({ type: 'Button', key: 'resume' })).toBeDefined()
+    expect(await ui.find({ type: 'Button', key: 'pause' })).toBeUndefined()
+    expect(await ui.find({ type: 'Button', key: 'stop' })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /⏸ pause/ })).toBeDefined()
+    await ui.unmount()
+  })
+
   test(`band: a finished audit waiting on a decision (${surface})`, async ($, on) => {
     seed(on, DONE)
     const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface, ...BAND })

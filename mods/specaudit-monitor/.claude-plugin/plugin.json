@@ -1,7 +1,9 @@
 {
   "name": "specaudit-monitor",
-  "version": "0.12.0",
-  "description": "A SpecAudit pane: progress and usage margin of the running audit, its final figures kept until the next one. Reads files only, never calls a model.",
-  "author": { "name": "Max Brönnimann" },
+  "version": "0.13.0",
+  "description": "A SpecAudit pane: progress and usage margin of the running audit, its final figures kept until the next one, with pause, stop and resume buttons in its band. Never calls a model: it writes only the audit's stop-requested flag and messages the session that launched it.",
+  "author": {
+    "name": "Max Brönnimann"
+  },
   "types": "./types/index.d.ts"
 }

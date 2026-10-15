@@ -1,4 +1,4 @@
-import type { Counts, ErrorRow } from '../types'
+import type { Counts, ErrorRow, Snapshot } from '../types'
 
 // Reads SpecAudit's own files (skills/start/references/register.md gives their format). Pure functions: no `$`.
 
@@ -9,6 +9,10 @@ export type RegisterInfo = {
   base?: string
   corpus?: string
   scratch?: string
+  /** The id of the session that launched the audit (the register's `Session`). */
+  launcher?: string
+  /** True when the audit runs in a process of its own (`Mode: audit session`), whose hooks read stop-requested. */
+  inProcess: boolean
   interpreter: string
   state?: string
   preflight?: string
@@ -121,6 +125,8 @@ export function parseRegister(text: string): RegisterInfo {
     base: worktree?.[3],
     corpus: field(text, /^- Corpus: ([^,\s]+)/m),
     scratch: field(text, /^- Scratch root: (\S+)/m)?.replace(/[\\/]+$/, ''),
+    launcher: field(text, /^- Session: ([^,\s]+)/m),
+    inProcess: /^- Mode: audit session\b/m.test(text),
     interpreter: field(text, /^- Interpreter: (\S+)/m) ?? 'python',
     state: field(text, /^- Session: .*?state: (.+)$/m),
     preflight: field(text, /^- Preflight: ([^,.;]+)/m),
@@ -194,3 +200,11 @@ export const bar = (fraction: number, width: number) => {
 
 export const compact = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(2)} M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)} k` : String(n)
+
+/** What the band's controls may do now: pause and stop while it runs, resume once it is suspended. */
+export function controlsOf(snap: Snapshot) {
+  const state = snap.state ?? ''
+  const isSuspended = state.startsWith('suspended')
+  const isRunning = snap.isLive && !!snap.inProcess && !!snap.scratch && !isSuspended && !state.startsWith('stopping') && !snap.stopRequested
+  return { canPause: isRunning, canStop: isRunning, canResume: snap.isLive && isSuspended }
+}

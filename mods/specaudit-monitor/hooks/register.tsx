@@ -6,6 +6,7 @@ import {
   auditWorktrees,
   bar,
   compact,
+  controlsOf,
   indexSection,
   isLive,
   listErrors,
@@ -19,6 +20,7 @@ const snapshot = atom({ plugin: 'specaudit-monitor', key: 'snapshot' } as const,
 const tick = atom({ plugin: 'specaudit-monitor', key: 'tick' } as const, 0)
 const unfolded = atom({ plugin: 'specaudit-monitor', key: 'unfolded' } as const, [])
 const opened = atom({ plugin: 'specaudit-monitor', key: 'opened' } as const, [])
+const armed = atom({ plugin: 'specaudit-monitor', key: 'armed' } as const, 0)
 
 // One tick every 5 s alternates the usage bar; a live audit is read every 10 s, otherwise every 20 s, so that an
 // audit launched meanwhile, or a change of folder, shows soon.
@@ -157,6 +159,10 @@ async function refresh($: EngineInterface) {
     stage: stageOf(info),
     state: info.state,
     branch: info.branch,
+    scratch: info.scratch,
+    launcher: info.launcher,
+    inProcess: info.inProcess,
+    stopRequested: !!info.scratch && (await $.fs.exists(`${info.scratch}/stop-requested`).catch(() => false)),
     counts: info.counts,
     errors: listErrors(text),
     agent: info.agent,
@@ -214,6 +220,75 @@ async function refreshAndShow($: EngineInterface) {
 
 async function openPane($: EngineInterface) {
   await $.ui.open({ id: PANE, title: `SpecAudit · ${baseName(cwd)}` })
+}
+
+// The band's controls act on the audit it shows, in its own repository (`cwd`, set by refresh): pause and stop write
+// stop-requested in its scratch root, which its session's hooks read (SpecAudit's closing.md, 8.9), then tell the
+// session that launched it, which owns what follows; resume asks that session for `/spec-audit:start --resume`.
+const CONFIRM_MS = 10000
+
+/** Sends `text` to the session that launched the audit, or submits it here when that is this session. */
+async function tellLauncher($: EngineInterface, snap: Snapshot, text: string) {
+  if (!snap.launcher) return false
+  try {
+    if (snap.launcher === (await $.session.id())) {
+      void $.prompt.submit({ text })
+      return true
+    }
+    return (await $.session.send({ to: { sessionId: snap.launcher }, text })).isDelivered
+  } catch {
+    return false
+  }
+}
+
+const auditName = (snap: Snapshot) => `l'audit SpecAudit ${snap.stamp} (${snap.document ?? '?'}, dépôt ${cwd})`
+
+async function requestStop($: EngineInterface, snap: Snapshot) {
+  await $.fs.write(`${snap.scratch}/stop-requested`, '')
+  await update($, snapshot, s => (s ? { ...s, stopRequested: true } : s))
+}
+
+async function pause($: EngineInterface, snap: Snapshot) {
+  await requestStop($, snap)
+  const told = await tellLauncher(
+    $,
+    snap,
+    `Pause de ${auditName(snap)} demandée depuis le bloc specaudit-monitor : ${snap.scratch}/stop-requested est posé. ` +
+      `Quand le processus de l'audit se termine, laisse l'audit suspendu (8.9, « Suspend »), sans clôture ni question ; ` +
+      `/spec-audit:start ${snap.document} --resume le reprendra.`,
+  )
+  $.ui.toast(
+    `Pause demandée : l'audit se suspend après le rapport de l'agent en cours.` +
+      (told ? '' : ` Session de lancement ${snap.launcher ?? '?'} injoignable : l'audit restera suspendu.`),
+  )
+}
+
+async function stop($: EngineInterface, snap: Snapshot) {
+  if (Date.now() - (await read($, armed)) > CONFIRM_MS) {
+    await update($, armed, () => Date.now())
+    $.ui.toast("Appuie encore sur stop dans les 10 s pour arrêter l'audit.")
+    return
+  }
+  await update($, armed, () => 0)
+  await requestStop($, snap)
+  const told = await tellLauncher(
+    $,
+    snap,
+    `Arrêt de ${auditName(snap)} demandé depuis le bloc specaudit-monitor : ${snap.scratch}/stop-requested est posé. ` +
+      `Exécute /spec-audit:stop ${snap.document} (8.9 de closing.md) : attends la fin du processus, fais le point et ` +
+      `pose la question « Stop ».`,
+  )
+  $.ui.toast(
+    told
+      ? "Arrêt demandé : la session de lancement fera le point et te demandera comment finir l'audit."
+      : `Arrêt demandé, l'audit se suspend. Pour décider de la suite : /spec-audit:stop ${snap.document} depuis la session ${snap.launcher ?? '?'}.`,
+  )
+}
+
+async function resume($: EngineInterface, snap: Snapshot) {
+  const command = `/spec-audit:start ${snap.document} --resume`
+  const told = await tellLauncher($, snap, `Reprise de ${auditName(snap)} demandée depuis le bloc specaudit-monitor : exécute ${command} dans ${cwd}.`)
+  $.ui.toast(told ? "Reprise demandée à la session de lancement de l'audit." : `Session de lancement injoignable : lance ${command} dans ${cwd}.`)
 }
 
 /** A text cut to `n` cells, an ellipsis in its last one. */
@@ -342,6 +417,19 @@ export const register: Register = on => {
     const width = Math.max(8, Math.min(24, Math.floor(((e.props.bodyColumns ?? 60) - 30) / 2)))
     const c = snap.counts
     const { shown, used, tone } = windowsOf(snap, t)
+    const { canPause, canStop, canResume } = controlsOf(snap)
+    const isArmed = Date.now() - (await read($, armed)) <= CONFIRM_MS
+    // A control that cannot act now is drawn greyed, as text: no Button takes a disabled state.
+    const control = (key: string, label: string, isActive: boolean, act: () => Promise<void>) =>
+      isActive ? (
+        <Button key={key} plain onPress={() => void act()}>
+          {label}
+        </Button>
+      ) : (
+        <Text key={key} dimColor>
+          {label}
+        </Text>
+      )
 
     return (
       <Box flexDirection="column">
@@ -357,6 +445,14 @@ export const register: Register = on => {
             détails ▸
           </Button>
         </Box>
+        {snap.isLive && (
+          <Box flexDirection="row" gap={2}>
+            {control('pause', '⏸ pause', canPause, () => pause($, snap))}
+            {control('stop', isArmed && canStop ? '⏹ confirmer ?' : '⏹ stop', canStop, () => stop($, snap))}
+            {control('resume', '▶ reprendre', canResume, () => resume($, snap))}
+            {snap.stopRequested && !snap.state?.startsWith('suspended') && <Text dimColor>arrêt demandé…</Text>}
+          </Box>
+        )}
         {snap.isLive ? (
           <Text>
             <Text dimColor>Avancement </Text>

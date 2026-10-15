@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { auditWorktrees, bar, indexSection, isLive, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
+import { auditWorktrees, bar, controlsOf, indexSection, isLive, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
 
 const REGISTER = `# Audit register — selection.md
 
@@ -13,6 +13,7 @@ const REGISTER = `# Audit register — selection.md
 - Parameters: max-passes = 1, auto = no, fail-fast = no, pause-at = session=7,week=25, auto-resume = no, model = sonnet
 - Session: 705774c1, state: running
 - Resumes: 0
+- Mode: audit session (pid 1660, session 3b98458e)
 
 ## Agents
 
@@ -93,6 +94,22 @@ describe('register', () => {
     const closed = parseRegister(REGISTER.replace('state: running', 'state: closed'))
     expect(isLive(closed)).toBe(false)
     expect(stageOf(closed)).toBe('Terminé')
+  })
+
+  test('the launcher, the mode, and the controls they allow', async () => {
+    const info = parseRegister(REGISTER)
+    expect(info.launcher).toBe('705774c1')
+    expect(info.inProcess).toBe(true)
+    const snap = (state: string, extra = {}) => ({
+      project: 'demo', stamp: 's', isLive: !state.startsWith('closed'), stage: '', state, updatedAt: 0,
+      scratch: 'C:/x-scratch', launcher: '705774c1', inProcess: true, ...extra,
+    })
+    expect(controlsOf(snap('running'))).toEqual({ canPause: true, canStop: true, canResume: false })
+    expect(controlsOf(snap('running', { stopRequested: true }))).toEqual({ canPause: false, canStop: false, canResume: false })
+    expect(controlsOf(snap('suspended (stopped on request)'))).toEqual({ canPause: false, canStop: false, canResume: true })
+    expect(controlsOf(snap('running', { inProcess: false }))).toEqual({ canPause: false, canStop: false, canResume: false })
+    expect(controlsOf(snap('closed'))).toEqual({ canPause: false, canStop: false, canResume: false })
+    expect(parseRegister(REGISTER.replace(/^- Mode: .*$/m, '- Mode: in session')).inProcess).toBe(false)
   })
 
   test('each error with its id, title and status', async () => {
