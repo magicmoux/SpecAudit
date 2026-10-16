@@ -6,6 +6,10 @@ Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two d
 
 ## [Unreleased]
 
+### Monitor
+
+- `specaudit-monitor` marked experimental in the README and the marketplace: it is developed outside the repository until its first stable version, and the version here (0.14.4) is an early snapshot.
+
 ### Audit
 
 - The launcher's account, to the end: an audit is billed to the account that launched it and to no other, whoever resumes it and whatever account the desktop app, their session or the CLI's default uses by then; another account may read its files (the index, a monitoring pane), never run it. Before every launch of the audit session after the first (a relaunch after a failed preflight, an automatic resume after a usage limit, a scheduled or manual `--resume`), the launcher runs `account.py check "<folder>" "<email>"` on the folder and e-mail the register records. A folder logged out or logged in to another account (a `claude auth login` while the audit waited) stops the resume, with the register `suspended (account: …)`, the index saying the audit waits for its account, and the command that logs it back in; the same account found in another folder is used and the change of folder recorded. An `--in-session` audit records its session's e-mail and is checked with `account.py check --session`. Until now, an automatic resume relaunched on whatever account its folder held.
