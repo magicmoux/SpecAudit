@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { auditWorktrees, bar, controlsOf, deadOf, indexSection, isLive, limitAlerts, listErrors, marginUsed, parsePauseAt, parseRegister, stageOf } from './parse'
+import { auditKey, auditWorktrees, bar, controlsOf, deadOf, indexSection, isLive, limitAlerts, listErrors, marginUsed, parsePauseAt, parseRegister, pickAudit, stageOf, uniqueAudits } from './parse'
 
 const REGISTER = `# Audit register — selection.md
 
@@ -192,5 +192,31 @@ describe('margin', () => {
     expect(Math.round(marginUsed({ start: 0.2, now: 0.22, limit: 0.25 }) * 100)).toBe(40)
     expect(marginUsed({ start: 0.2, now: 0.3, limit: 0.25 })).toBe(1)
     expect(bar(0.5, 4)).toBe('██░░')
+  })
+})
+
+describe('the audits of ~/.specaudit/audits.json', () => {
+  const a = { key: auditKey('C:/Repos/a', '20261016_100000'), stamp: '20261016_100000', live: true }
+  const b = { key: auditKey('C:/Repos/b', '20261016_110000'), stamp: '20261016_110000', live: true }
+  const old = { key: auditKey('C:/Repos/a', '20261015_090000'), stamp: '20261015_090000', live: false }
+
+  test('the key: the repository, with forward slashes, and the stamp', () => {
+    expect(auditKey('C:\\Repos\\a\\','20261016_100000')).toBe('C:/Repos/a#20261016_100000')
+  })
+
+  test('by default, a live audit before an ended one, the newest first', () => {
+    expect(pickAudit([old, a, b])?.key).toBe(b.key)
+    expect(pickAudit([old, { ...b, live: false }, a])?.key).toBe(a.key)
+    expect(pickAudit([])).toBeUndefined()
+  })
+
+  test('the audit selected while it is found, whatever its case; the default once it is gone', () => {
+    expect(pickAudit([old, a, b], a.key.toUpperCase())?.key).toBe(a.key)
+    expect(pickAudit([old, a, b], old.key)?.key).toBe(old.key)
+    expect(pickAudit([a, b], 'C:/Repos/c#20261016_120000')?.key).toBe(b.key)
+  })
+
+  test('each audit once, by key', () => {
+    expect(uniqueAudits([a, { ...a, key: a.key.toLowerCase() }, b]).length).toBe(2)
   })
 })

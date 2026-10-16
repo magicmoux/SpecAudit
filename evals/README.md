@@ -44,7 +44,7 @@ Run the tier that covers what you changed, and the whole suite before a pull req
 | quick | `claude plugin eval . --tag quick …`, and `evals/arch.sh` | 1 to 2 min | any change to the agents or the protocol |
 | agents, attest | `--tag agents --tag attest` | about 3 min | a change to an agent, the preflight or `/spec-audit:attest` |
 | e2e | `--tag e2e`, then `evals/local-e2e.sh audit-session` | about 10 min | a change to the protocol, before a merge |
-| full | no tag, then `arch.sh`, `account.sh`, `local-init.sh`, `journal.sh`, `local-e2e.sh`, `local-e2e-no-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
+| full | no tag, then `arch.sh`, `account.sh`, `local-init.sh`, `journal.sh`, `index.sh`, `local-e2e.sh`, `local-e2e-no-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
 | parallel | `local-e2e-parallel.sh` | about 10 min | a change to the index (`SPECAUDITS.md`, `index.py`), the launch or the closing: two audits launched at the same moment are rare, so this run, about $1.60, is not part of the suite before every pull request |
 | measure | `--tag measure --runs 3` | about 2 min | to re-measure what justifies a lowered effort |
 
@@ -97,6 +97,10 @@ Every repository the cases and scripts build has a `SPECAUDIT_ARCH.md`, written 
 ## Attestation: `attest-verify.sh`
 
 `evals/attest-verify.sh` tests `skills/attest/verify.py` on real signed tags, with a throwaway SSH key and repository: one folder per status (valid, unsigned, changed after signing, key not trusted, tampered tag, no tag), the resolution of a target (stamp, path, audited source, unknown target, folders still to attest) and the `--update` of the index. It needs git and `ssh-keygen`, no model and no network, and runs in a second.
+
+## The index of every audit: `index.sh`
+
+`evals/index.sh` tests the record `skills/start/references/index.py` leaves in `~/.specaudit/audits.json` (in a home of its own): one entry per audit, keyed by repository and stamp, pointing to its register with its worktree, state, launcher and time; two audits of two repositories kept side by side; an entry rewritten in place; a final result closing it whatever the register still says; `--register`; and a record that cannot be written (an unwritable `~/.specaudit`, a lock that never frees) leaving `SPECAUDITS.md` written and committed, the exit code 0 and stderr empty. The old `beacon.json` is no longer written. No model, no network; it runs in a few seconds.
 
 ## The hook: `journal.sh`
 

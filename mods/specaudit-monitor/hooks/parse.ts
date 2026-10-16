@@ -250,3 +250,25 @@ export function limitAlerts(snap: Snapshot): { name: string; used: number; now: 
     .filter(a => a.used >= 0.7)
     .map(a => ({ ...a, tone: a.used >= 0.9 ? ('error' as const) : ('warning' as const) }))
 }
+
+/** The key of an audit in ~/.specaudit/audits.json and in the band's list: its repository and its stamp. */
+export const auditKey = (repo: string, stamp: string) => `${repo.replace(/\\/g, '/').replace(/\/+$/, '')}#${stamp}`
+
+const sameKey = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
+
+/**
+ * The audit to show among those found: the one the person selected while it is still found, else a live one before
+ * one that has ended, the newest first.
+ */
+export function pickAudit<T extends { key: string; stamp: string; live: boolean }>(found: T[], selected?: string): T | undefined {
+  const chosen = selected ? found.find(f => sameKey(f.key, selected)) : undefined
+  if (chosen) return chosen
+  return [...found].sort((a, b) => Number(b.live) - Number(a.live) || b.stamp.localeCompare(a.stamp))[0]
+}
+
+/** The same audits once each, by key, the first seen kept. */
+export function uniqueAudits<T extends { key: string }>(found: T[]): T[] {
+  const out: T[] = []
+  for (const f of found) if (!out.some(o => sameKey(o.key, f.key))) out.push(f)
+  return out
+}

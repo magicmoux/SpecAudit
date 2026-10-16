@@ -26,6 +26,21 @@ export type ErrorRow = {
 /** One usage window: utilization now and at launch (0..1), and the pause threshold (0..1). */
 export type Window = { now: number; start: number; limit: number; resetsAt?: number }
 
+/** One audit of the band's list, when more than one is live: what its line shows, and the key that selects it. */
+export type AuditLine = {
+  /** `<repository>#<stamp>`, the key of ~/.specaudit/audits.json. */
+  key: string
+  project: string
+  stamp: string
+  document?: string
+  isLive: boolean
+  stage: string
+  state?: string
+  stopped?: string
+  evaluated: number
+  total: number
+}
+
 export type Snapshot = {
   project: string
   stamp?: string
@@ -62,6 +77,10 @@ export type Snapshot = {
   guards?: number
   result?: string
   consumption?: string
+  /** The key of the audit shown, `<repository>#<stamp>`. */
+  key?: string
+  /** Every live audit found (this project's, and those ~/.specaudit/audits.json lists), the one shown among them. */
+  audits?: AuditLine[]
   updatedAt: number
 }
 
@@ -76,6 +95,8 @@ declare module 'claude-code' {
       opened: string[]
       /** When the band's stop button was first pressed (ms), 0 otherwise: a second press within 10 s confirms. */
       armed: number
+      /** The audit the person chose in the band's list or the pane's, by key; '' for the default (the liveliest, newest). */
+      selected: string
     }
   }
 }

@@ -1,8 +1,9 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { ErrorRow, Snapshot, Window } from '../types'
+import type { AuditLine, ErrorRow, Snapshot, Window } from '../types'
 import {
+  auditKey,
   auditWorktrees,
   bar,
   compact,
@@ -14,7 +15,9 @@ import {
   listErrors,
   marginUsed,
   parseRegister,
+  pickAudit,
   stageOf,
+  uniqueAudits,
 } from './parse'
 
 const PANE = 'specaudit'
@@ -23,6 +26,7 @@ const tick = atom({ plugin: 'specaudit-monitor', key: 'tick' } as const, 0)
 const unfolded = atom({ plugin: 'specaudit-monitor', key: 'unfolded' } as const, [])
 const opened = atom({ plugin: 'specaudit-monitor', key: 'opened' } as const, [])
 const armed = atom({ plugin: 'specaudit-monitor', key: 'armed' } as const, 0)
+const selected = atom({ plugin: 'specaudit-monitor', key: 'selected' } as const, '')
 
 // One tick a second turns the band's spinner; a live audit is
 // read every 10 s, otherwise every 20 s, so that an
@@ -48,8 +52,8 @@ const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width=
 const slash = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '')
 const baseName = (p: string) => slash(p).split('/').pop() ?? p
 
-// The root of the repository shown: the session's (its cwd's top level), or the one the beacon names when its audit
-// is the livelier or the newer.
+// The root of the repository of the audit shown: the session's (its cwd's top level), or that of an audit
+// ~/.specaudit/audits.json lists, when the person selected it, or when it is the livelier or the newer.
 let cwd = ''
 
 async function run($: EngineInterface, argv: string[], dir = cwd) {
@@ -69,8 +73,8 @@ async function readText($: EngineInterface, path: string) {
   }
 }
 
-/** The newest audit of a repository: its live register in the worktree when there is one, else its results folder. */
-async function newestRegister($: EngineInterface, repo: string) {
+/** The registers of a repository's audits: every audit worktree's, live or ended, and its newest results folder's. */
+async function registersOf($: EngineInterface, repo: string) {
   const found: { stamp: string; path: string }[] = []
   for (const wt of auditWorktrees((await run($, ['git', 'worktree', 'list', '--porcelain'], repo)) ?? '')) {
     const dir = `${slash(wt.path)}/spec-audit`
@@ -81,40 +85,49 @@ async function newestRegister($: EngineInterface, repo: string) {
       }
     }
   }
-  for (const entry of await $.fs.list(repo).catch(() => [])) {
-    const stamp = /^SpecAudit-(\d{8}_\d{6})$/.exec(entry.name)?.[1]
-    const path = `${slash(repo)}/${entry.name}/register.md`
-    if (stamp && !found.some(f => f.stamp === stamp) && (await $.fs.exists(path))) found.push({ stamp, path })
+  const results = (await $.fs.list(repo).catch(() => []))
+    .map(entry => /^SpecAudit-(\d{8}_\d{6})$/.exec(entry.name)?.[1])
+    .filter((stamp): stamp is string => !!stamp && !found.some(f => f.stamp === stamp))
+    .sort((a, b) => b.localeCompare(a))
+  for (const stamp of results) {
+    const path = `${slash(repo)}/SpecAudit-${stamp}/register.md`
+    if (await $.fs.exists(path)) {
+      found.push({ stamp, path })
+      break
+    }
   }
-  return found.sort((a, b) => b.stamp.localeCompare(a.stamp))[0]
+  return found
 }
 
-// The interpreter that ran beacon.py, found once: `python3` is a stub on Windows, and trying it again at every poll
+// The interpreter that ran audits.py, found once: `python3` is a stub on Windows, and trying it again at every poll
 // would change nothing. When none runs, the search waits for a day, or for a new audit of the session's repository,
 // whose register names an interpreter that works.
 const RETRY_MS = 24 * 3600 * 1000
 let python: string | undefined
 let failed: { at: number; stamp?: string } | undefined
 
-/** The repository the beacon names (index.py writes it at each write of an index), if any. */
-async function beaconRepo($: EngineInterface, dir: string, audit?: { stamp: string; interpreter?: string }) {
-  if (failed && failed.stamp === audit?.stamp && Date.now() - failed.at < RETRY_MS) return undefined
+/** One audit ~/.specaudit/audits.json lists (index.py writes it), or the old beacon's, which has no register. */
+type Listed = { repo: string; stamp?: string | null; register?: string | null; results?: string; state?: string; updatedAt?: number }
+
+/** The audits index.py recorded on this machine, as audits.py prints them; none when no interpreter runs it. */
+async function listed($: EngineInterface, dir: string, audit?: { stamp: string; interpreter?: string }): Promise<Listed[]> {
+  if (failed && failed.stamp === audit?.stamp && Date.now() - failed.at < RETRY_MS) return []
   const candidates = python ? [python] : [...new Set([audit?.interpreter, 'python3', 'python'].filter((c): c is string => !!c))]
   for (const candidate of candidates) {
-    const out = await run($, [candidate, '-I', `${$.plugin.root}/hooks/beacon.py`], dir)
+    const out = await run($, [candidate, '-I', `${$.plugin.root}/hooks/audits.py`], dir)
     if (out === undefined) continue
     python = candidate
     failed = undefined
     try {
-      const repo = (JSON.parse(out) as { repo?: unknown }).repo
-      return typeof repo === 'string' && repo ? slash(repo) : undefined
+      const audits = out.trim() ? (JSON.parse(out) as { audits?: unknown }).audits : []
+      return Array.isArray(audits) ? audits.filter((a): a is Listed => !!a && typeof a.repo === 'string' && !!a.repo) : []
     } catch {
-      return undefined
+      return []
     }
   }
   python = undefined
   failed = { at: Date.now(), stamp: audit?.stamp }
-  return undefined
+  return []
 }
 
 // The processes running, `<pid> <command line>` per line, read at most every 10 s, the pace of a live audit's refresh:
@@ -145,35 +158,90 @@ async function processes($: EngineInterface) {
   return lines
 }
 
-type Found = { repo: string; stamp: string; path: string; text: string; live: boolean; stopped?: string; interpreter?: string }
+type Found = {
+  key: string
+  repo: string
+  stamp: string
+  path: string
+  text: string
+  info: ReturnType<typeof parseRegister>
+  live: boolean
+  stopped?: string
+  interpreter?: string
+}
 
-async function audit($: EngineInterface, repo: string): Promise<Found | undefined> {
-  const newest = await newestRegister($, repo)
-  if (!newest) return undefined
-  const text = (await readText($, newest.path)) ?? ''
+/** One audit read from its register, live while its register says so and its process (or launcher) still runs. */
+async function load($: EngineInterface, repo: string, stamp: string, path: string): Promise<Found | undefined> {
+  const text = await readText($, path)
+  if (text === undefined) return undefined
   const info = parseRegister(text)
   const stopped = isLive(info) ? deadOf(info, await processes($)) : undefined
-  return { repo, ...newest, text, live: isLive(info) && !stopped, stopped, interpreter: info.interpreter }
+  return { key: auditKey(repo, stamp), repo, stamp, path, text, info, live: isLive(info) && !stopped, stopped, interpreter: info.interpreter }
 }
 
 /**
- * The audit to show: the newest of the session's repository and of the one the beacon names, a live one before one that
- * has ended, so that an audit launched elsewhere (a test's throwaway repository) shows without changing folder.
+ * Every audit to consider: the session's repository's, and those ~/.specaudit/audits.json lists, each read from its own
+ * register, which that index only points to. A listed audit is followed while it is not closed, and the last one
+ * written also once it is (as the single beacon was), so that an audit launched elsewhere (a test's throwaway
+ * repository) shows without changing folder. An old beacon's repository, or a listed audit whose register has gone, is
+ * searched as the session's is.
  */
-async function pick($: EngineInterface) {
+async function collect($: EngineInterface) {
   const here = await $.session.cwd()
   const own = slash((await run($, ['git', 'rev-parse', '--show-toplevel'], here))?.trim() || here)
-  let best = await audit($, own)
-  const other = await beaconRepo($, here, best)
-  if (other && other.toLowerCase() !== own.toLowerCase()) {
-    const found = await audit($, other)
-    if (found && (!best || (found.live && !best.live) || (found.live === best.live && found.stamp > best.stamp))) best = found
+  const found: Found[] = []
+  const seen = (key: string) => found.some(f => f.key.toLowerCase() === key.toLowerCase())
+  const add = async (repo: string, stamp: string, path: string) => {
+    if (seen(auditKey(repo, stamp))) return
+    const f = await load($, repo, stamp, path)
+    if (f) found.push(f)
   }
-  return { own, best }
+  for (const r of await registersOf($, own)) await add(own, r.stamp, r.path)
+  const entries = await listed($, here, pickAudit(found))
+  const last = entries.reduce<Listed | undefined>((a, b) => (!a || (b.updatedAt ?? 0) > (a.updatedAt ?? 0) ? b : a), undefined)
+  const searched = new Set([own.toLowerCase()])
+  for (const entry of entries) {
+    if (entry.state === 'closed' && entry !== last) continue
+    const repo = slash(entry.repo)
+    if (entry.stamp && seen(auditKey(repo, entry.stamp))) continue
+    let path: string | undefined
+    for (const p of [entry.register, entry.results && `${slash(entry.results)}/register.md`]) {
+      if (p && (await $.fs.exists(p).catch(() => false))) {
+        path = p
+        break
+      }
+    }
+    if (entry.stamp && path) await add(repo, entry.stamp, path)
+    else if (!searched.has(repo.toLowerCase())) {
+      searched.add(repo.toLowerCase())
+      for (const r of await registersOf($, repo)) await add(repo, r.stamp, r.path)
+    }
+  }
+  return { own, found: uniqueAudits(found) }
+}
+
+/** The band's and the pane's list: every live audit, and the one shown, newest first. */
+function linesOf(found: Found[], shown: Found): AuditLine[] {
+  return found
+    .filter(f => f.live || f.key === shown.key)
+    .sort((a, b) => b.stamp.localeCompare(a.stamp))
+    .map(f => ({
+      key: f.key,
+      project: baseName(f.repo),
+      stamp: f.stamp,
+      document: f.info.document,
+      isLive: f.live,
+      stage: f.stopped ? `Arrêté : ${f.stopped}` : stageOf(f.info),
+      state: f.info.state,
+      stopped: f.stopped,
+      evaluated: f.info.counts.evaluated,
+      total: f.info.counts.total,
+    }))
 }
 
 async function refresh($: EngineInterface) {
-  const { own, best } = await pick($)
+  const { own, found } = await collect($)
+  const best = pickAudit(found, await read($, selected))
   cwd = best?.repo ?? own
   const project = baseName(cwd)
   if (!best) {
@@ -182,7 +250,7 @@ async function refresh($: EngineInterface) {
   }
   const newest = best
   const text = best.text
-  const info = parseRegister(text)
+  const info = best.info
   const live = best.live
   const snap: Snapshot = {
     project,
@@ -205,6 +273,8 @@ async function refresh($: EngineInterface) {
     iterations: info.iterations,
     revisions: info.revisions,
     resumes: info.resumes,
+    key: best.key,
+    audits: linesOf(found, best),
     updatedAt: Date.now(),
   }
 
@@ -254,6 +324,19 @@ async function refreshAndShow($: EngineInterface) {
 
 async function openPane($: EngineInterface) {
   await $.ui.open({ id: PANE, title: `SpecAudit · ${baseName(cwd)}` })
+}
+
+/** Shows the audit of `key`, chosen in the band's list or the pane's, until another is chosen or it is no longer found. */
+async function choose($: EngineInterface, key: string) {
+  await update($, selected, () => key)
+  await update($, armed, () => 0)
+  await refresh($).catch(() => false)
+}
+
+/** One line of the list of audits: the one shown marked, its stage's glyph, its project and document, its progress. */
+function auditLabel(a: AuditLine, isShown: boolean, width: number) {
+  const text = `${a.project} · ${a.document ?? a.stamp}  ${a.evaluated}/${a.total}`
+  return { mark: isShown ? '▸' : ' ', status: stageIcon(a), text: cut(text, Math.max(8, width - 4)) }
 }
 
 // The band's controls act on the audit it shows, in its own repository (`cwd`, set by refresh): pause and stop write
@@ -374,7 +457,7 @@ const stageTone = (snap: Snapshot) =>
   snap.stage === 'Terminé' ? 'success' : snap.stage.startsWith('En ') || snap.stage === 'Suspendu' ? 'warning' : undefined
 
 /** The stage as one glyph and its colour, for the band's first line; the stage in words is the pane's. */
-function stageIcon(snap: Snapshot): { glyph: string; color?: string } {
+function stageIcon(snap: Pick<Snapshot, 'stage' | 'stopped' | 'state' | 'isLive'>): { glyph: string; color?: string } {
   if (snap.stage === 'Terminé') return { glyph: '✔', color: 'success' }
   if (snap.stopped) return { glyph: '⏹' }
   if (snap.stage === 'En attente de ta décision') return { glyph: '?', color: 'warning' }
@@ -492,6 +575,11 @@ export const register: Register = on => {
     const isArmed = Date.now() - (await read($, armed)) <= CONFIRM_MS
     const isSuspended = !!snap.state?.startsWith('suspended')
     const status = stageIcon(snap)
+    const alerts = limitAlerts(snap)
+    const list = snap.audits ?? []
+    const columns = e.props.bodyColumns ?? 80
+    // The title and the progress take two rows, each alert one; the list takes what is left, one row at least.
+    const room = Math.max(1, (e.props.maxRows ?? 6) - 2 - alerts.length)
     // A control is a glyph alone, padded to twice its width: an easier target. Only the controls the audit's state
     // allows are drawn (controlsOf): pause and stop while it runs, resume once it is suspended, none once it has
     // stopped or ended. Its label names it for a screen reader.
@@ -516,8 +604,26 @@ export const register: Register = on => {
           {/* The detail, top right, as a maximize glyph: the pane is the band at full size. */}
           <Box flexShrink={0}>{control('detail', '⤢', 'Détails', () => openPane($))}</Box>
         </Box>
+        {/* With more than one live audit, one line each, a button that shows it here (▸ the one shown), in the rows the
+            band has left; the pane lists any that do not fit. */}
+        {list.length > 1 &&
+          list.slice(0, room).map((a, i) => {
+            const overflow = i === room - 1 && list.length > room
+            const { mark, status: s, text } = auditLabel(a, a.key === snap.key, columns)
+            return overflow ? (
+              <Button key="pick-more" label="Tous les audits" plain onPress={() => void openPane($)}>
+                <Text dimColor>{`  … ${list.length - room + 1} autres audits en cours ⤢`}</Text>
+              </Button>
+            ) : (
+              <Button key={`pick-${a.stamp}`} label={`Afficher ${a.project} · ${a.document ?? a.stamp}`} plain onPress={() => void choose($, a.key)}>
+                <Text color={a.key === snap.key ? ICON_COLOR : undefined}>{mark}</Text>
+                <Text color={s.color} dimColor={!s.color}>{` ${s.glyph} `}</Text>
+                <Text>{text}</Text>
+              </Button>
+            )
+          })}
         {/* The usage windows near their pause threshold, one line each, between the title and the progress. */}
-        {limitAlerts(snap).map(a => (
+        {alerts.map(a => (
           <Text key={`limit-${a.name}`} color={a.tone} wrap="truncate-end">
             {`⚠ Limite ${a.name} : ${pct(a.used)} de la marge utilisée (compte à ${pct(a.now)}, pause à ${pct(a.limit)})`}
           </Text>
@@ -714,6 +820,23 @@ export const register: Register = on => {
         {line('Stade', snap.stage, stageTone(snap))}
         {line('Résultat', snap.result)}
         {line('Branche', snap.branch)}
+
+        {/* Every live audit, when there is more than one: each a button that shows it, here and in the band. */}
+        {(snap.audits ?? []).length > 1 &&
+          section(
+            'Audits en cours',
+            false,
+            ...(snap.audits ?? []).map(a => {
+              const { mark, status: s, text } = auditLabel(a, a.key === snap.key, columns)
+              return (
+                <Button key={`pane-pick-${a.stamp}`} label={`Afficher ${a.project} · ${a.document ?? a.stamp}`} plain onPress={() => void choose($, a.key)}>
+                  <Text color={a.key === snap.key ? ICON_COLOR : undefined}>{mark}</Text>
+                  <Text color={s.color} dimColor={!s.color}>{` ${s.glyph} `}</Text>
+                  <Text bold={a.key === snap.key}>{text}</Text>
+                </Button>
+              )
+            }),
+          )}
 
         {section(
           'Consommation',

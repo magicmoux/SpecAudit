@@ -179,6 +179,53 @@ for (const surface of ['terminal', 'desktop'] as const) {
   })
 }
 
+// Two live audits, in two repositories: the one shown (LIVE) and another.
+const TWO: Snapshot = {
+  ...LIVE,
+  key: 'C:/Repos/demo#20261015_175354',
+  audits: [
+    { key: 'C:/Repos/other#20261016_090000', project: 'other', stamp: '20261016_090000', document: 'merge.md', isLive: true, stage: 'Détection', state: 'running', evaluated: 0, total: 0 },
+    { key: 'C:/Repos/demo#20261015_175354', project: 'demo', stamp: '20261015_175354', document: 'selection.md', isLive: true, stage: 'Vérification', state: 'running', evaluated: 3, total: 6 },
+  ],
+}
+
+test('band: one line per live audit, the one shown marked', async ($, on) => {
+  seed(on, TWO)
+  const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Button', key: 'pick-20261016_090000' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pick-20261015_175354' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^other · merge\.md  0\/0$/ })).toBeDefined()
+  expect((await ui.findAll({ type: 'Text', text: /^▸$/ })).length).toBe(1)
+  await ui.unmount()
+})
+
+test('band: no list for a single audit', async ($, on) => {
+  seed(on, { ...TWO, audits: TWO.audits!.slice(1) })
+  const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Button', key: 'pick-20261015_175354' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('band: the audits that do not fit are left to the pane', async ($, on) => {
+  const many = Array.from({ length: 6 }, (_, i) => ({ ...TWO.audits![0], key: `C:/Repos/r${i}#2026101${i}_000000`, project: `r${i}`, stamp: `2026101${i}_000000` }))
+  seed(on, { ...TWO, audits: many })
+  const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface: 'terminal', ...BAND })
+  for (const i of [0, 1, 2]) expect(await ui.find({ type: 'Button', key: `pick-2026101${i}_000000` })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pick-20261013_000000' })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', key: 'pick-more' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /3 autres audits en cours/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('pane: the live audits listed, each one a button', async ($, on) => {
+  seed(on, TWO)
+  const ui = await $.ui.mount({ plugin: 'specaudit-monitor', surface: 'desktop', ...PANE })
+  expect(await ui.find({ type: 'Text', text: /^Audits en cours$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pane-pick-20261016_090000' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'pane-pick-20261015_175354' })).toBeDefined()
+  await ui.unmount()
+})
+
 // What the engine draws in the band when no plugin does: nothing here.
 const bottom = (on: On) =>
   on('ui.render', async ($, e) => {

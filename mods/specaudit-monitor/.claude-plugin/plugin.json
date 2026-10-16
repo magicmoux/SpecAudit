@@ -1,7 +1,7 @@
 {
   "name": "specaudit-monitor",
-  "version": "0.14.4",
-  "description": "A SpecAudit pane: progress and usage margin of the running audit, its final figures kept until the next one, with pause, stop and resume buttons in its band. Never calls a model: it writes only the audit's stop-requested flag and messages the session that launched it.",
+  "version": "0.15.0",
+  "description": "A SpecAudit pane: progress and usage margin of every running audit on this machine, one band line each, its final figures kept until the next one, with pause, stop and resume buttons in its band. Never calls a model: it writes only the audit's stop-requested flag and messages the session that launched it.",
   "author": {
     "name": "Max Brönnimann"
   },
