@@ -30,7 +30,7 @@ printf '\n## SpecAudit-20261010_003000\n\nAudit of a.md, stopped.\n\n| | |\n|---
 git add -A && git commit -qm "audits"
 
 git tag -s specaudit/SpecAudit-20261010_010000 -m attest                       # valid, unchanged
-git tag specaudit/SpecAudit-20261010_020000                                    # lightweight: no signature
+git -c tag.gpgSign=false tag specaudit/SpecAudit-20261010_020000             # lightweight: no signature, whatever tag.gpgSign says
 git tag -s specaudit/SpecAudit-20261010_030000 -m attest                       # valid, then the folder changes
 git -c user.signingkey="$TMP/other" tag -s specaudit/SpecAudit-20261010_040000 -m attest   # key not trusted here
 git tag -s specaudit/SpecAudit-20261010_050000 -m attest                       # valid, then the tag is tampered with
