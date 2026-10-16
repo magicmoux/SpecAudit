@@ -162,7 +162,9 @@ SpecAudit-20261010_210233/
 
 `SPECAUDITS.md`, at the root, has an entry for every audit launched, newest first: a summary table (date, audited object, launched by, result: `RUNNING`, `FINISHED`, `INTERRUPTED` or `FAILED` with its detail), linked to one section per audit with its summary, details (its consumption among them) and results folder. To attest a result, sign a git tag on your own machine after reading the report; `/spec-audit:attest` checks it.
 
-## Audit monitor (optional)
+## Audit monitor (optional, experimental)
+
+> **Experimental.** The monitor is still being developed outside this repository; the version here is an early snapshot (0.14.4), which may change a lot or be replaced as a whole when it reaches its first stable version. Install it to try it, not to rely on it; `spec-audit` does not need it.
 
 `specaudit-monitor` is a separate, optional plugin of the same marketplace: a band above the prompt and a detail pane that follow the audit of the current project.
 
@@ -257,7 +259,7 @@ SpecAudit/
 ├── examples/                  demo specification
 ├── evals/                     eval suite and end-to-end scripts (see evals/README.md)
 ├── mods/
-│   └── specaudit-monitor/     optional plugin: the band and pane that follow an audit, and pause, stop or resume it
+│   └── specaudit-monitor/     optional plugin, experimental: the band and pane that follow an audit, and pause, stop or resume it
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 └── LICENSE                    CC BY-NC-SA 4.0, with additional permissions
