@@ -162,6 +162,8 @@ SpecAudit-20261010_210233/
 
 `SPECAUDITS.md`, at the root, has an entry for every audit launched, newest first: a summary table (date, audited object, launched by, result: `RUNNING`, `FINISHED`, `INTERRUPTED` or `FAILED` with its detail), linked to one section per audit with its summary, details (its consumption among them) and results folder. To attest a result, sign a git tag on your own machine after reading the report; `/spec-audit:attest` checks it.
 
+In the Claude desktop app, the session that launches an audit also files itself under a sidebar group, `SpecAudits`, created on first use, so that every audit you launched is found in one place, each under its name `[AUDIT] <slug>`. Its dot is the app's own: running while the audit runs, waiting for input at a question (closing, a stop, a usage limit), done or unread once it ends. The audit session itself, a separate `claude -p` process, does not appear in the sidebar. Outside the desktop app, or in a session started from another one (which moves only with its parent), nothing is filed and nothing is said.
+
 ## Audit monitor (optional)
 
 `specaudit-monitor` is a separate, optional plugin of the same marketplace: a band above the prompt and a detail pane that follow the audit of the current project.

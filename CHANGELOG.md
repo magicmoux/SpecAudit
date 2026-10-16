@@ -13,6 +13,8 @@ Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two d
 
 - An audit stops itself when the desktop app deletes the session that launched it: only that session can stop the audit or decide how it ends (`closing.md`, 8.9), and until now a deleted launcher left the audit running in its own process, with nobody to stop it. The audit session's hook, `journal.py`, now takes `--launcher`, the launcher's transcript (`launch.md`, step 6); once the app has deleted that session (its transcript gone, `<session>.desktop-released.json` beside it with `"reason": "delete"`), the hook writes `stop-requested` itself, with that reason. The audit stops the usual way, each level reporting first, and records `suspended (launcher session deleted)`, for a `--resume` from another session. Closing the session, restarting the app or a CLI session leave no such marker, and the audit goes on.
 
+- Sidebar group in the Claude desktop app: the launcher files itself under the group `SpecAudits` (`launch.md`, step 5), created on first use and reused afterwards, with the `ccd_sidebar` tools (`list_groups`, `create_group`, `move_sessions` with `"self"`); a `--resume` from another session files that one too. Skipped silently without the tools, without an app window, or when the app refuses the move (a session started from another one moves only with its parent). Only the launcher is filed: the audit session, a `claude -p` process, is not a session of the app. The session's dot is left to the app (running, waiting for input, done or unread), which already follows the audit, and the group is never emptied or deleted by the audit (`closing.md`).
+
 ### Tests
 
 - `evals/account.sh` (no model): `account.py check` on simulated accounts.
