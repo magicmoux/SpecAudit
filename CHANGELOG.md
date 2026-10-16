@@ -8,6 +8,7 @@ Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two d
 
 ### Audit
 
+- Every audit on the machine recorded: `index.py` records each audit in `~/.specaudit/audits.json`, one entry per audit keyed by its repository and stamp (repository, worktree, register path, state, launching session id, `updatedAt`), under a short lock of its own; a closed audit is dropped a month after its last write. The file only points: the register stays in the audit's worktree, its one source of truth. The record is best effort: one that cannot be written changes neither `SPECAUDITS.md` nor the exit code. `index.py` takes `--register` for a register that is not next to the entry file. The single-audit beacon `~/.specaudit/beacon.json`, which names only the last audit indexed, is still written, for the monitor versions that read only it.
 - The launcher's account, to the end: an audit is billed to the account that launched it and to no other, whoever resumes it and whatever account the desktop app, their session or the CLI's default uses by then; another account may read its files (the index, a monitoring pane), never run it. Before every launch of the audit session after the first (a relaunch after a failed preflight, an automatic resume after a usage limit, a scheduled or manual `--resume`), the launcher runs `account.py check "<folder>" "<email>"` on the folder and e-mail the register records. A folder logged out or logged in to another account (a `claude auth login` while the audit waited) stops the resume, with the register `suspended (account: …)`, the index saying the audit waits for its account, and the command that logs it back in; the same account found in another folder is used and the change of folder recorded. An `--in-session` audit records its session's e-mail and is checked with `account.py check --session`. Until now, an automatic resume relaunched on whatever account its folder held.
 - `--account` is fixed at resume: given with `--resume`, it must be the e-mail the register records, or the resume stops.
 
@@ -15,6 +16,7 @@ Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two d
 
 ### Tests
 
+- `evals/index.sh` (no model): the record of every audit in `~/.specaudit/audits.json`, and that a record which cannot be written changes neither the index nor the exit code.
 - `evals/account.sh` (no model): `account.py check` on simulated accounts.
 - `evals/journal.sh`: a launcher session deleted stops the audit, with its own state; one still there, or released for another reason, stops nothing.
 

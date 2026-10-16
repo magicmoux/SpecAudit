@@ -2,6 +2,7 @@
 """Write one audit's entry in the project's index, SPECAUDITS.md, under its lock, and commit it.
 
   python3 index.py <original repository> --entry <entry.md> --message "<commit message>" [--add <path>...] [--no-commit]
+                  [--register <register.md>]
 
 entry.md holds the audit's entry as references/register.md gives it: its row of the summary table (a line starting
 with "| [", linked to "#specaudit-<stamp>"), a blank line, then its section, from "## SpecAudit-<stamp>" to its end.
@@ -20,10 +21,16 @@ erase another's entry:
 Exit code 0 when the entry is written (and committed), 1 when the lock or the commit could not be had, 2 on a malformed
 entry or a check that failed (nothing is written then).
 
-Each entry written also leaves a beacon, ~/.specaudit/beacon.json (the repository, the audit's identifier, the time),
-so that a monitor watching another folder, such as the optional specaudit-monitor mod, finds an audit launched in a
-repository it was not looking at. It is best effort: without the mod nothing reads it, and a beacon that cannot be
-written changes nothing to the index or to the exit code.
+Each entry written is also recorded in the index of every audit on this machine, ~/.specaudit/audits.json, one entry
+per audit keyed by its repository and stamp: the repository, the worktree, the register's path, the audit's state, the
+id of the session that launched it, and when it was last written. It only points: the register, in the worktree, stays
+the audit's one source of truth, and a monitor watching another folder, such as the optional specaudit-monitor mod,
+reads it from there, for every audit at once. The register is the one given with --register, else register.md next to
+the entry file (spec-audit/<slug>/ in the worktree). This record is best effort: without the mod nothing reads it, and
+a record that cannot be written changes nothing to SPECAUDITS.md or to the exit code. The single-audit beacon of earlier
+versions, ~/.specaudit/beacon.json (the repository, the audit's identifier, the time), which names only the last audit
+indexed, so that two audits run side by side hide each other, is still written, the same best effort, for the monitor
+versions that read only it (specaudit-monitor up to 0.14); it goes once the monitor reads audits.json.
 """
 import argparse
 import json
@@ -114,7 +121,7 @@ def git(repo, *args):
 
 
 def beacon(repo, ident):
-    """Names the repository whose index was just written, for a monitor; any failure is ignored."""
+    """Names the repository whose index was just written, for a monitor that reads only it; any failure is ignored."""
     try:
         path = Path.home() / ".specaudit" / "beacon.json"
         path.parent.mkdir(exist_ok=True)
@@ -126,6 +133,83 @@ def beacon(repo, ident):
         pass
 
 
+RESULT = re.compile(r"^\|[^|]*\|[^|]*\|[^|]*\| *([A-Z]+)(?: — ([^|]*?))? *\|")
+KEEP_CLOSED_S = 30 * 24 * 3600
+
+
+def registered(register, result):
+    """What audits.json records of the register: its worktree, document, launcher and state ({} without a register)."""
+    try:
+        text = register.read_text(encoding="utf-8")
+    except (OSError, ValueError):
+        text = ""
+    field = lambda pattern: (m.group(1).strip() if (m := re.search(pattern, text, re.M)) else None)
+    out = {"worktree": field(r"^- Worktree: (.+?), branch "), "document": field(r"^- Document\(s\): (.+)$"),
+           "launcher": field(r"^- Session: ([^,\s]+)"), "state": field(r"^- Session: .*?state: (.+)$")}
+    status, detail = result
+    # The index is the later word at closing, when the register may still say running: an audit whose result is final
+    # is closed; one the result says is running or suspended keeps the register's state, or takes the result's.
+    if status in ("FINISHED", "FAILED") or (status == "INTERRUPTED" and not (detail or "").startswith("suspended")):
+        out["state"] = "closed"
+    elif not out["state"]:
+        out["state"] = "running" if status == "RUNNING" else "suspended" if status == "INTERRUPTED" else None
+    return out
+
+
+def record(repo, ident, register, row, results=None):
+    """Records the audit in ~/.specaudit/audits.json, under its own short lock; any failure is ignored."""
+    home = Path.home() / ".specaudit"
+    path, guard = home / "audits.json", home / "audits.json.lock"
+    held = False
+    try:
+        home.mkdir(exist_ok=True)
+        for _ in range(20):
+            try:
+                os.mkdir(guard)
+                held = True
+                break
+            except FileExistsError:
+                try:
+                    if time.time() - guard.stat().st_mtime > 60:
+                        os.rmdir(guard)
+                        continue
+                except FileNotFoundError:
+                    continue
+                time.sleep(0.5)
+        if not held:
+            return
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            audits = data["audits"] if isinstance(data, dict) and isinstance(data.get("audits"), dict) else {}
+        except (OSError, ValueError):
+            audits = {}
+        now = int(time.time())
+        repo_s = repo.resolve().as_posix()
+        stamp = ident[len("SpecAudit-"):]
+        m = RESULT.match(row)
+        entry = {"repo": repo_s, "id": ident, "stamp": stamp,
+                 "register": register.resolve().as_posix() if register.is_file() else None,
+                 **registered(register, (m.group(1), m.group(2)) if m else (None, None)),
+                 "result": " — ".join(g.strip() for g in m.groups() if g) if m else None, "updatedAt": now}
+        if results:
+            entry["results"] = results.resolve().as_posix()
+        audits[f"{repo_s}#{stamp}"] = entry
+        # An audit closed a month ago is dropped: SPECAUDITS.md and its results folder keep it.
+        audits = {k: v for k, v in audits.items() if not (isinstance(v, dict) and v.get("state") == "closed"
+                                                          and now - (v.get("updatedAt") or 0) > KEEP_CLOSED_S)}
+        tmp = home / f"audits.json.{os.getpid()}.tmp"
+        tmp.write_text(json.dumps({"version": 1, "audits": audits}, indent=1, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, path)
+    except Exception:
+        pass
+    finally:
+        if held:
+            try:
+                os.rmdir(guard)
+            except OSError:
+                pass
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("repo")
@@ -133,6 +217,7 @@ def main():
     ap.add_argument("--message", required=True)
     ap.add_argument("--add", nargs="*", default=[])
     ap.add_argument("--no-commit", action="store_true")
+    ap.add_argument("--register", help="the audit's register (default: register.md next to the entry file)")
     a = ap.parse_args()
     repo = Path(a.repo)
     entry = Path(a.entry).read_text(encoding="utf-8").strip("\n")
@@ -167,6 +252,8 @@ def main():
             return 2
         index.write_text(after, encoding="utf-8", newline="\n")
         print(f"index: {ident} written; {len(others_after)} other entries kept")
+        results = next((repo / p for p in a.add if Path(p).name == ident and (repo / p).is_dir()), None)
+        record(repo, ident, Path(a.register) if a.register else Path(a.entry).parent / "register.md", row, results)
         beacon(repo, ident)
         if a.no_commit:
             return 0
