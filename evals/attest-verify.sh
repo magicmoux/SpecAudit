@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Test of skills/attest/verify.py on real signed tags: a throwaway repository under the temp directory, a throwaway SSH
 # key, one results folder per status. Needs git and ssh-keygen; no network, no model. Usage: evals/attest-verify.sh
 set -uo pipefail

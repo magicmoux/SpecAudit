@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Select the use edges to probe for hypothesis discharge, and keep their results across audits.
 
   python3 discharge.py select <edges.json> <cache.json> --strongest formal|model|ad-hoc

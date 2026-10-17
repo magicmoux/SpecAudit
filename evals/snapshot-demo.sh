@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Regenerates examples/demo-result/: the results of two real audits of the demo, examples/demo/bubble-sort.md, so that
 # a reader sees what an audit leaves without running one, and can replay its checks with Python alone.
 #   partial/   --max-passes 1: the critical fix of the abstract and conclusion stays pending (partial, needs decision)

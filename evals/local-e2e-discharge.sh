@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Hypothesis discharge, end to end, on examples/discharge/block-search.md: Proposition 3 applies Lemma 2 to A ++ B
 # without guaranteeing that it is sorted, and Theorem 6, named by the abstract, applies Proposition 3. It checks that
 # the use edges are recorded, that a probe finds the gap with an executed counterexample, that the error is put on

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Prints a minimal SPECAUDIT_ARCH.md that marks each path given as audited with the formal profile: what
 # /spec-audit:init would propose for a repository holding only these documents. /spec-audit:start refuses to run
 # without the file, so every script or case that builds a repository to audit writes it first.

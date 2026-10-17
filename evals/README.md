@@ -44,7 +44,7 @@ Run the tier that covers what you changed, and the whole suite before a pull req
 | quick | `claude plugin eval . --tag quick …`, and `evals/arch.sh` | 1 to 2 min | any change to the agents or the protocol |
 | agents, attest | `--tag agents --tag attest` | about 3 min | a change to an agent, the preflight or `/spec-audit:attest` |
 | e2e | `--tag e2e`, then `evals/local-e2e.sh audit-session` | about 10 min | a change to the protocol, before a merge |
-| full | no tag, then `arch.sh`, `account.sh`, `local-init.sh`, `journal.sh`, `local-e2e.sh`, `local-e2e-no-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
+| full | no tag, then `arch.sh`, `account.sh`, `attribution.sh`, `local-init.sh`, `journal.sh`, `local-e2e.sh`, `local-e2e-no-merge.sh`, `local-e2e-folder.sh`, `local-e2e-discharge.sh`, `local-e2e-fail-fast.sh`, `local-e2e-pause.sh` and `local-e2e-kill.sh` | about 10 min at `-j 6` | before a pull request |
 | parallel | `local-e2e-parallel.sh` | about 10 min | a change to the index (`SPECAUDITS.md`, `index.py`), the launch or the closing: two audits launched at the same moment are rare, so this run, about $1.60, is not part of the suite before every pull request |
 | measure | `--tag measure --runs 3` | about 2 min | to re-measure what justifies a lowered effort |
 

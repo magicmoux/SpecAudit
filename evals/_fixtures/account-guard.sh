@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Sourced by every script that launches `claude`: each run is billed to the account the claude CLI is logged into,
 # which may not be the one of the session that starts the script. Refuses to go on unless SPECAUDIT_E2E_ACCOUNT names
 # that account's e-mail. To run on another account, log it in under its own configuration folder once

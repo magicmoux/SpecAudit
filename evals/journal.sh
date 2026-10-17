@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Test of the audit session's hook, skills/start/references/journal.py, on synthetic hook events: one agent at a time
 # (--lock): a launch is forced to the foreground, a second launch while the first has not returned is refused and leaves
 # nothing in its scratch directory, the return releases the lock, a lock whose agent ended without its release is

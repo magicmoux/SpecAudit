@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Write one audit's entry in the project's index, SPECAUDITS.md, under its lock, and commit it.
 
   python3 index.py <original repository> --entry <entry.md> --message "<commit message>" [--add <path>...] [--no-commit]

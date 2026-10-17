@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Lemma 3 already fixed in the document; the guard follows Definitions 1 and 2, duplicates included.
 . "$(dirname "$0")/../_fixtures/demo-repo.sh"
 sed -i 's/every list L, |P_k(L)| = k\./every list L, |P_k(L)| = min(k, |L|)./' selection.md

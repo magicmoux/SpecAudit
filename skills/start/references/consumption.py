@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Measure what an audit session consumed, from its streams: tokens per agent, cost per model, share of the usage windows.
 
   python3 consumption.py <launch folder | stream.jsonl>... [--config-dir <folder>] [--no-transcripts]

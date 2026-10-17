@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 schema_version: "1.1"
 name: adjudicator-guard-review-faithful-low
 description: At low effort, as the per-step routing launches a guard review. A fresh spec-adjudicator in guard review finds a guard that follows Definitions 1 and 2 faithful, rather than faulting every guard it is shown.

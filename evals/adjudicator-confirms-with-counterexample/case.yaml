@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 schema_version: "1.1"
 name: adjudicator-confirms-with-counterexample
 description: A fresh spec-adjudicator confirms the false Lemma 3 with an executed counterexample, at the ad hoc evidence level.

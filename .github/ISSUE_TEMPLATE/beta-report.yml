@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 name: Beta report
 description: Report the result of an audit run during the beta of the formal profile.
 title: "[beta] "

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Check the attestation of each results folder listed in SPECAUDITS.md, and optionally record it in the index.
 
   python3 verify.py                 print the status of every folder of the index

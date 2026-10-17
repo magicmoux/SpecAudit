@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Two results folders, neither attested: with no argument, the command must not pick one.
 . "$(dirname "$0")/../_fixtures/demo-repo.sh"
 mkdir -p notes

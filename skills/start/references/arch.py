@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Read a project's architecture, SPECAUDIT_ARCH.md, and hold the audit to it.
 
   python3 arch.py require  [--root <repo>]                 is there a valid architecture? (exit 2: none, 1: invalid)

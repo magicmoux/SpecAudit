@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Build the audit session's protocol.md: what its orchestrator rereads at every turn, and nothing else.
 
   python3 protocol.py <skill folder> <launch folder> <protocol folder> [--fail-fast] [--formal-oracle]

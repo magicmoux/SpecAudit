@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Test of skills/start/references/consumption.py on synthetic streams: a first run (orchestrator and two agents, one
 # assistant message repeated on two lines, two result events whose modelUsage is cumulative) and a resumed run during
 # which the session window resets. No model, no network. Usage: evals/consumption.sh

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Seeds the eval workspace with a git repository holding the demo specification and its architecture.
 # Usage from a case's scaffold script: . "$(dirname "$0")/../_fixtures/demo-repo.sh"
 set -euo pipefail

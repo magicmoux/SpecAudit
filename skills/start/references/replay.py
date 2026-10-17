@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Replay the guard corpus of an audit results folder, on the fixed document or on the original one.
 
   python3 resources/replay.py --on fixed    every guard must pass: the fixes hold

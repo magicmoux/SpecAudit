@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 schema_version: "1.1"
 name: adjudicator-refutes-false-positive
 description: A fresh spec-adjudicator refutes a false claim against the correct Proposition 4 instead of forcing a confirmation.

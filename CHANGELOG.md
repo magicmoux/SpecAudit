@@ -10,6 +10,11 @@ Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two d
 
 - SpecAudit is distributed under the PolyForm Shield License 1.0.0 (`LICENSE`, the official text, with its `Required Notice:` line), in place of CC BY-NC-SA 4.0 with additional permissions. Any use is allowed, commercial included, such as a consultant's paid engagements; providing a product or service that competes with SpecAudit is not. The change takes effect with this version: every version published before it, up to the tag `v1.0.0-beta.5-cc`, remains available under the license it was published with (MIT for 0.5 to 0.9.1, CC BY-NC-SA 4.0 with additional permissions for the betas). The README's License section explains it in plain language and gives the license history; `plugin.json` gives `LicenseRef-PolyForm-Shield-1.0.0`, PolyForm Shield not being on the SPDX license list; the contributor agreement in `CONTRIBUTING.md` follows.
 
+### Credit
+
+- Every file names its copyright holders and its license, following the REUSE specification (`reuse lint` passes): an SPDX header in each code file (`.py`, `.sh`, `.yaml`, `.yml`, `.ts`, `.tsx`), and `REUSE.toml` for every other file. Markdown, JSON, the evaluation fixtures, the examples and `mods/` carry no header on purpose: a model reads them (`protocol.py` splices `SKILL.md` and `register.md` into the audit session's prompt), an audit reads them as the document under test, whose lines the tests count, or the plugin copies them into the user's repository. The license text is also in `LICENSES/LicenseRef-PolyForm-Shield-1.0.0.md`.
+- Contributors are credited in the files they change: `CONTRIBUTING.md`, "Credit", says how (a header line, or a `REUSE.toml` entry), and that a contributor may add a `Required Notice:` line to `LICENSE`. Each pull request runs `.github/workflows/credit.yml`: `reuse lint`, and `.github/scripts/attribution.py`, which names each author or `Co-authored-by:` person, through `.mailmap`, missing from a file they changed; AI tools are not counted, and the `trivial` label skips the check. Pull requests are merged with a merge commit, and `master` accepts only signed commits, so that each contributor's commits arrive unchanged.
+
 ### Monitor
 
 - `specaudit-monitor` marked experimental in the README and the marketplace: it is developed outside the repository until its first stable version, and the version here (0.14.4) is an early snapshot.
@@ -23,6 +28,7 @@ Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two d
 
 ### Tests
 
+- `evals/attribution.sh` (no model): the credit check on a throwaway repository.
 - `evals/account.sh` (no model): `account.py check` on simulated accounts.
 - `evals/journal.sh`: a launcher session deleted stops the audit, with its own state; one still there, or released for another reason, stops nothing.
 

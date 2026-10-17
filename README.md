@@ -230,6 +230,7 @@ SpecAudit/
 ├── .claude-plugin/
 │   ├── plugin.json            plugin manifest
 │   └── marketplace.json       the repository is also a marketplace
+├── .github/                   credit check of pull requests (REUSE, attribution.py), funding, issue forms
 ├── skills/
 │   ├── init/
 │   │   ├── SKILL.md           /spec-audit:init, proposes the project's architecture, SPECAUDIT_ARCH.md
@@ -261,8 +262,10 @@ SpecAudit/
 ├── mods/
 │   └── specaudit-monitor/     optional plugin, experimental: the band and pane that follow an audit, and pause, stop or resume it
 ├── CHANGELOG.md
-├── CONTRIBUTING.md
-└── LICENSE                    PolyForm Shield 1.0.0
+├── CONTRIBUTING.md            how to contribute, and how contributors are credited
+├── LICENSE                    PolyForm Shield 1.0.0, with its Required Notice lines
+├── LICENSES/                  the license text, for REUSE
+└── REUSE.toml                 copyright and license of the files that carry no header
 ```
 
 ## Future work, up for grabs

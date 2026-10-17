@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Hook of the audit session: keep each agent's journal in its scratch directory, whatever the agent does.
 
   python3 journal.py [--stream <stream.jsonl> --pause-at <threshold> --flag <pause-requested>] [--ended <file>]
