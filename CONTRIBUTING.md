@@ -82,6 +82,43 @@ For a change to the protocol, also test on a real document of the target domain 
 3. Update the documentation and the changelog.
 4. Check that `claude plugin validate --strict .` passes.
 
+## Credit
+
+Whoever changes a file is credited in it, by name. The repository follows the [REUSE specification](https://reuse.software/spec/): every file states its copyright holders and its license, in one of two places.
+
+- **Code files** (`.py`, `.sh`, `.ts`, `.tsx`, `.yaml`, `.yml`) carry a header, after the shebang if there is one:
+
+  ```python
+  # SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+  # SPDX-FileCopyrightText: 2026 Your Name <https://github.com/you>
+  # SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
+  ```
+
+  Add your line under the others when you change the file.
+- **Every other file** is credited in `REUSE.toml`, at the root, and never in the file itself: Markdown (the skills, agents, profiles and references a model reads, the documentation), the evaluation fixtures and the examples (documents an audit reads, whose lines the tests count), JSON and the monitor in `mods/`. A header there would be read by the model, audited, or copied into the user's repository with the file. To credit yourself, add an entry for the file at the end of `REUSE.toml`, listing every holder, since the last entry that matches a file applies:
+
+  ```toml
+  [[annotations]]
+  path = "skills/start/SKILL.md"
+  SPDX-FileCopyrightText = ["2026 Max Brönnimann <https://github.com/magicmoux>", "2026 Your Name <https://github.com/you>"]
+  SPDX-License-Identifier = "LicenseRef-PolyForm-Shield-1.0.0"
+  ```
+
+A trivial change (a typo, a rename, a reformatting) creates nothing to credit: git keeps it, and a maintainer adds the `trivial` label to the pull request. You may also add your own `Required Notice: Copyright <year> <name> (<url>)` line at the top of `LICENSE`, under the existing one: the license requires anyone who passes SpecAudit on to keep those lines.
+
+Every pull request is checked (`.github/workflows/credit.yml`): `reuse lint`, and `.github/scripts/attribution.py`, which reads each commit's author and `Co-authored-by:` people through `.mailmap` and lists who is missing from the files they changed. Run both before you push:
+
+```bash
+pipx run --spec "reuse[charset-normalizer]" reuse lint
+python3 .github/scripts/attribution.py origin/master
+```
+
+If you commit under several identities, add a line to `.mailmap` so that they count as one person.
+
+**Signed commits, merged as they are.** `master` accepts only signed commits ([SSH or GPG](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification)), and pull requests are merged with a merge commit, never squashed or rebased: your commits reach `master` unchanged, with your signature and your name.
+
+**Work done with an AI tool** is credited to the person who directed and reviewed it, who answers for it: an AI tool is not a copyright holder and has no line in a header, in `REUSE.toml` or in `LICENSE`. Say so in the commit with an `Assisted-by:` trailer, for example `Assisted-by: Claude (Opus 5.5)`, rather than `Co-authored-by:`, which reads as authorship.
+
 ## License and contributor agreement
 
 SpecAudit is licensed under the PolyForm Shield License 1.0.0, in [LICENSE](LICENSE). By opening a pull request, you agree to the following:
