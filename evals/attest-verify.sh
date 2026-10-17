@@ -14,6 +14,8 @@ echo "signer@example.invalid $(cat key.pub)" > allowed
 mkdir repo && cd repo && git init -q
 # Some environments replace git's SSH signing program with their own signer; the test needs the standard one.
 git config gpg.ssh.program ssh-keygen
+# A global tag.gpgsign or commit.gpgsign would sign the lightweight tag below, or ask it for a message: only `tag -s` signs.
+git config tag.gpgsign false && git config commit.gpgsign false
 git config user.name "Test Signer" && git config user.email signer@example.invalid
 git config gpg.format ssh && git config user.signingkey "$TMP/key" && git config gpg.ssh.allowedSignersFile "$TMP/allowed"
 printf '# SpecAudit index\n\n| Date | Audited object | Launched by | Result |\n|---|---|---|---|\n' > SPECAUDITS.md
