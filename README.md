@@ -290,7 +290,7 @@ A warm thank-you to [chteau](https://github.com/chteau), author of [tokenforge](
 
 ## License
 
-Copyright © 2026 Max Brönnimann. Starting with version 1.0.0-beta.6, SpecAudit is distributed under the [PolyForm Shield License 1.0.0](https://polyformproject.org/licenses/shield/1.0.0); see [LICENSE](LICENSE).
+Copyright © 2026 Max Brönnimann. Starting with version 1.0.0-beta.6, SpecAudit is distributed under the [PolyForm Shield License 1.0.0](https://polyformproject.org/licenses/shield/1.0.0); see [LICENSE](LICENSE). SpecAudit is meant to be built together, not resold: the only return expected from it is collaboration, and [sponsorship](https://github.com/sponsors/magicmoux) from those who wish to support it.
 
 In plain language:
 
