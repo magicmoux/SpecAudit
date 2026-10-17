@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
+# Copyright and credit of every file (CONTRIBUTING.md, "Credit"): the repository follows the REUSE specification, and
+# whoever changes a file in a pull request is credited in it. The `trivial` label skips the credit check, not REUSE.
+name: Credit
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  reuse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx run --spec "reuse[charset-normalizer]==6.2.0" reuse lint
+
+  credit:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'trivial') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python3 .github/scripts/attribution.py "origin/${{ github.base_ref }}" HEAD
