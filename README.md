@@ -2,7 +2,7 @@
 
 **Catch the errors in your specs before your readers do.** SpecAudit reviews them like a skeptic, and confirms an error only with evidence you can rerun. Formal documents today; other kinds of spec planned, open to contributions.
 
-[![License: CC BY-NC-SA 4.0 with additional permissions](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0%20%2B-lightgrey.svg)](LICENSE)
+[![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm%20Shield%201.0.0-lightgrey.svg)](LICENSE)
 ![Version 1.0.0-beta.4](https://img.shields.io/badge/version-1.0.0--beta.4-orange.svg)
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A63D2.svg)
 
@@ -211,7 +211,7 @@ An audit launches several agents per pass: it consumes a lot of tokens. `--max-p
 
 ### Disclaimer
 
-SpecAudit is provided **as is**, without warranty of any kind, express or implied, as stated in its [license](LICENSE) (Section 5 of CC BY-NC-SA 4.0). You use it **at your own risk**. It does not replace review by a qualified person: you remain responsible for the documents you publish or rely on, for reviewing every change it proposes before you merge it, and for the cost of the runs you launch. Its authors and contributors are not liable for any claim, damage or loss arising from its use, including from an error it missed or a fix it introduced.
+SpecAudit is provided **as is**, without warranty of any kind, express or implied, as stated in its [license](LICENSE) (the "No Liability" section of PolyForm Shield 1.0.0). You use it **at your own risk**. It does not replace review by a qualified person: you remain responsible for the documents you publish or rely on, for reviewing every change it proposes before you merge it, and for the cost of the runs you launch. Its authors and contributors are not liable for any claim, damage or loss arising from its use, including from an error it missed or a fix it introduced.
 
 ## Documentation
 
@@ -262,7 +262,7 @@ SpecAudit/
 │   └── specaudit-monitor/     optional plugin, experimental: the band and pane that follow an audit, and pause, stop or resume it
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
-└── LICENSE                    CC BY-NC-SA 4.0, with additional permissions
+└── LICENSE                    PolyForm Shield 1.0.0
 ```
 
 ## Future work, up for grabs
@@ -290,11 +290,22 @@ A warm thank-you to [chteau](https://github.com/chteau), author of [tokenforge](
 
 ## License
 
-Copyright © 2026 Max Brönnimann. SpecAudit is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), with additional permissions; see [LICENSE](LICENSE). SpecAudit is meant to be built together, not resold: the only return expected from it is collaboration.
+Copyright © 2026 Max Brönnimann. Starting with version 1.0.0-beta.6, SpecAudit is distributed under the [PolyForm Shield License 1.0.0](https://polyformproject.org/licenses/shield/1.0.0); see [LICENSE](LICENSE). SpecAudit is meant to be built together, not resold: the only return expected from it is collaboration, and [sponsorship](https://github.com/sponsors/magicmoux) from those who wish to support it.
 
-In short, and the text of [LICENSE](LICENSE) prevails:
+In plain language:
 
-- you may use SpecAudit for any purpose, commercial included, such as auditing your own or your clients' documents, or selling audits or consulting performed with it; the results of an audit are yours;
-- you may adapt it, keep your adaptations private, such as profiles for your own projects in `.specaudit/`, and share them free of charge under the same license, with attribution;
-- you may not sell, rent or license SpecAudit or an adapted version, include it in a paid product or service, or offer it as a paid hosted service;
-- an adapted version must not be shared under the name SpecAudit, nor suggest that its author endorses it.
+- you may use SpecAudit for any purpose, commercial included: auditing your own or your clients' documents, or using it as a consultant in paid engagements, and billing for the audits and the advice you deliver with it; the results of an audit are yours;
+- you may change it, build on it and share it, as long as whoever gets a copy from you also gets the license terms (or their URL) and the `Required Notice:` line at the top of [LICENSE](LICENSE);
+- the only thing you may not do is provide a product or service that competes with SpecAudit, or with a product its licensor provides using it: for example selling, renting, licensing or offering by subscription SpecAudit, an adapted version or a substitute for it. Under the license, a product competes even when it is free of charge or built on another platform.
+
+This summary is for convenience only: it does not replace the text of the license, which alone is binding and prevails.
+
+SpecAudit is provided **as is, without warranty** of any kind; see [Disclaimer](#disclaimer).
+
+### License history
+
+- **Initial experimental versions** (0.5 to 0.9.1): published for two days in October 2026 under the MIT License, in a former repository that has since been deleted.
+- **Beta versions** (1.0.0-beta.1 up to the tag `v1.0.0-beta.5-cc`): CC BY-NC-SA 4.0, with additional permissions. A first 1.0.0-beta.1 had been published on 2026-10-11 under the EUPL-1.2 or the AGPL-3.0-or-later, before the history restarted at 1.0.0-beta.1 under CC BY-NC-SA 4.0.
+- **From 1.0.0-beta.6**: PolyForm Shield 1.0.0.
+
+Each version published before the change remains available under the license it was published with.

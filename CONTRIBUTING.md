@@ -84,9 +84,9 @@ For a change to the protocol, also test on a real document of the target domain 
 
 ## License and contributor agreement
 
-SpecAudit is licensed under CC BY-NC-SA 4.0, with the additional permissions in [LICENSE](LICENSE). By opening a pull request, you agree to the following:
+SpecAudit is licensed under the PolyForm Shield License 1.0.0, in [LICENSE](LICENSE). By opening a pull request, you agree to the following:
 
-1. Your contribution is your own work, or you have the right to submit it, and it is published under the license of the project, CC BY-NC-SA 4.0 with the additional permissions in LICENSE. Material taken from another project may be contributed only if its license allows this, and its license and origin are stated in the pull request.
+1. Your contribution is your own work, or you have the right to submit it, and it is published under the license of the project, PolyForm Shield 1.0.0, in LICENSE. Material taken from another project may be contributed only if its license allows this, and its license and origin are stated in the pull request.
 2. You keep the copyright on your contribution, and may use it as you wish elsewhere.
 
 State it in the pull request with the line `I agree to the contributor agreement in CONTRIBUTING.md.`
