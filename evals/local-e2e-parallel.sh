@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Two audits launched at the same moment from the same repository, on two different documents, with opposite
 # scenarios: selection.md without --auto (a critical fix stays pending: partial, no fixed copy) and sums.md with --auto
 # (its one false proposition is fixed, its true lemma kept: every error fixed, fixed copy). It checks that nothing is

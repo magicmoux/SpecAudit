@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # The architecture, end to end, outside `claude plugin eval` (which refuses shell tools without a sandbox, on Windows):
 #   1. /spec-audit:init, run non-interactively (`claude -p`) on the fixture project _fixtures/arch-project/: the proposal
 #      it prints gives each path its expected role, the Lean oracle its command, correspondence table and guard location,

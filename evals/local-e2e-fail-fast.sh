@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # --fail-fast on the demo (evals/_fixtures/selection.md): one detection wave, the candidates confirmed from the most
 # upstream, and a stop at the first confirmed error. It checks that the error reported is a root (Lemma 3 or Example 6,
 # never their consequence Corollary 5), that the document is unchanged and no fix committed, and that the report's

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 schema_version: "1.1"
 name: start-skill-triggers
 description: A natural-language request to check the proofs of a formal document loads the start skill.

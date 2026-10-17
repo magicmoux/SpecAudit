@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Read the usage of the account an audit session runs on, from its stream, and request a pause above a threshold.
 
   python3 usage.py <stream.jsonl> [--pause-at session=75,week=50 | 80 | off] [--flag <pause-requested file>]

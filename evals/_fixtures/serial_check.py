@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Check that no two agents of an audit ran at the same time.
 
   python3 serial_check.py <scratch root> [<stream.jsonl>...]

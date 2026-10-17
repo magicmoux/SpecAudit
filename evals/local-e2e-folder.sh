@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # An audit whose target is a folder: docs/ holds selection.md and sums.md, audited together with --auto. It checks that
 # the folder stands for the documents in it (both listed in the register, each fixed as its own errors require, the
 # true statements kept), that the index names the folder as the audited object, and that the results folder holds the

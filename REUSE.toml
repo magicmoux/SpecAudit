@@ -1,0 +1,25 @@
+# Copyright and license of the files that carry no header of their own.
+#
+# Code files carry an SPDX header. The files below do not, on purpose: a model reads them (skills, agents, profiles,
+# references, documentation, evaluation fixtures and the documents they audit), the plugin copies them into the
+# user's repository, or their format has no comments (JSON, JSONL, patches). A header there would be read, audited
+# or copied along with them. See CONTRIBUTING.md, "Credit".
+#
+# A contributor to one of these files adds an [[annotations]] entry for it at the end of this file, listing every
+# copyright holder of the file: when several entries match a file, the last one applies.
+version = 1
+
+[[annotations]]
+path = [
+    "**.md",
+    "**.json",
+    "**.jsonl",
+    "examples/**",
+    "evals/_fixtures/arch-project/**",
+    "mods/**",
+    ".gitattributes",
+    ".gitignore",
+    ".mailmap",
+]
+SPDX-FileCopyrightText = "2026 Max Brönnimann <https://github.com/magicmoux>"
+SPDX-License-Identifier = "LicenseRef-PolyForm-Shield-1.0.0"

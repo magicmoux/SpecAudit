@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Pause and resume on a usage threshold, on the demo (evals/_fixtures/selection.md). A first launch with --pause-at 1
 # pauses the audit as soon as the stream reports any usage, without waiting (--no-auto-resume); a second launch
 # resumes it with --resume, under the tests' usage ceiling. It checks the pause (the request, the register suspended for the usage

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Turns the current directory, a copy of _fixtures/arch-project/, into a git repository: a project with an original
 # manuscript and hard-to-find references (source/), its revised version and proofs (artifacts/), and a Lean
 # development with a correspondence table (mechanization/). Lean need not be installed: init only reads it.

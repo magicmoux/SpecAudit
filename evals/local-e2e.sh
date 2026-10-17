@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Local end-to-end test of a full audit of the demo, outside `claude plugin eval`, which refuses shell tools on platforms
 # without a sandbox (Windows). It runs as you, in a throwaway repository under the temp directory.
 # Usage: evals/local-e2e.sh [in-session|audit-session] [model] [audit options, default "--max-passes 1"]

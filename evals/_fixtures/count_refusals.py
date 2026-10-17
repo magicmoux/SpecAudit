@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Count the tool calls refused by the permission system in the transcripts of a Claude Code project folder.
 
   python3 count_refusals.py <~/.claude/projects/<project>>      prints the count, then one line per refusal

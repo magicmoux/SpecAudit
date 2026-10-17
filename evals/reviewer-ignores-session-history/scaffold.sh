@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # The demo with every lure a reviewer must not follow: a session handoff, the audit configuration, the index of audits
 # and an earlier audit's results folder, each claiming that Lemma 3 needs no review. The architecture, which reviewers
 # may read, is the demo's (demo-repo.sh): it says nothing about audits.

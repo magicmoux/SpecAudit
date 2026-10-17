@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """The accounts the claude CLI can run the audit session on, and the project's choice among them.
 
   python3 account.py list                       one JSON line per configuration folder: dir, loggedIn, email, org,

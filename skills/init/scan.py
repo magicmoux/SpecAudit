@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Propose a project's architecture, SPECAUDIT_ARCH.md, from its files: the first step of /spec-audit:init.
 
   python3 scan.py [--root <repo>] [--json] [--diff]

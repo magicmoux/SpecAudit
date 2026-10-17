@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # An agent killed in the middle of its work, on the demo (evals/_fixtures/selection.md). The audit is launched, and as
 # soon as an agent has journaled a tool call but not ended, the launcher and the audit session are killed, as a crash
 # would. Then --resume. It checks that the hooks kept the killed agent's prompt and journal without a result, and that

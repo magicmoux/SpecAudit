@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Test of the architecture scripts, without a model: skills/init/scan.py proposes SPECAUDIT_ARCH.md for the fixture
 # project _fixtures/arch-project/ (manuscript, revised copy, references, Lean development with a correspondence table)
 # and for the demo; skills/start/references/arch.py refuses an audit without the file, and refuses any change outside

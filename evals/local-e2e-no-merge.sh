@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # The closing without --keep, which no other script reaches: an audit in a claude -p session cannot ask the closing
 # question and applies its non-interactive rule, "Keep the branch". With --auto and two passes, every confirmed error
 # can be fixed, the outcome where a merge would be most tempting. It checks that the audit never merges: the branch

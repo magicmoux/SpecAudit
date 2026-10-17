@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Sourced by the local end-to-end scripts, after $PY and $PLUGIN are set.
 # consumption_matches <report.md> <launch folder>: the total of the report's "## Consumption" section (its Total row)
 # equals the one consumption.py measures on the run's streams. The total does not depend on the transcripts, so they

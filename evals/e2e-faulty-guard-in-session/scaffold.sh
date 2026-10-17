@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # The demo as a previous audit left it: Lemma 3 already fixed, and its guard in the corpus, committed. The guard is
 # faulty: its model of P_k drops duplicates (set), against Definition 1, so the corpus is red at the baseline although
 # the document is right on that point.

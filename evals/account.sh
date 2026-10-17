@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 # Test of skills/start/references/account.py check, on simulated accounts: configuration folders under a throwaway home,
 # each with a fake-auth.json standing for what `claude auth status` would say there. An audit stays on the account that
 # launched it: the check passes only while the recorded folder is logged in to the recorded e-mail, and names the other

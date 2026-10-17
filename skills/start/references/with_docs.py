@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Max Brönnimann <https://github.com/magicmoux>
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
 """Run a command with SPEC_DOCS set, so that the guards that read the document read another version of it.
 
   python3 with_docs.py <path in the project>=<file to read> [<path>=<file> ...] -- <command> [<args> ...]
