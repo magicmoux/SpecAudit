@@ -5,6 +5,6 @@
   "author": { "name": "Max Brönnimann" },
   "homepage": "https://github.com/magicmoux/SpecAudit",
   "repository": "https://github.com/magicmoux/SpecAudit",
-  "license": "CC-BY-NC-SA-4.0",
+  "license": "LicenseRef-PolyForm-Shield-1.0.0",
   "keywords": ["specification", "audit", "review", "proof", "mathematics", "algorithms", "counterexample", "regression-guards"]
 }
