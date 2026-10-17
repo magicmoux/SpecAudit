@@ -2,9 +2,13 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
-Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two days in October 2026; a first 1.0.0-beta.1 was published under the EUPL-1.2 or the AGPL-3.0-or-later on 2026-10-11; history restarted at 1.0.0-beta.1 under CC BY-NC-SA 4.0 with additional permissions.
+Pre-release versions 0.5 to 0.9.1 were published under the MIT License for two days in October 2026; a first 1.0.0-beta.1 was published under the EUPL-1.2 or the AGPL-3.0-or-later on 2026-10-11; history restarted at 1.0.0-beta.1 under CC BY-NC-SA 4.0 with additional permissions, up to the tag `v1.0.0-beta.5-cc`; from 1.0.0-beta.6, SpecAudit is distributed under the PolyForm Shield License 1.0.0.
 
-## [Unreleased]
+## [1.0.0-beta.6] — Unreleased
+
+### License
+
+- SpecAudit is distributed under the PolyForm Shield License 1.0.0 (`LICENSE`, the official text, with its `Required Notice:` line), in place of CC BY-NC-SA 4.0 with additional permissions. Any use is allowed, commercial included, such as a consultant's paid engagements; providing a product or service that competes with SpecAudit is not. The change takes effect with this version: every version published before it, up to the tag `v1.0.0-beta.5-cc`, remains available under the license it was published with (MIT for 0.5 to 0.9.1, CC BY-NC-SA 4.0 with additional permissions for the betas). The README's License section explains it in plain language and gives the license history; `plugin.json` gives `LicenseRef-PolyForm-Shield-1.0.0`, PolyForm Shield not being on the SPDX license list; the contributor agreement in `CONTRIBUTING.md` follows.
 
 ### Monitor
 
